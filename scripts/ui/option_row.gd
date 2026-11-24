@@ -49,3 +49,9 @@ func _on_pressed() -> void:
 
 func _refresh() -> void:
 	text = "%s:   ‹ %s ›" % [label_text, options[index]]
+
+
+## Changes the shown option without emitting value_changed.
+func set_index(new_index: int) -> void:
+	index = clampi(new_index, 0, options.size() - 1)
+	_refresh()

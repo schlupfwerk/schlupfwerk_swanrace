@@ -292,6 +292,7 @@ static func _multimesh(parent: Node3D, mesh: Mesh, transforms: Array[Transform3D
 	if not shadows:
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	instance.add_to_group("scenery_detail")
+	Settings.configure_detail(instance)
 	parent.add_child(instance)
 	return instance
 

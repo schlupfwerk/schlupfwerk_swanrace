@@ -17,6 +17,7 @@ config/features=PackedStringArray("4.7", "Mobile")
 [autoload]
 
 Profile="*res://scripts/save/profile.gd"
+Settings="*res://scripts/save/settings.gd"
 InputGlyphs="*res://scripts/ui/input_glyphs.gd"
 
 [display]
@@ -53,6 +54,14 @@ jump={
 pause={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"device":-1,"physical_keycode":4194305), Object(InputEventJoypadButton,"device":-1,"button_index":6,"pressed":true)]
+}
+menu_prev_tab={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"device":-1,"physical_keycode":81), Object(InputEventJoypadButton,"device":-1,"button_index":9,"pressed":true)]
+}
+menu_next_tab={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"device":-1,"physical_keycode":69), Object(InputEventJoypadButton,"device":-1,"button_index":10,"pressed":true)]
 }
 
 [rendering]

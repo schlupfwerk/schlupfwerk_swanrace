@@ -26,6 +26,9 @@ var _footwear_color_row: OptionRow
 var _footwear_color := DEFAULT_FOOTWEAR_COLOR
 var _hint := Label.new()
 var _race_button := Button.new()
+var _settings_button := Button.new()
+var _panel: PanelContainer
+var _layer: CanvasLayer
 
 
 func _ready() -> void:
@@ -68,6 +71,7 @@ func _build_stage() -> void:
 func _build_menu() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
+	_layer = layer
 	var root := Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -81,6 +85,7 @@ func _build_menu() -> void:
 	panel.offset_bottom = -24
 	panel.custom_minimum_size.x = 520
 	root.add_child(panel)
+	_panel = panel
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
 	panel.add_child(column)
@@ -179,6 +184,11 @@ func _build_menu() -> void:
 	_race_button.pressed.connect(_on_race)
 	buttons.add_child(_race_button)
 
+	_settings_button.text = "Configurações"
+	_settings_button.custom_minimum_size = Vector2(0, 56)
+	_settings_button.pressed.connect(_on_settings)
+	buttons.add_child(_settings_button)
+
 	var quit_button := Button.new()
 	quit_button.text = "Sair"
 	quit_button.custom_minimum_size = Vector2(120, 56)
@@ -222,3 +232,13 @@ func _on_race() -> void:
 
 func _update_hint() -> void:
 	_hint.text = InputGlyphs.menu_hint()
+
+
+func _on_settings() -> void:
+	_panel.visible = false
+	var menu := SettingsMenu.new()
+	menu.closed.connect(func() -> void:
+		menu.queue_free()
+		_panel.visible = true
+		_settings_button.grab_focus())
+	_layer.add_child(menu)

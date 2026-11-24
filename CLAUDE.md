@@ -104,6 +104,22 @@ prioridade.
   grafismo na borda, um cipó de folhas que cresce com a velocidade e uma pena como
   ponteiro.
 
+## Configurações (autoload `Settings`, `user://settings.cfg`)
+Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
+`scripts/ui/settings_menu.gd`, toda navegável por controle (LB/RB ou Q/E trocam de aba).
+- **Vídeo:** modo de tela (janela, tela cheia, tela cheia exclusiva), resolução (em
+  janela), monitor, qualidade **Baixa/Média/Alta** (ou Personalizada), campo de visão.
+- **Vídeo, avançado:** mostrar FPS e frequência da tela, VSync, limite de FPS, escala de
+  renderização, antisserrilhamento (MSAA), sombras, detalhes do cenário (quantas árvores e
+  enfeites aparecem: grupo `scenery_detail`), placa de vídeo.
+- **Placa de vídeo:** por padrão a Godot escolhe a **dedicada** (Vulkan prefere GPU
+  dedicada). O jogador pode escolher outra; aplica reiniciando com `--gpu-index`. Se a
+  placa escolhida não abrir, o jogo volta sozinho para a automática.
+- **Áudio:** volume geral, música e efeitos (padrão de mercado) e som em segundo plano.
+- Cenário novo deve respeitar as configurações: sol no grupo `sun`
+  (`Settings.configure_sun`), enfeites em MultiMesh no grupo `scenery_detail`
+  (`Settings.configure_detail`).
+
 ## Áudio
 - Barramentos: `Master`, `Music` e `SFX` (`default_bus_layout.tres`).
 - **Música:** cada país/pista terá a sua, **sem direitos autorais** (licença compatível,
