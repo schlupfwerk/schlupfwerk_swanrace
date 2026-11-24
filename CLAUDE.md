@@ -174,4 +174,9 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 - Todo asset de terceiros precisa de entrada em `assets/CREDITS.md` com uma licença compatível.
 - GDScript no estilo oficial da Godot (snake_case, tabs). Comentários e commits em inglês.
 - Mantenha o jogo leve: modelos low poly e texturas comprimidas.
+- **Git LFS** para binários grandes e fontes de arte (`.blend`, `.glb`, `.psd`, `.wav`,
+  vídeos etc.; a lista está no `.gitattributes`). Antes de commitar um arquivo de um
+  tipo novo com mais de ~5 MB, adicione a extensão ao LFS. Nenhum arquivo acima de 100 MB.
+- **Builds exportados** (APK, AAB, executáveis) vão para a pasta `builds/` (ignorada)
+  e são publicados no GitHub Releases, nunca commitados.
 - Não invente datas, números ou parcerias em textos do jogo ou da loja.

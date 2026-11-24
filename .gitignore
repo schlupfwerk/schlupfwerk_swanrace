@@ -3,6 +3,17 @@
 /android/
 *.tmp
 
+# Exported builds: publish them on GitHub Releases, never commit
+builds/
+*.apk
+*.aab
+*.exe
+*.pck
+
+# Blender backups
+*.blend1
+*.blend2
+
 # Signing keys and credentials: never commit
 *.keystore
 *.jks
