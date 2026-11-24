@@ -24,7 +24,8 @@ Inspiração de formato: corridas no estilo Chocobo Racing, mas com identidade p
 - **Plataformas:** Android, iOS e, no Steam, Windows, Linux/SteamOS (Steam Deck,
   build nativo, mirando "Steam Deck Verified") e macOS. Todas saem do mesmo projeto,
   só muda o preset de exportação. Não há versão para navegador. O foco continua sendo
-  o celular. Ordem: Android → Windows + Linux → macOS junto com iOS (quando houver Mac).
+  o celular. **Foco atual: Android, Windows e Linux.** iOS e macOS ficam para
+  quando houver um Mac; não gaste esforço neles por enquanto.
 - **Offline primeiro:** o jogo inteiro funciona sem internet, contra bots.
 - **Sem anúncios e sem coleta de dados.** Placares e conquistas (Game Center,
   Google Play Games e Steam) e o multiplayer são **opcionais** e vêm depois.
