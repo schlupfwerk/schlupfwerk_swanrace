@@ -45,6 +45,9 @@ whatever you use.
 
 ## Building
 
+Clone with [Git LFS](https://git-lfs.com) installed (`git lfs install` once),
+since large art files are stored with LFS.
+
 Requirements will be listed here as the project grows:
 - Godot 4.x (exact version to be pinned)
 - Android: Android SDK and JDK, as described in Godot's export docs
