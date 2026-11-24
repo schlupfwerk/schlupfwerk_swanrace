@@ -11,10 +11,18 @@ config_version=5
 [application]
 
 config/name="Swan Race"
-run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.4", "Mobile")
+run/main_scene="res://scenes/wardrobe.tscn"
+config/features=PackedStringArray("4.7", "Mobile")
+
+[autoload]
+
+Profile="*res://scripts/save/profile.gd"
+InputGlyphs="*res://scripts/ui/input_glyphs.gd"
 
 [display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
@@ -41,6 +49,10 @@ brake={
 jump={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"device":-1,"physical_keycode":32), Object(InputEventJoypadButton,"device":-1,"button_index":0,"pressed":true)]
+}
+pause={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"device":-1,"physical_keycode":4194305), Object(InputEventJoypadButton,"device":-1,"button_index":6,"pressed":true)]
 }
 
 [rendering]

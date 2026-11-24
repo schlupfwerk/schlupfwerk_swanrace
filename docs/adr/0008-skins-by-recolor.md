@@ -1,6 +1,6 @@
 # 0008. Skins by recolor
 
-- **Status:** Accepted
+- **Status:** Superseded by [0015](0015-swan-customization-and-equal-abilities.md)
 - **Date:** 2026-11-24
 
 ## Context

@@ -38,7 +38,11 @@ Inspiração de formato: corridas no estilo Chocobo Racing, mas com identidade p
 - **Público infantil:** sem chat aberto e sem links externos sem uma verificação para os pais.
 
 ## Controles
-Esquerda/direita (botões no lado esquerdo da tela, ou **inclinação do celular**,
+**Prioridade agora (protótipo no Windows): teclado, controle de Xbox e de PS5.** O jogo
+e os menus têm que ser **100% usáveis sem mouse**. O mouse (e o toque, no celular) é só
+uma opção extra nos menus; na corrida ele não faz nada.
+
+No celular: esquerda/direita (botões no lado esquerdo da tela, ou **inclinação do celular**,
 opcional e com calibração) e três botões no lado direito. Os botões mudam de função
 conforme o terreno:
 
@@ -70,7 +74,26 @@ analógicos: `accel` e `brake` devem usar a força (`Input.get_action_strength`)
   - Uma opção nas configurações para fixar os botões de toque sempre visíveis.
 
 As **transições entre terrenos** são o coração do jogo, principalmente a decolagem a
-partir da água. Prototipe e ajuste isso antes de qualquer outra coisa.
+partir da água. Depois da base (o cisne correndo bem num terreno plano), elas são a
+prioridade.
+
+## O cisne
+- **Visual:** cisne cartoon misturado com avestruz (pescoço longo em S, corpo redondo,
+  pernas compridas). Forma **simples e lisa**, poucos detalhes e poucos triângulos,
+  montada com primitivas suaves e shading toon.
+- **Personalização** (tudo só visual):
+  - penas em **cor sólida ou gradiente** (cor de baixo → cor de cima);
+  - cor das **patas**;
+  - acessórios: **boné, peruca, maquiagem, jaqueta e tênis**, cada um com cor. Com a
+    jaqueta, as asas viram as mangas; com o tênis, os pés somem.
+  - cores escolhidas de uma **paleta** (esquerda/direita), para funcionar no controle.
+- **Apelido** de até 16 caracteres, com botão de sortear (para quem está sem teclado).
+  Aparece acima do cisne e no HUD.
+- **Todos os cisnes têm exatamente a mesma habilidade.** Não existem cisnes mais
+  rápidos, mais leves ou com atributos diferentes; os números do movimento são os
+  mesmos para todos (`SwanMotor`).
+- **Efeitos:** ao **acelerar**, solta um rastro de fumaça/poeira; ao **frear**, abre as
+  asas e solta um vento.
 
 ## Pistas
 Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
@@ -81,7 +104,9 @@ Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
   Retrate o lado vibrante e colorido (casas, pipas, música); **nunca** violência.
 
 ## Bots
-- Cada bot tem **nome, skin e personalidade** (ex.: ótimo na descida e ruim no voo).
+- Cada bot tem **apelido, visual e personalidade**. A personalidade muda só o **jeito
+  de pilotar** (ex.: arrisca mais na descida, voa com cuidado), nunca os atributos:
+  todos os cisnes têm a mesma habilidade.
 - Cometem **erros humanos** de vez em quando.
 - Dificuldade fácil, normal e difícil. No fácil, um *rubber banding* leve.
 - **Bots usam exatamente a mesma interface de controle do jogador** (ver Arquitetura).
@@ -100,10 +125,13 @@ Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
   - `Services`: placar, conquistas e save na nuvem (Game Center / Play Games / Steamworks)
   - `Store`: só a gorjeta (StoreKit / Google Play Billing / Steam)
   - Steam via plugin **GodotSteam** (GDExtension). Sem DRM obrigatório do Steam.
-- **Skins por recolor:** um shader com uma textura-máscara (corpo, asas, bico, detalhes)
-  e uma paleta de 3 ou 4 cores por skin. Cada skin é um recurso de dados (id, nome,
-  cores), sem modelo nem textura nova. Acessórios (chapéu, cachecol) podem vir depois.
-  Todo item tem um **id fixo que nunca muda**.
+- **Personalização por dados (ADR 0015):** `SwanLook` guarda apelido, estilo e cores
+  das penas, cor das patas e acessórios usados (`id → cor`). As penas usam um shader
+  (`shaders/feather.gdshader`) com cor sólida ou gradiente vertical; os acessórios são
+  peças simples já presentes no modelo, ligadas/desligadas e recoloridas. Sem textura
+  nem modelo novo por item. Todo item tem um **id fixo que nunca muda**.
+- **Simulação em passo fixo** (60 ticks/s) dentro do `Swan`, com interpolação na hora
+  de desenhar: determinística e lisa em qualquer taxa de quadros.
 - **Save:** guarda itens ganhos, personalização, recordes e configurações. O **save
   local é a fonte da verdade** (funciona offline); a nuvem sincroniza quando há
   internet. Conflitos se resolvem **mesclando** (união dos itens, melhor recorde por
@@ -118,22 +146,31 @@ scripts/         GDScript
   race/          lógica da corrida, cisne, pista
   input/         PlayerInput, BotBrain
   services/      camada de Services e Store
-  ui/            HUD, menus
+  save/          save local (autoload Profile)
+  ui/            HUD, menus, vestiário
+shaders/         shaders (.gdshader)
 assets/          modelos, texturas, sons e músicas (licença CC BY-NC-SA 4.0)
   CREDITS.md     autores e licenças de assets de terceiros
 docs/
 ```
 
-## Primeiro marco: protótipo jogável
-- Uma pista reta e curta com os 4 terrenos em sequência (cerca de 1 minuto de corrida)
-- O cisne low poly montado com formas simples (sem arte final ainda)
-- 2 bots com personalidades diferentes
-- HUD: terreno atual, velocidade, posição, tempo, contagem regressiva e resultado
-- Botões de toque com o texto mudando conforme o terreno
-- Inclinação opcional com calibração
-- Jogável com controle de Xbox e de PS5 no PC
-- Rodando no Samsung S23 (Android). O iOS fica para quando houver um Mac; o Steam,
-  para depois do protótipo.
+## Primeiro marco: protótipo jogável (siga esta ordem)
+O protótipo é feito e testado **no Windows**, com teclado e controles de Xbox e PS5.
+
+1. **Praia plana (feito):** terreno 100% reto, sem obstáculos; areia com matinhos e
+   pedrinhas só de enfeite (nada afeta o cisne). Cisne andando com esquerda/direita,
+   acelerar, frear e pular; velocímetro; rastro ao acelerar e vento ao frear;
+   vestiário com personalização e apelido, salvo localmente.
+2. **Sensação de corrida:** ajustar velocidade, curva, pulo e câmera até ficar gostoso.
+3. **Os 4 terrenos** numa pista reta e curta (cerca de 1 minuto), com as transições,
+   principalmente a decolagem da água.
+4. **2 bots** com personalidades diferentes (mesma habilidade, ver Bots).
+5. **HUD completo:** terreno atual, velocidade, posição, tempo, contagem regressiva e
+   resultado.
+6. **Android (Samsung S23):** botões de toque com o texto mudando conforme o terreno e
+   inclinação opcional com calibração.
+
+iOS fica para quando houver um Mac; o Steam, para depois do protótipo.
 
 Critério de sucesso: **é divertido nos primeiros 30 segundos?**
 
