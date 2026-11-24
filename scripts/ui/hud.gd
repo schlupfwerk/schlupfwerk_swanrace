@@ -9,7 +9,6 @@ var track: IslandTrack
 var terrain_name := ""
 
 var _speedometer := Speedometer.new()
-var _hint := Label.new()
 var _lap_label := Label.new()
 var _time_label := Label.new()
 var _best_label := Label.new()
@@ -118,12 +117,14 @@ func _ready() -> void:
 	pedals.offset_top = -236
 	pedals.offset_bottom = -36
 
-	_hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_hint.position = Vector2(24, -48)
-	_hint.add_theme_font_size_override("font_size", 20)
-	root.add_child(_hint)
-	InputGlyphs.changed.connect(_update_hint)
-	_update_hint()
+	# Drawing of the controls in use, lit up while pressed.
+	var controls := InputDisplay.new()
+	root.add_child(controls)
+	controls.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	controls.offset_left = 20
+	controls.offset_right = 380
+	controls.offset_top = -190
+	controls.offset_bottom = -16
 
 
 func _process(delta: float) -> void:
@@ -155,10 +156,6 @@ func show_message(text: String, seconds: float) -> void:
 static func format_time(seconds: float) -> String:
 	var hundredths := roundi(seconds * 100.0)
 	return "%d:%02d.%02d" % [hundredths / 6000, (hundredths / 100) % 60, hundredths % 100]
-
-
-func _update_hint() -> void:
-	_hint.text = InputGlyphs.race_hint()
 
 
 ## Start lights: `lit` red lamps, or all green with `go`; hidden with -1.

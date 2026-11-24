@@ -160,13 +160,13 @@ func _on_lap_completed(lap_time: float) -> void:
 	if completed >= _total_laps:
 		_finish()
 		return
-	if record:
-		_hud.show_message(tr("MSG_BEST_LAP") % Hud.format_time(lap_time), 2.5)
-	else:
-		_hud.show_message(tr("MSG_LAP") % Hud.format_time(lap_time), 2.0)
-	if completed == _total_laps - 1:
+	var left := _total_laps - completed
+	var lap_text := (tr("MSG_BEST_LAP") if record else tr("MSG_LAP")) % Hud.format_time(lap_time)
+	if left == 1:
 		_final_lap = true
-		_hud.show_message(tr("FINAL_LAP"), 2.5)
+		_hud.show_message("%s\n%s" % [tr("FINAL_LAP"), lap_text], 3.0)
+	else:
+		_hud.show_message("%s\n%s" % [tr("LAPS_LEFT") % left, lap_text], 3.0)
 
 
 ## Crossed the line after the last lap: whistle, camera pulls away, results.

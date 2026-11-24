@@ -63,6 +63,8 @@ var _daze := 0.0
 var _daze_stars := Node3D.new()
 ## Smoothed steering, for leaning and looking into turns.
 var _turn_look := 0.0
+## Head toss when honking: 1 right after, fading to 0.
+var _honk := 0.0
 var _cape := Node3D.new()
 ## Everything on the back hangs from here and swings with the stride.
 var _back := Node3D.new()
@@ -181,7 +183,9 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	# The head looks into the turn (and shakes when dazed).
 	_neck.rotation.y = -_turn_look * 0.45 + sin(Time.get_ticks_msec() * 0.03) * 0.55 * _daze
 	_neck.rotation.z = -_turn_look * 0.2 + sin(Time.get_ticks_msec() * 0.021) * 0.25 * _daze
+	_honk = move_toward(_honk, 0.0, delta * 2.5)
 	_head.rotation.x = -(_neck.rotation.x + _body_pivot.rotation.x) * 0.75 + 0.5 * drowning
+	_head.rotation.x -= sin(_honk * PI) * 0.5
 	_daze_stars.visible = _daze > 0.05
 	_daze_stars.rotation.y += delta * 6.0
 
@@ -910,3 +914,8 @@ static func _add_outline(mat: Material) -> void:
 		_outline.grow_amount = OUTLINE_WIDTH
 		_outline.disable_receive_shadows = true
 	mat.next_pass = _outline
+
+
+## Called when the swan honks: a quick toss of the head.
+func honk() -> void:
+	_honk = 1.0

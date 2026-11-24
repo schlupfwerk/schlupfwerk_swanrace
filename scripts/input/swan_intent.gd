@@ -13,6 +13,8 @@ var brake: float = 0.0
 var jump: bool = false
 ## True while the turbo button is held.
 var turbo: bool = false
+## True when the horn button was pressed (honk, or the pet in the bag).
+var horn: bool = false
 
 
 func reset() -> void:
@@ -21,3 +23,4 @@ func reset() -> void:
 	brake = 0.0
 	jump = false
 	turbo = false
+	horn = false

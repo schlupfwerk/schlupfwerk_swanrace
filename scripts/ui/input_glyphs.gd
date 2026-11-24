@@ -9,12 +9,21 @@ enum Kind { KEYBOARD, XBOX, PLAYSTATION, TOUCH }
 const PLAYSTATION_TAGS := ["ps3", "ps4", "ps5", "dualsense", "dualshock", "playstation", "sony"]
 
 var kind := Kind.KEYBOARD
+## On the keyboard, true when the player steers with the arrows (not WASD).
+var arrows := false
 
 
 func _input(event: InputEvent) -> void:
 	var new_kind := kind
 	if event is InputEventKey and event.pressed:
 		new_kind = Kind.KEYBOARD
+		var key: Key = event.physical_keycode
+		if key in [KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT] and not arrows:
+			arrows = true
+			changed.emit()
+		elif key in [KEY_W, KEY_A, KEY_S, KEY_D] and arrows:
+			arrows = false
+			changed.emit()
 	elif event is InputEventMouseButton and event.pressed:
 		new_kind = Kind.KEYBOARD
 	elif event is InputEventScreenTouch:
@@ -26,10 +35,6 @@ func _input(event: InputEvent) -> void:
 	if new_kind != kind:
 		kind = new_kind
 		changed.emit()
-
-
-func race_hint() -> String:
-	return tr("HINT_RACE_" + _suffix())
 
 
 func menu_hint() -> String:

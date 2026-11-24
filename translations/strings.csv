@@ -163,3 +163,9 @@ RESULTS_HINT_KEYBOARD,Enter: race again   Esc: menu,Enter: correr de novo   Esc:
 RESULTS_HINT_XBOX,A: race again   B: menu,A: correr de novo   B: menu
 RESULTS_HINT_PLAYSTATION,Cross: race again   Circle: menu,Cruz: correr de novo   Círculo: menu
 TURBO,Turbo,Turbo
+JUMP,Jump,Pular
+BRAKE_SHORT,Brake,Frear
+ACCEL_SHORT,Accelerate,Acelerar
+STEER_SHORT,Steer,Virar
+HORN,Horn,Buzina
+LAPS_LEFT,%d laps to go!,Faltam %d voltas!

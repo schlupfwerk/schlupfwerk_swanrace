@@ -49,6 +49,8 @@ var _respawn_heading := 0.0
 var _blink := 0.0
 var _pet_player := _make_player(-6.0)
 var _pet_timer := 3.0
+var _horn_player := _make_player(-2.0)
+var _horn_cooldown := 0.0
 var _lose_player := AudioStreamPlayer.new()
 var _drown_bubbles := DrownBubbles.new()
 
@@ -67,7 +69,7 @@ func _ready() -> void:
 	_land_player.stream = Sfx.land()
 	_bump_player.stream = Sfx.land()
 	_bump_player.pitch_scale = 0.6
-	for player in [_step_player, _jump_player, _land_player, _bump_player, _pet_player]:
+	for player in [_step_player, _jump_player, _land_player, _bump_player, _pet_player, _horn_player]:
 		add_child(player)
 	model.stepped.connect(_on_stepped)
 	_lose_player.stream = Sfx.lose()
@@ -145,6 +147,7 @@ func _process(delta: float) -> void:
 		_land_player.volume_db = linear_to_db(lerpf(0.5, 1.0, strength)) - 4.0
 		_land_player.play()
 	_update_pet(delta)
+	_update_horn(delta)
 	model.wet = in_water
 	model.boosting = motor.boosting
 	model.animate(delta, motor.speed_ratio(), intent.steer, intent.accel,
@@ -223,3 +226,21 @@ func _update_pet(delta: float) -> void:
 		_pet_player.stream = sound
 		_pet_player.pitch_scale = randf_range(0.92, 1.08)
 		_pet_player.play()
+
+
+## Horn button: the swan honks, or the pet in the bag barks or meows.
+func _update_horn(delta: float) -> void:
+	_horn_cooldown -= delta
+	var pressed := brain is PlayerInput and controls_enabled and Input.is_action_just_pressed("horn")
+	if not pressed or _horn_cooldown > 0.0:
+		return
+	_horn_cooldown = 0.35
+	if look.is_wearing("dog_bag"):
+		_horn_player.stream = Sfx.bark()
+	elif look.is_wearing("cat_bag"):
+		_horn_player.stream = Sfx.meow()
+	else:
+		_horn_player.stream = Sfx.honk()
+		model.honk()
+	_horn_player.pitch_scale = randf_range(0.96, 1.04)
+	_horn_player.play()

@@ -198,6 +198,11 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   versão mais rápida e animada (`scripts/audio/final_lap_music.gd`). **Chegada:** apito de 2 s,
   a câmera se afasta girando, resultado (tempo total, melhor volta) e opção de correr de novo
   ou voltar ao menu.
+- **Buzina:** H no teclado, Y/Triângulo no controle. O cisne dá um "honk" e joga a cabeça;
+  com cachorro ou gato na bolsa, o bicho late ou mia no lugar.
+- **A cada volta:** "Faltam X voltas!" (e "Última volta!" na penúltima).
+- **Desenho dos controles** no canto inferior esquerdo da corrida, aceso conforme o que está
+  apertado: WASD ou setas (troca sozinho), Xbox (A B X Y, LT/RT) ou PlayStation (✕ ○ □ △, L2/R2).
 - **Largada com semáforo:** 3 luzes vermelhas com "tu", verde com "tuuuu" e "Corra!".
 - **Afogamento:** som de derrota e 5 bolhas subindo em zigue-zague e estourando com som.
 - **Turbo com stamina:** X/Quadrado (Shift no teclado) dá mais aceleração e +22% de

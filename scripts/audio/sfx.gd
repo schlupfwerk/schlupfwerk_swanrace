@@ -175,3 +175,23 @@ static func whistle() -> AudioStreamWAV:
 			var envelope := minf(t / 0.03, 1.0) * clampf((2.0 - t) / 0.15, 0.0, 1.0)
 			return (tone * (0.75 + 0.25 * trill) + breath) * 0.32 * envelope)
 	return _cache["whistle"]
+
+
+## Swan horn: a cartoon nasal "honk" (a bit trumpet, a bit duck).
+static func honk() -> AudioStreamWAV:
+	if not _cache.has("honk"):
+		_cache["honk"] = _render(0.42, func(t: float, state: Dictionary) -> float:
+			# Two quick honks, the second a little lower.
+			var second := t > 0.2
+			var local := t - (0.22 if second else 0.0)
+			if local < 0.0 or local > 0.2:
+				return 0.0
+			var pitch := (360.0 if second else 410.0) * (1.0 + 0.12 * exp(-local * 30.0))
+			state.phase = state.get("phase", 0.0) + TAU * pitch / RATE
+			var p: float = state.phase
+			# Nasal: strong odd and even partials, a buzzy reed.
+			var tone := sin(p) + 0.8 * sin(2.0 * p) + 0.6 * sin(3.0 * p) + 0.45 * sin(4.0 * p) \
+					+ 0.3 * sin(5.0 * p)
+			var envelope := minf(local / 0.012, 1.0) * clampf((0.2 - local) / 0.04, 0.0, 1.0)
+			return tone * 0.22 * envelope)
+	return _cache["honk"]
