@@ -153,6 +153,8 @@ valor atual). A Godot exporta para Windows/Linux; o upload é feito com o SteamP
 O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
 ## Regras do repositório
+- Decisões de arquitetura ficam em `docs/adr/` (ADRs, em inglês). Mudou uma decisão?
+  Escreva uma ADR nova que substitui a antiga e atualize este arquivo.
 - Código: **GPLv3** com permissão extra para lojas de apps (`LICENSE`,
   `LICENSE-EXCEPTION.md`). Assets: **CC BY-NC-SA 4.0** (`ASSETS_LICENSE.md`).
   Nome e logo: `TRADEMARKS.md`.
