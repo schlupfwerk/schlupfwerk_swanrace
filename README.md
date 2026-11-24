@@ -1,6 +1,6 @@
 # Swan Race *(working title)*
 
-A light 3D racing game for Android, iOS and PC (Steam), made with Godot by **Schlupfwerk**.
+A light 3D racing game for Android, iOS and PC (Steam: Windows, Linux/Steam Deck and macOS), made with Godot by **Schlupfwerk**.
 Race as a swan through four kinds of terrain in a single run:
 
 1. **Downhill**: slide down a mountain at full speed
@@ -19,8 +19,9 @@ Janeiro, with more to come.
   personalities.
 - **No ads, no data collection.** Online leaderboards (Game Center, Google
   Play Games and Steam) and multiplayer will be optional.
-- **Fair monetization**: cosmetic skins only, plus an optional tip. Nothing
-  that affects the race.
+- **No paid items**: skins are earned by playing. The only purchase is an
+  optional tip, which unlocks nothing.
+- **Your progress follows you** through your Google, Apple or Steam account.
 - **Family friendly.**
 
 ## Controls
@@ -48,7 +49,7 @@ Requirements will be listed here as the project grows:
 - Godot 4.x (exact version to be pinned)
 - Android: Android SDK and JDK, as described in Godot's export docs
 - iOS: a Mac with Xcode
-- PC: Windows/Linux export from Godot, published on Steam
+- PC: Windows, Linux/SteamOS and macOS exports from Godot, published on Steam
 
 ## Contributing
 
@@ -75,7 +76,9 @@ Suíça, na Alemanha e no Rio de Janeiro.
 - Funciona **offline**, contra cisnes controlados por IA.
 - **Sem anúncios e sem coleta de dados.** Placares e multiplayer serão
   opcionais.
-- Monetização **só com skins cosméticas** e uma gorjeta opcional.
+- **Sem itens pagos:** as skins são ganhas jogando. A única compra é uma
+  gorjeta opcional, que não libera nada.
+- O progresso acompanha você pela sua conta Google, Apple ou Steam.
 - Jogue com toque, teclado ou controle (Xbox, PlayStation e controles
   Bluetooth genéricos, inclusive no celular), trocando quando quiser.
 - Feito para **toda a família**.

@@ -21,15 +21,19 @@ Inspiração de formato: corridas no estilo Chocobo Racing, mas com identidade p
   único repositório. **Não há código em Kotlin nem em Swift.** Código nativo só entra,
   se um dia for preciso, por plugins (Game Center, Play Games, compras).
 - **Renderer: Mobile.** O jogo precisa rodar bem em celulares comuns (e roda bem no PC).
-- **Plataformas:** Android, iOS e PC pelo Steam (Windows primeiro; Linux/Steam Deck
-  quando possível). Todas saem do mesmo projeto, só muda o preset de exportação.
-  Não há versão para navegador. O foco continua sendo o celular.
+- **Plataformas:** Android, iOS e, no Steam, Windows, Linux/SteamOS (Steam Deck,
+  build nativo, mirando "Steam Deck Verified") e macOS. Todas saem do mesmo projeto,
+  só muda o preset de exportação. Não há versão para navegador. O foco continua sendo
+  o celular. Ordem: Android → Windows + Linux → macOS junto com iOS (quando houver Mac).
 - **Offline primeiro:** o jogo inteiro funciona sem internet, contra bots.
 - **Sem anúncios e sem coleta de dados.** Placares e conquistas (Game Center,
   Google Play Games e Steam) e o multiplayer são **opcionais** e vêm depois.
-- **Monetização:** só **skins cosméticas** e uma **gorjeta** opcional, ambas por
-  compra no app (no Steam, por DLC ou compra no jogo; modelo ainda a definir).
-  Nada que dê vantagem na corrida.
+- **Sem itens pagos.** Skins e cosméticos são **ganhos jogando**. A única compra é
+  uma **gorjeta** opcional, que não libera nada.
+- **Save na nuvem pela conta da própria plataforma** (sem servidor nosso): Google
+  Play Games no Android, iCloud/Game Center no iOS/macOS, Steam Cloud no Steam.
+  Trocar de aparelho dentro do mesmo ecossistema mantém o progresso; entre
+  ecossistemas (ex.: Android → iPhone) não. Conta unificada: adiada (ADR 0014).
 - **Público infantil:** sem chat aberto e sem links externos sem uma verificação para os pais.
 
 ## Controles
@@ -93,12 +97,17 @@ Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
 - **Serviços das plataformas por trás de uma camada intermediária**, com
   implementações para iOS, Android, Steam e uma falsa para testes no PC:
   - `Services`: placar, conquistas e save na nuvem (Game Center / Play Games / Steamworks)
-  - `Store`: compras de skins e gorjeta (StoreKit / Google Play Billing / Steam)
+  - `Store`: só a gorjeta (StoreKit / Google Play Billing / Steam)
   - Steam via plugin **GodotSteam** (GDExtension). Sem DRM obrigatório do Steam.
 - **Skins por recolor:** um shader com uma textura-máscara (corpo, asas, bico, detalhes)
   e uma paleta de 3 ou 4 cores por skin. Cada skin é um recurso de dados (id, nome,
   cores), sem modelo nem textura nova. Acessórios (chapéu, cachecol) podem vir depois.
-- O save local guarda skins, recordes e configurações. Nada é enviado para fora.
+  Todo item tem um **id fixo que nunca muda**.
+- **Save:** guarda itens ganhos, personalização, recordes e configurações. O **save
+  local é a fonte da verdade** (funciona offline); a nuvem sincroniza quando há
+  internet. Conflitos se resolvem **mesclando** (união dos itens, melhor recorde por
+  pista, configurações mais recentes). O formato tem número de versão. Nada vai para
+  servidor nosso.
 
 ## Estrutura de pastas (sugerida)
 ```

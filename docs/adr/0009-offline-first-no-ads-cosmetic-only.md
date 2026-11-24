@@ -1,6 +1,6 @@
 # 0009. Offline first, no ads, cosmetic-only monetization
 
-- **Status:** Accepted
+- **Status:** Accepted; monetization superseded by [0012](0012-no-paid-items.md)
 - **Date:** 2026-11-24
 
 ## Context

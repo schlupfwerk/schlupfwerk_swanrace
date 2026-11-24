@@ -1,6 +1,6 @@
 # 0004. Platforms: Android, iOS and PC (Steam)
 
-- **Status:** Accepted
+- **Status:** Superseded by [0011](0011-desktop-platforms-windows-linux-macos.md)
 - **Date:** 2026-11-24
 
 ## Context
