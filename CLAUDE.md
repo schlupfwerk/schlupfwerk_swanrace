@@ -182,6 +182,11 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - **Mato:** **bate**, a velocidade vai a **0**, balança a cabeça com estrelinhas e se
   vira de volta para a direção da corrida. Leva **2,5 s** para se recuperar.
 - **Nunca na contramão:** o cisne não consegue virar mais de 80° da direção da pista.
+- **Pedais analógicos:** no controle, **R2/RT acelera** e **L2/LT freia** com a força do gatilho.
+  Ao lado do velocímetro há um **indicador de pressão** (acelerador e freio). O **freio é
+  progressivo**: gatilho todo abre a asa inteira e para em ~1,2 s; meio gatilho abre meia asa
+  e freia pela metade.
+- **Na curva** o cisne inclina o corpo e vira a cabeça para o lado da curva.
 - **Curva custa:** segurando a curva, o limite de velocidade cai 1% a cada 0,1 s (até
   −30%) e volta ao soltar. **Pouso** de pulo tira 5% da velocidade.
 - **Minimapa** no canto superior esquerdo com o ponto de GPS de cada cisne.

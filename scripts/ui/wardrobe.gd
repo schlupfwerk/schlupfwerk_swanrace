@@ -56,7 +56,7 @@ func _process(delta: float) -> void:
 		_model.rotation.y += turn * TURN_SPEED * delta
 	elif _auto_turn:
 		_model.rotation.y += delta * AUTO_TURN_SPEED
-	_model.animate(delta, 0.0, 0.0, 0.0, false, true)
+	_model.animate(delta, 0.0, 0.0, 0.0, 0.0, true)
 
 
 func _unhandled_input(event: InputEvent) -> void:

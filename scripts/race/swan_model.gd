@@ -59,6 +59,8 @@ var _stretch := 0.0
 ## Dazed after bumping into something: 1 right after the bump, fading to 0.
 var _daze := 0.0
 var _daze_stars := Node3D.new()
+## Smoothed steering, for leaning and looking into turns.
+var _turn_look := 0.0
 var _cape := Node3D.new()
 ## Everything on the back hangs from here and swings with the stride.
 var _back := Node3D.new()
@@ -125,8 +127,10 @@ func set_fade(alpha: float) -> void:
 
 
 ## Called every frame with the swan's current state.
+## `brake` is 0..1: the wings open as much as the brake is pressed.
 func animate(delta: float, speed_ratio: float, steer: float, accel: float,
-		braking: bool, on_ground: bool) -> void:
+		brake: float, on_ground: bool) -> void:
+	var braking := brake > 0.05
 	var moving := clampf(speed_ratio * 2.0, 0.0, 1.0)
 	var smooth := 1.0 - exp(-10.0 * delta)
 	var legs := 1.0 - exp(-25.0 * delta)
@@ -161,8 +165,10 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	var lean := -0.25 * accel * moving + (0.15 if braking else 0.0)
 	_body_pivot.rotation.x = lerpf(_body_pivot.rotation.x, lean, 1.0 - exp(-8.0 * delta))
 	_body_pivot.rotation.z = sin(_phase) * 0.13 * moving
-	_body_pivot.rotation.y = sin(_phase + 0.6) * 0.09 * moving
-	rotation.z = lerpf(rotation.z, -steer * 0.16 * moving, 1.0 - exp(-8.0 * delta))
+	# Turning: the body twists and leans into the curve.
+	_turn_look = lerpf(_turn_look, steer, 1.0 - exp(-6.0 * delta))
+	_body_pivot.rotation.y = sin(_phase + 0.6) * 0.09 * moving - _turn_look * 0.22
+	rotation.z = lerpf(rotation.z, -steer * 0.24 * maxf(moving, 0.3), 1.0 - exp(-8.0 * delta))
 
 	# The faster it runs, the lower the head goes, bobbing forward and back.
 	var neck_lean := -0.8 * speed_ratio - 0.1 * accel + sin(_phase * 2.0 + 0.8) * 0.14 * moving
@@ -170,15 +176,16 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_neck.rotation.x = lerpf(_neck.rotation.x, neck_lean, smooth)
 	# Shake the head when dazed.
 	_daze = move_toward(_daze, 0.0, delta / Swan.STUN_TIME)
-	_neck.rotation.y = sin(Time.get_ticks_msec() * 0.03) * 0.55 * _daze
-	_neck.rotation.z = sin(Time.get_ticks_msec() * 0.021) * 0.25 * _daze
+	# The head looks into the turn (and shakes when dazed).
+	_neck.rotation.y = -_turn_look * 0.45 + sin(Time.get_ticks_msec() * 0.03) * 0.55 * _daze
+	_neck.rotation.z = -_turn_look * 0.2 + sin(Time.get_ticks_msec() * 0.021) * 0.25 * _daze
 	_head.rotation.x = -(_neck.rotation.x + _body_pivot.rotation.x) * 0.75 + 0.5 * drowning
 	_daze_stars.visible = _daze > 0.05
 	_daze_stars.rotation.y += delta * 6.0
 
 	# Braking opens the wings; running sweeps them back, flapping a little.
 	# Drowning: frantic flapping.
-	_wing_open = move_toward(_wing_open, 1.0 if braking else 0.0, delta * 7.0)
+	_wing_open = move_toward(_wing_open, clampf(brake, 0.0, 1.0), delta * 7.0)
 	var run_open := (0.45 + sin(_phase * 2.0) * 0.12) * speed_ratio
 	var flail := (0.9 + sin(Time.get_ticks_msec() * 0.03) * 0.6) * drowning
 	var open := maxf(maxf(ease(_wing_open, -2.0) * WING_OPEN_ANGLE, run_open), flail)
@@ -198,7 +205,7 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_bubbles.emitting = drowning > 0.3
 	_smoke.emitting = on_ground and not wet and accel > 0.2 and speed_ratio > 0.05
 	for wind in _wind:
-		wind.emitting = braking and _wing_open > 0.6
+		wind.emitting = braking and _wing_open > 0.3
 	# Squash on landing, stretch on take-off.
 	_squash = move_toward(_squash, 0.0, delta * 4.0)
 	_stretch = move_toward(_stretch, 0.0, delta * 3.0)

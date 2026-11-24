@@ -77,6 +77,16 @@ func _ready() -> void:
 	_speedometer.position = Vector2(-254, -254)
 	root.add_child(_speedometer)
 
+	var pedals := PedalBars.new()
+	pedals.swan = swan
+	root.add_child(pedals)
+	# Just left of the speedometer, bottom right.
+	pedals.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	pedals.offset_left = -340
+	pedals.offset_right = -270
+	pedals.offset_top = -236
+	pedals.offset_bottom = -36
+
 	_hint.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	_hint.position = Vector2(24, -48)
 	_hint.add_theme_font_size_override("font_size", 20)
