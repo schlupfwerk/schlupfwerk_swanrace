@@ -22,11 +22,13 @@ static func apply(swan: Swan, laps: LapTracker, track: IslandTrack) -> void:
 	var lateral := laps.lateral
 	var race_heading := track.heading_at(i)
 
-	var in_water := lateral > track.water_line(i)
-	swan.motor.max_speed_scale = IslandTrack.WATER_SPEED_SCALE if in_water else 1.0
-	swan.in_water = in_water
 	var ground := track.ground_height(i, lateral)
 	swan.ground_y = ground
+	# Wet only where there is actually water (a high beach drops in a bank).
+	var in_water := ground < IslandTrack.SEA_LEVEL + 0.15
+	swan.motor.max_speed_scale = IslandTrack.WATER_SPEED_SCALE if in_water else 1.0
+	swan.in_water = in_water
+	_follow_ground(swan, track, i, ground)
 	if IslandTrack.SEA_LEVEL - ground > IslandTrack.DROWN_DEPTH:
 		var center := track.points[i]
 		swan.drown(Vector3(center.x, 0.0, center.y), race_heading)
@@ -63,3 +65,17 @@ static func _collide(swan: Swan, track: IslandTrack, i: int, race_heading: float
 			swan.bump(race_heading)
 		else:
 			swan.motor.speed *= 0.5
+
+
+## Slope under the swan: it changes speed (SwanMotor) and tilts the swan.
+static func _follow_ground(swan: Swan, track: IslandTrack, i: int, ground: float) -> void:
+	var p := Vector2(swan.motor.position.x, swan.motor.position.z)
+	var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)
+	var right := Vector2(-forward.y, forward.x)
+	var ahead := track.locate(p + forward, i)
+	var beside := track.locate(p + right, i)
+	var grade := track.ground_height(ahead["index"], ahead["lateral"]) - ground
+	var cross := track.ground_height(beside["index"], beside["lateral"]) - ground
+	swan.motor.slope = grade if swan.motor.on_ground else 0.0
+	swan.ground_pitch = atan(clampf(grade, -0.6, 0.6))
+	swan.ground_roll = atan(clampf(cross, -0.6, 0.6))

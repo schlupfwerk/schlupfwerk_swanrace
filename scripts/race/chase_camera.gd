@@ -21,6 +21,7 @@ func _ready() -> void:
 	far = 600.0
 	if target:
 		_yaw = target.rotation.y
+		_height = target.global_position.y
 		_place()
 
 
@@ -28,7 +29,9 @@ func _process(delta: float) -> void:
 	if target == null:
 		return
 	_yaw = lerp_angle(_yaw, target.rotation.y, 1.0 - exp(-5.0 * delta))
-	_height = lerpf(_height, target.global_position.y * JUMP_FOLLOW, 1.0 - exp(-6.0 * delta))
+	# Follow the ground fully (hills), but only half of a jump.
+	var ground := target.global_position.y - target.motor.position.y
+	_height = lerpf(_height, ground + target.motor.position.y * JUMP_FOLLOW, 1.0 - exp(-6.0 * delta))
 	_place()
 	var target_fov := Settings.fov + 8.0 * target.motor.speed_ratio()
 	fov = lerpf(fov, target_fov, 1.0 - exp(-4.0 * delta))

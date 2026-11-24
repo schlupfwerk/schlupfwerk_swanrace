@@ -187,6 +187,12 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   progressivo**: gatilho todo abre a asa inteira e para em ~1,2 s; meio gatilho abre meia asa
   e freia pela metade.
 - **Na curva** o cisne inclina o corpo e vira a cabeça para o lado da curva.
+- **Relevo:** a pista tem subidas e descidas (até ~11 m, rampas de até ~10%) e é
+  **inclinada nas curvas** (até ~12°, o lado de dentro mais baixo). Subida: perde velocidade e
+  o máximo cai até 75%; descida: ganha velocidade e passa dos 50 km/h (até 130%). O cisne
+  inclina com o chão; praias altas descem em barranco até o mar.
+- **Largada com semáforo:** 3 luzes vermelhas com "tu", verde com "tuuuu" e "Corra!".
+- **Afogamento:** som de derrota e 5 bolhas subindo em zigue-zague e estourando com som.
 - **Curva custa:** segurando a curva, o limite de velocidade cai 1% a cada 0,1 s (até
   −30%) e volta ao soltar. **Pouso** de pulo tira 5% da velocidade.
 - **Minimapa** no canto superior esquerdo com o ponto de GPS de cada cisne.

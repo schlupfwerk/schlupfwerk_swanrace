@@ -50,7 +50,6 @@ var _smoke: CPUParticles3D
 var _wind: Array[CPUParticles3D] = []
 var _land_dust: CPUParticles3D
 var _splash: CPUParticles3D
-var _bubbles: CPUParticles3D
 var _phase := 0.0
 var _wing_open := 0.0
 ## Landing squash and take-off stretch, 1 right after the event, fading to 0.
@@ -202,7 +201,6 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_cape.rotation.x = lerpf(_cape.rotation.x, cape_lift, smooth)
 
 	_splash.emitting = (wet and moving > 0.15) or drowning > 0.1
-	_bubbles.emitting = drowning > 0.3
 	_smoke.emitting = on_ground and not wet and accel > 0.2 and speed_ratio > 0.05
 	for wind in _wind:
 		wind.emitting = braking and _wing_open > 0.3
@@ -723,17 +721,6 @@ func _build_effects() -> void:
 	_splash.initial_velocity_min = 2.0
 	_splash.initial_velocity_max = 3.5
 	_splash.gravity = Vector3(0, -9.8, 0)
-
-	# Bubbles rising when drowning.
-	_bubbles = _particles(30, 1.2, _particle_sphere(0.06), Color(0.9, 0.97, 1.0, 0.8))
-	_bubbles.position = Vector3(0, 1.4, -0.4)
-	_bubbles.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
-	_bubbles.emission_sphere_radius = 0.4
-	_bubbles.direction = Vector3.UP
-	_bubbles.spread = 20.0
-	_bubbles.initial_velocity_min = 0.8
-	_bubbles.initial_velocity_max = 1.6
-	_bubbles.gravity = Vector3(0, 0.5, 0)
 
 	# Wind gusts from the open wings while braking.
 	for side in [-1.0, 1.0]:

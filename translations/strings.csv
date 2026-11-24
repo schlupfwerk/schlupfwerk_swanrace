@@ -48,7 +48,7 @@ MAP_DESERT_ISLAND,Desert Island,Ilha Deserta
 HUD_LAP,Lap %d,Volta %d
 HUD_LAST,Last  %s,Última  %s
 HUD_BEST,Best  %s,Melhor  %s
-GO,Go!,Vai!
+GO,Run!,Corra!
 MSG_BEST_LAP,Best lap!  %s,Melhor volta!  %s
 MSG_LAP,Lap  %s,Volta  %s
 HINT_RACE_KEYBOARD,WASD or arrows: move   Space: jump   Esc: menu,WASD ou setas: mover   Espaço: pular   Esc: menu

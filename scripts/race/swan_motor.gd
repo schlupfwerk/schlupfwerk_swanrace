@@ -19,6 +19,12 @@ const GRAVITY := 24.0
 const TURN_CAP_LOSS_PER_SECOND := 0.1
 const TURN_CAP_MIN := 0.7
 const TURN_CAP_RECOVERY_PER_SECOND := 0.35
+## Slopes: uphill slows the swan and lowers its top speed (down to 75%);
+## downhill speeds it up and lets it run faster (up to 130%).
+const SLOPE_GRAVITY := 6.0
+const SLOPE_LIMIT_PER_GRADE := 2.5
+const SLOPE_LIMIT_MIN := 0.75
+const SLOPE_LIMIT_MAX := 1.3
 ## Each landing costs 5% of the speed, so jumps are a choice.
 const LANDING_SPEED_LOSS := 0.05
 
@@ -31,6 +37,9 @@ var vertical_velocity := 0.0
 var max_speed_scale := 1.0
 ## Top speed left after steering (1 = none lost).
 var turn_cap := 1.0
+## Grade of the ground along the heading (rise per meter; negative = downhill).
+## Set by the track each tick.
+var slope := 0.0
 var on_ground := true
 var accelerating := false
 var braking := false
@@ -45,7 +54,7 @@ func forward() -> Vector3:
 
 
 func speed_ratio() -> float:
-	return minf(speed / MAX_SPEED, 1.0)
+	return speed / MAX_SPEED
 
 
 func step(intent: SwanIntent, tick: float) -> void:
@@ -67,8 +76,11 @@ func step(intent: SwanIntent, tick: float) -> void:
 		turn_cap = maxf(turn_cap - TURN_CAP_LOSS_PER_SECOND * absf(intent.steer) * tick, TURN_CAP_MIN)
 	else:
 		turn_cap = minf(turn_cap + TURN_CAP_RECOVERY_PER_SECOND * tick, 1.0)
-	speed = clampf(speed, 0.0, MAX_SPEED)
-	var limit := MAX_SPEED * max_speed_scale * turn_cap
+	if on_ground:
+		speed -= SLOPE_GRAVITY * slope * tick
+	var slope_limit := clampf(1.0 - slope * SLOPE_LIMIT_PER_GRADE, SLOPE_LIMIT_MIN, SLOPE_LIMIT_MAX)
+	speed = clampf(speed, 0.0, MAX_SPEED * SLOPE_LIMIT_MAX)
+	var limit := MAX_SPEED * max_speed_scale * turn_cap * slope_limit
 	if speed > limit:
 		speed = move_toward(speed, limit, BRAKE_DECELERATION * tick)
 

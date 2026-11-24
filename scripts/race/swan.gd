@@ -28,6 +28,9 @@ var on_tick: Callable
 var ground_y := 0.0
 ## True while wading in the sea (set by the track): slow, wet, splashing.
 var in_water := false
+## Tilt of the ground under the swan (radians), set by the track.
+var ground_pitch := 0.0
+var ground_roll := 0.0
 
 var _accumulator := 0.0
 var _previous_position := Vector3.ZERO
@@ -46,6 +49,8 @@ var _respawn_heading := 0.0
 var _blink := 0.0
 var _pet_player := _make_player(-6.0)
 var _pet_timer := 3.0
+var _lose_player := AudioStreamPlayer.new()
+var _drown_bubbles := DrownBubbles.new()
 
 
 func _ready() -> void:
@@ -65,6 +70,10 @@ func _ready() -> void:
 	for player in [_step_player, _jump_player, _land_player, _bump_player, _pet_player]:
 		add_child(player)
 	model.stepped.connect(_on_stepped)
+	_lose_player.stream = Sfx.lose()
+	_lose_player.bus = &"SFX"
+	add_child(_lose_player)
+	add_child(_drown_bubbles)
 	set_look(look)
 	_previous_position = motor.position
 	_previous_heading = motor.heading
@@ -122,6 +131,10 @@ func _process(delta: float) -> void:
 		var on := fmod(_blink, 0.25) > 0.1
 		model.set_fade(maxf(shown, 0.15) * (1.0 if on else 0.4) if _blink > 0.0 else 1.0)
 	rotation.y = lerp_angle(_previous_heading, motor.heading, alpha)
+	# Lean with the ground: nose up on climbs, tilted on banked curves.
+	var tilt := 1.0 - exp(-8.0 * delta)
+	rotation.x = lerpf(rotation.x, ground_pitch, tilt)
+	rotation.z = lerpf(rotation.z, ground_roll, tilt)
 	if jumped:
 		model.take_off()
 		_jump_player.pitch_scale = randf_range(0.95, 1.05)
@@ -177,6 +190,8 @@ func drown(at: Vector3, heading: float) -> void:
 	_respawn_heading = heading
 	motor.speed = 0.0
 	drowned.emit()
+	_lose_player.play()
+	_drown_bubbles.release(global_position + Vector3(0, 1.6, 0))
 
 
 func _respawn() -> void:
@@ -187,8 +202,7 @@ func _respawn() -> void:
 	motor.on_ground = true
 	_previous_position = motor.position
 	_previous_heading = motor.heading
-	ground_y = 0.0
-	_render_ground = 0.0
+	_render_ground = ground_y
 	in_water = false
 	_blink = BLINK_TIME
 

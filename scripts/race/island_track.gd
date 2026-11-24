@@ -25,6 +25,13 @@ const SEA_LEVEL := -0.6
 ## Water depth (m) at which the swan is half under water and drowns.
 const DROWN_DEPTH := 1.15
 const BUCKET := 8
+## Hills along the lap (m): never below this, so the beach stays above the sea.
+const BASE_HEIGHT := 0.6
+## Banking: how much the sand tilts into a curve, and the most it ever tilts.
+const BANK_PER_CURVATURE := 3.0
+const MAX_BANK := 0.21
+## Only the middle of the sand is banked; the edges level out.
+const BANK_HALF_WIDTH := 10.0
 
 ## Racing line in travel order, as (x, z).
 var points := PackedVector2Array()
@@ -39,6 +46,9 @@ var obstacles: Array[Dictionary] = []
 ## itself in a tight curve (positive = sea side).
 var _room_right := PackedFloat32Array()
 var _room_left := PackedFloat32Array()
+## Height of the racing line and tilt of the sand (rise per meter to the right).
+var _height := PackedFloat32Array()
+var _bank := PackedFloat32Array()
 var _buckets := {}
 
 
@@ -57,6 +67,7 @@ func _init() -> void:
 	for i in SAMPLES:
 		points.append(raw[i] * LAP_LENGTH / raw_length)
 	_measure_room()
+	_shape_ground()
 	var total := 0.0
 	for i in SAMPLES:
 		lengths.append(total)
@@ -97,17 +108,28 @@ func water_line(i: int) -> float:
 	return _water[wrapi(i, 0, SAMPLES)]
 
 
-## Height of the ground (sand or sea floor) at a lateral offset.
+## Height of the sand at a lateral offset (hills plus banking in curves).
+func surface_height(i: int, lateral: float) -> float:
+	i = wrapi(i, 0, SAMPLES)
+	var tilted := _height[i] + clampf(lateral, -BANK_HALF_WIDTH, BANK_HALF_WIDTH) * _bank[i]
+	return maxf(tilted, BASE_HEIGHT * 0.5)
+
+
+## Height of the ground (sand, forest edge or sea floor) at a lateral offset.
 func ground_height(i: int, lateral: float) -> float:
 	var water := water_line(i)
+	var forest := forest_edge(i)
+	if lateral <= forest:
+		return surface_height(i, forest)
 	if lateral <= water:
-		return 0.0
-	# Steep: the sea floor drops fast, so the swan sinks quickly.
-	if lateral <= water + 3.0:
-		return lerpf(0.0, -0.5, (lateral - water) / 3.0)
-	if lateral <= water + 8.0:
-		return lerpf(-0.5, -1.6, (lateral - water - 3.0) / 5.0)
-	return lerpf(-1.6, -3.4, clampf((lateral - water - 8.0) / 8.0, 0.0, 1.0))
+		return surface_height(i, lateral)
+	# From the top of the sand down a bank into the sea.
+	var shore := surface_height(i, water)
+	if lateral <= water + 5.0:
+		return lerpf(shore, -0.5, (lateral - water) / 5.0)
+	if lateral <= water + 10.0:
+		return lerpf(-0.5, -1.6, (lateral - water - 5.0) / 5.0)
+	return lerpf(-1.6, -3.4, clampf((lateral - water - 10.0) / 8.0, 0.0, 1.0))
 
 
 func index_at(distance: float) -> int:
@@ -206,3 +228,24 @@ func _measure_room() -> void:
 			left = minf(left, radius_left[wrapi(i + k, 0, SAMPLES)])
 		_room_right.append(minf(right, 400.0))
 		_room_left.append(minf(left, 400.0))
+
+
+## Hills along the lap and banking that follows the curves.
+func _shape_ground() -> void:
+	var curvature := PackedFloat32Array()
+	for i in SAMPLES:
+		var a := points[wrapi(i - 1, 0, SAMPLES)]
+		var b := points[i]
+		var c := points[(i + 1) % SAMPLES]
+		# Positive when turning right (the inside of the curve is on the right).
+		curvature.append((b - a).angle_to(c - b) / maxf((b - a).length(), 0.01))
+	for i in SAMPLES:
+		var u := TAU * i / SAMPLES
+		# Two rolling hills and a few smaller bumps, back to the start height.
+		_height.append(BASE_HEIGHT + 3.5 * (1.0 - cos(3.0 * u)) + 2.0 * (1.0 - cos(7.0 * u + 1.0)))
+		var smooth := 0.0
+		for k in range(-12, 13):
+			smooth += curvature[wrapi(i + k, 0, SAMPLES)]
+		smooth /= 25.0
+		# Tilt into the curve: the inside is lower.
+		_bank.append(clampf(-smooth * BANK_PER_CURVATURE, -MAX_BANK, MAX_BANK))

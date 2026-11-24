@@ -76,7 +76,7 @@ func _on_stepped(_strength: float, foot: int) -> void:
 	var yaw := swan.rotation.y
 	var heading := Basis(Vector3.UP, yaw)
 	var spot := swan.global_position + heading * Vector3(0.3 * foot, 0.0, -0.1)
-	spot.y = swan.ground_y + 0.015
+	spot.y = swan.ground_y + 0.05
 	# Lay the quad flat: its top (the toes) points forward.
 	# Mirrored for the left foot, so the big toe is always on the inside.
 	var basis := heading * Basis(Vector3.RIGHT, -PI / 2.0) * Basis.from_scale(

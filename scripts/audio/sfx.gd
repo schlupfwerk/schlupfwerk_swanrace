@@ -114,3 +114,50 @@ static func meow() -> AudioStreamWAV:
 			var envelope := minf(t / 0.04, 1.0) * clampf((0.7 - t) / 0.15, 0.0, 1.0)
 			return tone * 0.4 * envelope)
 	return _cache["meow"]
+
+
+## Start light beep: a short "tu" (ready) or the long, higher "tuuuu" (go).
+static func start_beep(go: bool) -> AudioStreamWAV:
+	var key := "beep_go" if go else "beep"
+	if not _cache.has(key):
+		var length := 0.9 if go else 0.2
+		var pitch := 1046.5 if go else 523.25
+		_cache[key] = _render(length, func(t: float, state: Dictionary) -> float:
+			state.phase = state.get("phase", 0.0) + TAU * pitch / RATE
+			# Soft square-ish tone, like a race start light.
+			var tone := sin(state.phase) + 0.3 * sin(state.phase * 3.0) + 0.15 * sin(state.phase * 5.0)
+			var envelope := minf(t / 0.01, 1.0) * clampf((length - t) / 0.05, 0.0, 1.0)
+			return tone * 0.4 * envelope)
+	return _cache[key]
+
+
+## Losing jingle: "wah... wah... wah-waaah", sliding down.
+static func lose() -> AudioStreamWAV:
+	if not _cache.has("lose"):
+		var notes := [[0.0, 0.32, 392.0], [0.36, 0.32, 370.0], [0.72, 0.32, 349.2], [1.08, 0.9, 329.6]]
+		_cache["lose"] = _render(2.0, func(t: float, state: Dictionary) -> float:
+			var out := 0.0
+			for note: Array in notes:
+				var local: float = t - note[0]
+				if local < 0.0 or local > note[1]:
+					continue
+				var last: bool = note == notes[notes.size() - 1]
+				var pitch: float = note[2] * (1.0 + (0.025 * sin(TAU * 6.0 * local) if last else 0.0))
+				pitch *= 1.0 - (0.08 * local / note[1] if last else 0.0)
+				# "Wah": a muted brass tone that opens and closes.
+				var wah := 0.5 + 0.5 * sin(PI * local / note[1])
+				var phase := TAU * pitch * local
+				var tone := sin(phase) + wah * (0.6 * sin(phase * 2.0) + 0.35 * sin(phase * 3.0))
+				var envelope := minf(local / 0.03, 1.0) * clampf((note[1] - local) / 0.08, 0.0, 1.0)
+				out += tone * 0.35 * envelope
+			return out)
+	return _cache["lose"]
+
+
+## A bubble popping: a tiny rising "blip".
+static func pop() -> AudioStreamWAV:
+	if not _cache.has("pop"):
+		_cache["pop"] = _render(0.08, func(t: float, state: Dictionary) -> float:
+			state.phase = state.get("phase", 0.0) + TAU * lerpf(500.0, 1600.0, t / 0.08) / RATE
+			return sin(state.phase) * exp(-t * 45.0) * 0.6)
+	return _cache["pop"]

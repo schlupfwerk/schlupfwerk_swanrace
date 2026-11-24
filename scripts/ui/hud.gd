@@ -16,6 +16,7 @@ var _best_label := Label.new()
 var _last_label := Label.new()
 var _center_label := Label.new()
 var _message_time := 0.0
+var _lights := StartLights.new()
 
 
 func _ready() -> void:
@@ -46,6 +47,14 @@ func _ready() -> void:
 		times.add_child(label)
 	_lap_label.add_theme_font_size_override("font_size", 32)
 	_time_label.add_theme_font_size_override("font_size", 30)
+
+	root.add_child(_lights)
+	_lights.set_anchors_preset(Control.PRESET_CENTER)
+	_lights.offset_left = -150
+	_lights.offset_right = 150
+	_lights.offset_top = -260
+	_lights.offset_bottom = -160
+	_lights.visible = false
 
 	_center_label.set_anchors_preset(Control.PRESET_CENTER)
 	_center_label.custom_minimum_size = Vector2(800, 160)
@@ -114,11 +123,6 @@ func set_best(best: float) -> void:
 	_best_label.text = tr("HUD_BEST") % (format_time(best) if best > 0.0 else "--:--.--")
 
 
-func show_countdown(seconds: int) -> void:
-	_center_label.text = str(seconds)
-	_message_time = 0.0
-
-
 func show_message(text: String, seconds: float) -> void:
 	_center_label.text = text
 	_message_time = seconds
@@ -132,3 +136,10 @@ static func format_time(seconds: float) -> String:
 
 func _update_hint() -> void:
 	_hint.text = InputGlyphs.race_hint()
+
+
+## Start lights: `lit` red lamps, or all green with `go`; hidden with -1.
+func set_start_lights(lit: int, go := false) -> void:
+	_lights.visible = lit >= 0
+	_lights.lit = maxi(lit, 0)
+	_lights.go = go

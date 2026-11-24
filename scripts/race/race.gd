@@ -16,6 +16,9 @@ var _countdown := COUNTDOWN
 var _racing := false
 var _last_lap := 0.0
 var _music := AudioStreamPlayer.new()
+var _beep := AudioStreamPlayer.new()
+var _lights_lit := 0
+var _go_time := 0.0
 
 static var _music_stream: AudioStreamWAV
 static var _music_rendering := false
@@ -59,6 +62,9 @@ func _ready() -> void:
 	add_child(_hud)
 	_hud.set_best(Profile.best_lap(TRACK_ID))
 
+	_beep.bus = &"SFX"
+	add_child(_beep)
+
 	_music.bus = &"Music"
 	_music.volume_db = -6.0
 	add_child(_music)
@@ -75,12 +81,25 @@ func _process(delta: float) -> void:
 		_music.play()
 	if not _racing:
 		_countdown -= delta
+		# Start lights: one red lamp and a short beep per second, then green.
+		var lamps := clampi(3 - ceili(_countdown - 0.0001) + 1, 0, 3)
+		if lamps != _lights_lit and _countdown > 0.0:
+			_lights_lit = lamps
+			_hud.set_start_lights(lamps)
+			_beep.stream = Sfx.start_beep(false)
+			_beep.play()
 		if _countdown <= 0.0:
 			_racing = true
 			_swan.controls_enabled = true
-			_hud.show_message(tr("GO"), 1.0)
-		else:
-			_hud.show_countdown(ceili(_countdown))
+			_hud.set_start_lights(3, true)
+			_hud.show_message(tr("GO"), 1.2)
+			_beep.stream = Sfx.start_beep(true)
+			_beep.play()
+			_go_time = 1.5
+	elif _go_time > 0.0:
+		_go_time -= delta
+		if _go_time <= 0.0:
+			_hud.set_start_lights(-1)
 	_hud.set_lap(_laps.lap, _laps.lap_time, _last_lap)
 
 
