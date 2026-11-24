@@ -13,6 +13,13 @@ const TURN_RATE_FAST := 1.6 # rad/s at top speed
 const AIR_CONTROL := 0.35
 const JUMP_VELOCITY := 6.5
 const GRAVITY := 24.0
+## Turning has a cost: while steering, the top speed drops 1% every 0.1 s
+## (scaled by how hard you steer), down to 70%. It recovers when you let go.
+const TURN_CAP_LOSS_PER_SECOND := 0.1
+const TURN_CAP_MIN := 0.7
+const TURN_CAP_RECOVERY_PER_SECOND := 0.35
+## Each landing costs 5% of the speed, so jumps are a choice.
+const LANDING_SPEED_LOSS := 0.05
 
 var position := Vector3.ZERO
 ## Yaw in radians. 0 faces -Z.
@@ -21,6 +28,8 @@ var speed := 0.0
 var vertical_velocity := 0.0
 ## Set by the terrain each tick (1 = normal). The same rule for every swan.
 var max_speed_scale := 1.0
+## Top speed left after steering (1 = none lost).
+var turn_cap := 1.0
 var on_ground := true
 var accelerating := false
 var braking := false
@@ -53,8 +62,12 @@ func step(intent: SwanIntent, tick: float) -> void:
 	speed += ACCELERATION * intent.accel * control * tick
 	speed -= BRAKE_DECELERATION * intent.brake * control * tick
 	speed -= COAST_DECELERATION * (1.0 - intent.accel) * tick
+	if absf(intent.steer) > 0.1:
+		turn_cap = maxf(turn_cap - TURN_CAP_LOSS_PER_SECOND * absf(intent.steer) * tick, TURN_CAP_MIN)
+	else:
+		turn_cap = minf(turn_cap + TURN_CAP_RECOVERY_PER_SECOND * tick, 1.0)
 	speed = clampf(speed, 0.0, MAX_SPEED)
-	var limit := MAX_SPEED * max_speed_scale
+	var limit := MAX_SPEED * max_speed_scale * turn_cap
 	if speed > limit:
 		speed = move_toward(speed, limit, BRAKE_DECELERATION * tick)
 
@@ -70,3 +83,4 @@ func step(intent: SwanIntent, tick: float) -> void:
 			vertical_velocity = 0.0
 			on_ground = true
 			landed = true
+			speed *= 1.0 - LANDING_SPEED_LOSS

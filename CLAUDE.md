@@ -84,10 +84,23 @@ prioridade.
 - **Personalização** (tudo só visual):
   - penas em **cor sólida ou gradiente** (cor de baixo → cor de cima);
   - cor das **patas**;
-  - acessórios: **boné, peruca, óculos, cílios, maquiagem, colar e jaqueta**, cada um
-    com cor. Com a jaqueta, as asas viram as mangas.
-  - **calçado** (um por vez): **descalço, tênis, botas, sapatos ou chinelo**, com cor.
-    Calçado fechado esconde os pés; o chinelo deixa os pés à mostra.
+  - **Slots (um item por vez, depois a cor):**
+    - **Cabeça:** boné, chapéu de palha, cartola, chapéu de cowboy, gorro, peruca cacheada,
+      peruca lisa.
+    - **Roupa** (com volume, não colada no corpo): jaqueta de couro, jaqueta de inverno,
+      regata, moletom. Jaquetas e moletom viram mangas nas asas.
+    - **Costas** (balançam com a passada): mochila, bolsa, capa de super-herói (esvoaça
+      com a velocidade), bolsa com cachorrinho (late), bolsa com gatinho (mia), ovo de
+      avestruz.
+    - **Calçado:** descalço (pé de 2 dedos, como avestruz), tênis, botas, sapatos, chinelo
+      japonês (geta).
+  - **Óculos:** formato (redondo, quadrado, aviador, viseira), cor da armação e lente
+    sólida ou em gradiente.
+  - **Extras liga/desliga com cor:** cílios, maquiagem, colar (alto, em V), meias (até
+    a metade da perna).
+  - No vestiário o cisne gira sozinho até o jogador girar (Q/E, LB/RB, analógico direito
+    ou arrastando com o mouse). Cada opção é **‹ | valor | ›**: A/Cruz avança, X/Quadrado
+    ou Backspace volta.
   - cores escolhidas de uma **paleta** (esquerda/direita), para funcionar no controle.
 - **Apelido** de até 16 caracteres, com botão de sortear (para quem está sem teclado).
   Aparece acima do cisne e no HUD.
@@ -96,7 +109,7 @@ prioridade.
   mesmos para todos (`SwanMotor`).
 - **É um cisne, não um carro:** no chão, no máximo **50 km/h**, chegando lá em uns
   **4,5 s**. Passadas longas, pernas afastadas.
-- **Jeito desengonçado:** o corpo balança e torce a cada passada, os joelhos abrem; quanto
+- **Jeito desengonçado:** pernas com joelho que dobra; o corpo balança e torce a cada passada; quanto
   mais rápido, **mais baixa a cabeça** e **mais as asas apontam para trás**.
 - **Contorno preto fino** em todo o cisne (casca invertida, segunda passada dos
   materiais) e **penas visíveis** (escamas de penas no shader, penas longas nas asas e
@@ -160,11 +173,18 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   e melhor volta salva.
 
 **Regras do terreno** (`TrackRules`, iguais para todos os cisnes):
-- **Água:** molhado e **55% mais lento**, afunda um pouco, respinga. Não dá para ir
-  para o mar aberto (limite ~26 m além da linha da água).
+- **Água:** molhado e **55% mais lento**; o fundo desce rápido e o cisne vai afundando.
+  Passou da metade do corpo (~9 m além da linha da água): **se afoga**, volta ao centro
+  da pista a 0 km/h piscando por 5 s (de transparente a visível) e aparece
+  **"Cuidado com a água!!!!"**.
+- **Pedras e troncos têm colisão** (círculos registrados pelo cenário em
+  `IslandTrack.add_obstacle`); troncos são baixos e dá para pular por cima.
 - **Mato:** **bate**, a velocidade vai a **0**, balança a cabeça com estrelinhas e se
   vira de volta para a direção da corrida. Leva **2,5 s** para se recuperar.
 - **Nunca na contramão:** o cisne não consegue virar mais de 80° da direção da pista.
+- **Curva custa:** segurando a curva, o limite de velocidade cai 1% a cada 0,1 s (até
+  −30%) e volta ao soltar. **Pouso** de pulo tira 5% da velocidade.
+- **Minimapa** à esquerda com o ponto de GPS de cada cisne.
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
 de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**; a pista foi aumentada

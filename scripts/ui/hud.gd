@@ -4,6 +4,8 @@ extends CanvasLayer
 ## speedometer and control hints.
 
 var swan: Swan
+## Track for the minimap (optional).
+var track: IslandTrack
 var terrain_name := ""
 
 var _speedometer := Speedometer.new()
@@ -53,6 +55,14 @@ func _ready() -> void:
 	_center_label.add_theme_font_size_override("font_size", 64)
 	_center_label.add_theme_constant_override("outline_size", 12)
 	root.add_child(_center_label)
+
+	if track:
+		var minimap := Minimap.new()
+		minimap.track = track
+		minimap.swans = [swan]
+		minimap.size = Vector2(250, 250)
+		root.add_child(minimap)
+		minimap.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_KEEP_SIZE, 20)
 
 	_speedometer.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_speedometer.custom_minimum_size = Vector2(230, 230)

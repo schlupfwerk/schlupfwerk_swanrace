@@ -36,6 +36,10 @@ func menu_hint() -> String:
 	return tr("HINT_MENU_" + _suffix())
 
 
+func wardrobe_hint() -> String:
+	return tr("HINT_WARDROBE_" + _suffix())
+
+
 func tabs_hint() -> String:
 	return tr("HINT_TABS_" + _suffix())
 

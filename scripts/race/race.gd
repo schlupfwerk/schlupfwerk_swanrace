@@ -33,6 +33,7 @@ func _ready() -> void:
 	_swan.look = Profile.look
 	_swan.controls_enabled = false
 	_swan.on_tick = _on_swan_tick
+	_swan.drowned.connect(func() -> void: _hud.show_message(tr("CAREFUL_WATER"), 3.0))
 	add_child(_swan)
 	_laps.hint = start
 	_laps.distance = IslandTrack.LAP_LENGTH - GRID_OFFSET
@@ -53,6 +54,7 @@ func _ready() -> void:
 	add_child(fish)
 
 	_hud.swan = _swan
+	_hud.track = _track
 	_hud.terrain_name = tr("MAP_DESERT_ISLAND")
 	add_child(_hud)
 	_hud.set_best(Profile.best_lap(TRACK_ID))

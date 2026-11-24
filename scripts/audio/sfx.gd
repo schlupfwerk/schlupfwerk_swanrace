@@ -81,3 +81,36 @@ static func _render(duration: float, sample: Callable) -> AudioStreamWAV:
 	stream.stereo = false
 	stream.data = data
 	return stream
+
+
+## Small dog: two quick barks ("au au").
+static func bark() -> AudioStreamWAV:
+	if not _cache.has("bark"):
+		_cache["bark"] = _render(0.42, func(t: float, state: Dictionary) -> float:
+			var local := fmod(t, 0.22)
+			if local > 0.14:
+				return 0.0
+			var pitch := lerpf(620.0, 380.0, local / 0.14)
+			state.phase = state.get("phase", 0.0) + TAU * pitch / RATE
+			var tone := sin(state.phase) + 0.6 * sin(state.phase * 2.0) + 0.3 * sin(state.phase * 3.0)
+			state.rasp = lerpf(state.get("rasp", 0.0), randf_range(-1.0, 1.0), 0.3)
+			var envelope := minf(local / 0.01, 1.0) * exp(-local * 22.0)
+			return (tone * 0.45 + state.rasp * 0.5) * envelope)
+	return _cache["bark"]
+
+
+## Cat: a rising and falling "mee-ow" with a little vibrato.
+static func meow() -> AudioStreamWAV:
+	if not _cache.has("meow"):
+		_cache["meow"] = _render(0.7, func(t: float, state: Dictionary) -> float:
+			var u := t / 0.7
+			var pitch := 520.0 + 380.0 * sin(u * PI) * (1.0 - 0.4 * u)
+			pitch *= 1.0 + 0.02 * sin(TAU * 7.0 * t)
+			state.phase = state.get("phase", 0.0) + TAU * pitch / RATE
+			# Brighter in the middle ("ee"), rounder at the end ("ow").
+			var bright := sin(u * PI)
+			var tone := sin(state.phase) + (0.5 + 0.4 * bright) * sin(state.phase * 2.0) \
+					+ 0.3 * bright * sin(state.phase * 3.0)
+			var envelope := minf(t / 0.04, 1.0) * clampf((0.7 - t) / 0.15, 0.0, 1.0)
+			return tone * 0.4 * envelope)
+	return _cache["meow"]

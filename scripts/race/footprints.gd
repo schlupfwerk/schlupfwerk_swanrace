@@ -14,6 +14,7 @@ const SIZES := {
 	"boots": Vector2(0.38, 0.64),
 	"shoes": Vector2(0.3, 0.58),
 	"flip_flops": Vector2(0.36, 0.62),
+	"socks": Vector2(0.3, 0.5),
 }
 
 static var _textures := {}
@@ -66,6 +67,8 @@ func _on_stepped(_strength: float, foot: int) -> void:
 	if swan.in_water or not swan.motor.on_ground:
 		return
 	var footwear := swan.look.footwear()
+	if footwear == "" and swan.look.is_wearing("socks"):
+		footwear = "socks"
 	if footwear != _footwear:
 		_footwear = footwear
 		_material.albedo_texture = texture_for(footwear)
@@ -75,8 +78,9 @@ func _on_stepped(_strength: float, foot: int) -> void:
 	var spot := swan.global_position + heading * Vector3(0.3 * foot, 0.0, -0.1)
 	spot.y = swan.ground_y + 0.015
 	# Lay the quad flat: its top (the toes) points forward.
+	# Mirrored for the left foot, so the big toe is always on the inside.
 	var basis := heading * Basis(Vector3.RIGHT, -PI / 2.0) * Basis.from_scale(
-			Vector3(size.x, size.y, 1.0))
+			Vector3(size.x * foot, size.y, 1.0))
 	_multimesh.set_instance_transform(_next, Transform3D(basis, spot))
 	_ages[_next] = 0.0
 	_next = (_next + 1) % POOL
@@ -123,22 +127,21 @@ static func _alpha(footwear: String, u: float, v: float) -> float:
 			if v > 0.15:
 				return 0.0
 			return 1.0 if _in_sole(u, v * 1.1 - 0.05, 0.7, 0.0) else 0.0
+		"socks":
+			# Soft rounded print, no toes.
+			return 0.6 if _in_sole(u, v, 0.75, 0.05) else 0.0
 		"flip_flops":
-			# Smooth flat sole with the strap post near the toes.
-			if not _in_sole(u, v, 0.8, 0.12):
-				return 0.0
-			return 0.0 if Vector2(u, v + 0.55).length() < 0.1 else 0.85
+			# Japanese geta: only the two wooden teeth touch the sand.
+			var tooth := absf(v + 0.45) < 0.14 or absf(v - 0.55) < 0.14
+			return 1.0 if tooth and absf(u) < 0.85 else 0.0
 		_:
-			# Webbed swan foot: three toes from the heel, webbing between them.
-			var heel := Vector2(0.0, 0.85)
-			var toes := [Vector2(-0.8, -0.75), Vector2(0.0, -0.95), Vector2(0.8, -0.75)]
+			# Ostrich-like foot: a big inner toe, a small outer toe and the heel pad.
 			var p := Vector2(u, v)
-			for tip: Vector2 in toes:
-				if _segment_distance(p, heel, tip) < 0.11:
-					return 1.0
-			var inside := _in_triangle(p, heel, toes[0], toes[2]) \
-					and v > -0.75 + 0.18 * (1.0 - cos(u * PI * 1.25))
-			return 0.55 if inside else 0.0
+			if _segment_distance(p, Vector2(-0.1, 0.55), Vector2(-0.3, -0.85)) < 0.2:
+				return 1.0
+			if _segment_distance(p, Vector2(0.15, 0.5), Vector2(0.5, -0.35)) < 0.14:
+				return 0.9
+			return 0.8 if p.distance_to(Vector2(0.0, 0.7)) < 0.22 else 0.0
 
 
 static func _in_sole(u: float, v: float, width: float, waist: float) -> bool:
@@ -151,11 +154,3 @@ static func _segment_distance(p: Vector2, a: Vector2, b: Vector2) -> float:
 	var t := clampf((p - a).dot(ab) / ab.length_squared(), 0.0, 1.0)
 	return p.distance_to(a + ab * t)
 
-
-static func _in_triangle(p: Vector2, a: Vector2, b: Vector2, c: Vector2) -> bool:
-	var d1 := (p - b).cross(a - b)
-	var d2 := (p - c).cross(b - c)
-	var d3 := (p - a).cross(c - a)
-	var has_negative := d1 < 0.0 or d2 < 0.0 or d3 < 0.0
-	var has_positive := d1 > 0.0 or d2 > 0.0 or d3 > 0.0
-	return not (has_negative and has_positive)

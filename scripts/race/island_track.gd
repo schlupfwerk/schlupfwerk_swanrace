@@ -16,11 +16,14 @@ const SHAPE := [0.27, 0.16, 0.09, 0.045]
 ## Average half-widths of the sand from the racing line; they vary along the lap.
 const FOREST_EDGE := -15.0
 const WATER_LINE := 15.0
-## In the water the swan is wet and slow.
+## In the water the swan is wet and slow; deeper than half its body, it drowns.
 const WATER_SPEED_SCALE := 0.45
 ## How far the swan may turn away from the racing direction (never wrong way).
 const MAX_WRONG_ANGLE := deg_to_rad(80.0)
 const SEA_LEVEL := -0.6
+## Water depth (m) at which the swan is half under water and drowns.
+const DROWN_DEPTH := 1.15
+const BUCKET := 8
 
 ## Racing line in travel order, as (x, z).
 var points := PackedVector2Array()
@@ -28,6 +31,10 @@ var points := PackedVector2Array()
 var lengths := PackedFloat32Array()
 var _forest := PackedFloat32Array()
 var _water := PackedFloat32Array()
+## Solid things on or near the sand (rocks, logs): {"p": Vector2, "r": radius,
+## "h": height}. A swan in the air above "h" passes over it.
+var obstacles: Array[Dictionary] = []
+var _buckets := {}
 
 
 func _init() -> void:
@@ -85,9 +92,12 @@ func ground_height(i: int, lateral: float) -> float:
 	var water := water_line(i)
 	if lateral <= water:
 		return 0.0
-	if lateral <= water + 6.0:
-		return lerpf(0.0, -0.35, (lateral - water) / 6.0)
-	return lerpf(-0.35, -1.4, clampf((lateral - water - 6.0) / 12.0, 0.0, 1.0))
+	# Steep: the sea floor drops fast, so the swan sinks quickly.
+	if lateral <= water + 3.0:
+		return lerpf(0.0, -0.5, (lateral - water) / 3.0)
+	if lateral <= water + 8.0:
+		return lerpf(-0.5, -1.6, (lateral - water - 3.0) / 5.0)
+	return lerpf(-1.6, -3.4, clampf((lateral - water - 8.0) / 8.0, 0.0, 1.0))
 
 
 func index_at(distance: float) -> int:
@@ -130,3 +140,24 @@ func locate(p: Vector2, hint: int) -> Dictionary:
 				"lateral": (p - on_line).dot(Vector2(-ab.y, ab.x).normalized()),
 			}
 	return result
+
+
+## Registers something solid. Buckets by track index keep the checks cheap.
+func add_obstacle(p: Vector2, radius: float, height: float) -> void:
+	var index: int = locate(p, -1)["index"]
+	obstacles.append({"p": p, "r": radius, "h": height})
+	var bucket := index / BUCKET
+	if not _buckets.has(bucket):
+		_buckets[bucket] = []
+	_buckets[bucket].append(obstacles.size() - 1)
+
+
+## Obstacles close to track point i.
+func obstacles_near(i: int) -> Array[Dictionary]:
+	var found: Array[Dictionary] = []
+	var count := SAMPLES / BUCKET
+	var bucket := wrapi(i, 0, SAMPLES) / BUCKET
+	for b in [wrapi(bucket - 1, 0, count), bucket, wrapi(bucket + 1, 0, count)]:
+		for n: int in _buckets.get(b, []):
+			found.append(obstacles[n])
+	return found

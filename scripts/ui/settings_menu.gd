@@ -260,7 +260,7 @@ func _refresh_rows() -> void:
 	if _quality_row:
 		_quality_row.set_index(Settings.quality)
 	if _resolution_row:
-		_resolution_row.disabled = Settings.window_mode != Settings.WindowMode.WINDOWED
+		_resolution_row.set_enabled(Settings.window_mode == Settings.WindowMode.WINDOWED)
 	if _advanced_rows.has("render_scale"):
 		_advanced_rows.render_scale.set_index(Settings.RENDER_SCALES.find(Settings.render_scale))
 		_advanced_rows.msaa.set_index(Settings.MSAA_LEVELS.find(Settings.msaa))

@@ -1,34 +1,44 @@
 extends Node3D
 ## Wardrobe: customize the swan, then race. Fully usable with keyboard or
-## controller; mouse and touch are optional.
+## controller; mouse and touch are optional. The swan turns by itself until
+## the player turns it (Q/E, LB/RB, right stick or dragging with the mouse).
 
 const RACE_SCENE := "res://scenes/race.tscn"
 const STYLE_OPTIONS: PackedStringArray = ["SOLID", "GRADIENT"]
-const ACCESSORY_LABELS := {
-	"cap": "CAP",
-	"wig": "WIG",
-	"glasses": "GLASSES",
-	"lashes": "LASHES",
-	"makeup": "MAKEUP",
-	"necklace": "NECKLACE",
-	"jacket": "JACKET",
-}
-## Footwear options, in order. "" is barefoot.
-const FOOTWEAR_OPTIONS := ["", "sneakers", "boots", "shoes", "flip_flops"]
-const FOOTWEAR_LABELS: PackedStringArray = ["BAREFOOT", "SNEAKERS", "BOOTS", "SHOES", "FLIP_FLOPS"]
-const DEFAULT_FOOTWEAR_COLOR := Color("e8413c")
+## Slot rows: slot, label, color label, [item id, item label]... ("" = none).
+const SLOT_ROWS := [
+	["head", "HEAD", "HEAD_COLOR", [["", "NONE"], ["cap", "CAP"], ["straw_hat", "STRAW_HAT"],
+			["top_hat", "TOP_HAT"], ["cowboy_hat", "COWBOY_HAT"], ["beanie", "BEANIE"],
+			["wig", "WIG_CURLY"], ["wig_long", "WIG_LONG"]]],
+	["outfit", "OUTFIT", "OUTFIT_COLOR", [["", "NONE"], ["jacket", "LEATHER_JACKET"],
+			["winter_jacket", "WINTER_JACKET"], ["tank_top", "TANK_TOP"], ["hoodie", "HOODIE"]]],
+	["back", "BACK_ITEM", "BACK_COLOR", [["", "NONE"], ["backpack", "BACKPACK"], ["bag", "BAG"],
+			["cape", "CAPE"], ["dog_bag", "DOG_BAG"], ["cat_bag", "CAT_BAG"],
+			["ostrich_egg", "OSTRICH_EGG"]]],
+	["footwear", "FOOTWEAR", "FOOTWEAR_COLOR", [["", "BAREFOOT"], ["sneakers", "SNEAKERS"],
+			["boots", "BOOTS"], ["shoes", "SHOES"], ["flip_flops", "FLIP_FLOPS"]]],
+]
+## Items that are simply on or off, with a color.
+const EXTRA_ROWS := [["lashes", "LASHES"], ["makeup", "MAKEUP"], ["necklace", "NECKLACE"],
+		["socks", "SOCKS"]]
+const GLASSES_LABELS: PackedStringArray = ["NONE", "GLASSES_ROUND", "GLASSES_SQUARE",
+		"GLASSES_AVIATOR", "GLASSES_VISOR"]
+const TURN_SPEED := 2.2
+const AUTO_TURN_SPEED := 0.4
+const DEFAULT_ITEM_COLOR := Color("e8413c")
 
 var _look: SwanLook
 var _model := SwanModel.new()
 var _nickname_edit := LineEdit.new()
 var _color_2_row: OptionRow
-var _footwear_color_row: OptionRow
-var _footwear_color := DEFAULT_FOOTWEAR_COLOR
+## Color rows that only make sense when something is chosen: row -> Callable.
+var _dependent_rows := {}
 var _hint := Label.new()
 var _race_button := Button.new()
 var _settings_button := Button.new()
 var _panel: PanelContainer
 var _layer: CanvasLayer
+var _auto_turn := true
 
 
 func _ready() -> void:
@@ -40,8 +50,20 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_model.rotation.y += delta * 0.4
+	var turn := Input.get_axis("turn_model_left", "turn_model_right") if _panel.visible else 0.0
+	if absf(turn) > 0.1:
+		_auto_turn = false
+		_model.rotation.y += turn * TURN_SPEED * delta
+	elif _auto_turn:
+		_model.rotation.y += delta * AUTO_TURN_SPEED
 	_model.animate(delta, 0.0, 0.0, 0.0, false, true)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Drag on the swan (outside the menu) to turn it.
+	if event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+		_auto_turn = false
+		_model.rotation.y += event.relative.x * 0.01
 
 
 func _build_stage() -> void:
@@ -83,7 +105,7 @@ func _build_menu() -> void:
 	panel.offset_left = 24
 	panel.offset_top = 24
 	panel.offset_bottom = -24
-	panel.custom_minimum_size.x = 520
+	panel.custom_minimum_size.x = 620
 	root.add_child(panel)
 	_panel = panel
 	var column := VBoxContainer.new()
@@ -119,60 +141,47 @@ func _build_menu() -> void:
 	random_button.pressed.connect(_on_random_nickname)
 	list.add_child(random_button)
 
-	var style_row := OptionRow.new().setup(tr("FEATHERS"), _translated(STYLE_OPTIONS), _look.feather_style)
-	style_row.value_changed.connect(func(i: int) -> void:
-		_look.feather_style = i as SwanLook.FeatherStyle
-		_refresh())
-	list.add_child(style_row)
+	# Feathers and legs.
+	_row(list, "FEATHERS", _translated(STYLE_OPTIONS), _look.feather_style, func(i: int) -> void:
+		_look.feather_style = i as SwanLook.FeatherStyle)
+	_color_row(list, "FEATHER_COLOR", _look.feather_color, func(c: Color) -> void:
+		_look.feather_color = c)
+	_color_2_row = _color_row(list, "TOP_COLOR", _look.feather_color_2, func(c: Color) -> void:
+		_look.feather_color_2 = c)
+	_color_row(list, "LEGS", _look.leg_color, func(c: Color) -> void:
+		_look.leg_color = c)
 
-	var color_row := OptionRow.new().setup(
-			tr("FEATHER_COLOR"), SwanPalette.display_names(), SwanPalette.closest(_look.feather_color))
-	color_row.value_changed.connect(func(i: int) -> void:
-		_look.feather_color = SwanPalette.colors[i]
-		_refresh())
-	list.add_child(color_row)
+	# Head, outfit, back and footwear: pick the item, then its color.
+	for slot_row: Array in SLOT_ROWS:
+		_add_slot_rows(list, slot_row[0], slot_row[1], slot_row[2], slot_row[3])
 
-	_color_2_row = OptionRow.new().setup(
-			tr("TOP_COLOR"), SwanPalette.display_names(), SwanPalette.closest(_look.feather_color_2))
-	_color_2_row.value_changed.connect(func(i: int) -> void:
-		_look.feather_color_2 = SwanPalette.colors[i]
-		_refresh())
-	list.add_child(_color_2_row)
+	# Glasses: shape, frame color, lens color (solid or gradient).
+	_row(list, "GLASSES", _translated(GLASSES_LABELS),
+			SwanLook.GLASSES_STYLES.find(_look.glasses_style) + 1, func(i: int) -> void:
+				_look.glasses_style = "" if i == 0 else SwanLook.GLASSES_STYLES[i - 1])
+	var has_glasses := func() -> bool: return _look.glasses_style != ""
+	_dependent_rows[_color_row(list, "FRAME_COLOR", _look.glasses_frame, func(c: Color) -> void:
+		_look.glasses_frame = c)] = has_glasses
+	_dependent_rows[_row(list, "LENS", _translated(STYLE_OPTIONS),
+			int(_look.glasses_lens_gradient), func(i: int) -> void:
+				_look.glasses_lens_gradient = i == 1)] = has_glasses
+	_dependent_rows[_color_row(list, "LENS_COLOR", _look.glasses_lens, func(c: Color) -> void:
+		_look.glasses_lens = c)] = has_glasses
+	_dependent_rows[_color_row(list, "LENS_COLOR_2", _look.glasses_lens_2, func(c: Color) -> void:
+		_look.glasses_lens_2 = c)] = func() -> bool:
+			return _look.glasses_style != "" and _look.glasses_lens_gradient
 
-	var legs_row := OptionRow.new().setup(
-			tr("LEGS"), SwanPalette.display_names(), SwanPalette.closest(_look.leg_color))
-	legs_row.value_changed.connect(func(i: int) -> void:
-		_look.leg_color = SwanPalette.colors[i]
-		_refresh())
-	list.add_child(legs_row)
-
-	var accessory_options := PackedStringArray([tr("NONE")])
-	accessory_options.append_array(SwanPalette.display_names())
-	for id: String in ACCESSORY_LABELS:
-		var current := 0
-		if _look.is_wearing(id):
-			current = SwanPalette.closest(_look.accessories[id]) + 1
-		var row := OptionRow.new().setup(tr(ACCESSORY_LABELS[id]), accessory_options, current)
-		row.value_changed.connect(_on_accessory_changed.bind(id))
-		list.add_child(row)
-
-	var footwear := _look.footwear()
-	if footwear != "":
-		_footwear_color = _look.accessories[footwear]
-	var footwear_row := OptionRow.new().setup(
-			tr("FOOTWEAR"), _translated(FOOTWEAR_LABELS), FOOTWEAR_OPTIONS.find(footwear))
-	footwear_row.value_changed.connect(func(i: int) -> void:
-		_look.set_footwear(FOOTWEAR_OPTIONS[i], _footwear_color)
-		_refresh())
-	list.add_child(footwear_row)
-
-	_footwear_color_row = OptionRow.new().setup(
-			tr("FOOTWEAR_COLOR"), SwanPalette.display_names(), SwanPalette.closest(_footwear_color))
-	_footwear_color_row.value_changed.connect(func(i: int) -> void:
-		_footwear_color = SwanPalette.colors[i]
-		_look.set_footwear(_look.footwear(), _footwear_color)
-		_refresh())
-	list.add_child(_footwear_color_row)
+	# Simple extras: none, or a color.
+	var extra_options := PackedStringArray([tr("NONE")])
+	extra_options.append_array(SwanPalette.display_names())
+	for extra: Array in EXTRA_ROWS:
+		var id: String = extra[0]
+		var current := SwanPalette.closest(_look.accessories[id]) + 1 if _look.is_wearing(id) else 0
+		_row(list, extra[1], extra_options, current, func(i: int) -> void:
+			if i == 0:
+				_look.accessories.erase(id)
+			else:
+				_look.accessories[id] = SwanPalette.colors[i - 1])
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
@@ -195,7 +204,8 @@ func _build_menu() -> void:
 	quit_button.pressed.connect(func() -> void: get_tree().quit())
 	buttons.add_child(quit_button)
 
-	_hint.add_theme_font_size_override("font_size", 18)
+	_hint.add_theme_font_size_override("font_size", 17)
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_hint)
 
 	var version := Label.new()
@@ -208,27 +218,53 @@ func _build_menu() -> void:
 	_update_hint()
 
 
+## A slot: one row to pick the item and one for its color.
+func _add_slot_rows(list: VBoxContainer, slot: String, label: String, color_label: String,
+		items: Array) -> void:
+	var ids := []
+	var labels := PackedStringArray()
+	for item: Array in items:
+		ids.append(item[0])
+		labels.append(tr(item[1]))
+	var color := _look.slot_color(slot, DEFAULT_ITEM_COLOR)
+	_row(list, label, labels, maxi(ids.find(_look.slot_item(slot)), 0), func(i: int) -> void:
+		_look.set_slot(slot, ids[i], _look.slot_color(slot, color)))
+	var color_row := _color_row(list, color_label, color, func(c: Color) -> void:
+		color = c
+		_look.set_slot(slot, _look.slot_item(slot), c))
+	_dependent_rows[color_row] = func() -> bool: return _look.slot_item(slot) != ""
+
+
+func _row(list: VBoxContainer, label: String, options: PackedStringArray, index: int,
+		on_change: Callable) -> OptionRow:
+	var row := OptionRow.new().setup(tr(label), options, index)
+	row.value_changed.connect(func(i: int) -> void:
+		on_change.call(i)
+		_refresh())
+	list.add_child(row)
+	return row
+
+
+func _color_row(list: VBoxContainer, label: String, color: Color, on_change: Callable) -> OptionRow:
+	return _row(list, label, SwanPalette.display_names(), SwanPalette.closest(color),
+			func(i: int) -> void: on_change.call(SwanPalette.colors[i]))
+
+
 func _refresh() -> void:
-	_color_2_row.disabled = _look.feather_style != SwanLook.FeatherStyle.GRADIENT
-	_footwear_color_row.disabled = _look.footwear() == ""
+	_color_2_row.set_enabled(_look.feather_style == SwanLook.FeatherStyle.GRADIENT)
+	for row: OptionRow in _dependent_rows:
+		row.set_enabled((_dependent_rows[row] as Callable).call())
 	_model.apply_look(_look)
 
 
 func _on_nickname_changed(new_text: String) -> void:
-	_look.nickname = new_text.strip_edges() if not new_text.strip_edges().is_empty() else tr("DEFAULT_NICKNAME")
+	var trimmed := new_text.strip_edges()
+	_look.nickname = trimmed if not trimmed.is_empty() else tr("DEFAULT_NICKNAME")
 
 
 func _on_random_nickname() -> void:
 	_nickname_edit.text = Nicknames.random()
 	_on_nickname_changed(_nickname_edit.text)
-
-
-func _on_accessory_changed(index: int, id: String) -> void:
-	if index == 0:
-		_look.accessories.erase(id)
-	else:
-		_look.accessories[id] = SwanPalette.colors[index - 1]
-	_refresh()
 
 
 func _on_race() -> void:
@@ -238,7 +274,7 @@ func _on_race() -> void:
 
 
 func _update_hint() -> void:
-	_hint.text = InputGlyphs.menu_hint()
+	_hint.text = InputGlyphs.wardrobe_hint()
 
 
 func _on_settings() -> void:

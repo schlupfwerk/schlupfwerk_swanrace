@@ -7,6 +7,13 @@ extends Node3D
 const TICK := 1.0 / 60.0
 ## Seconds without control after bumping into the forest.
 const STUN_TIME := 2.5
+## Seconds of the drowning animation before the swan is put back on the track.
+const DROWN_TIME := 1.8
+## Seconds of blinking (fading in) after coming back from the water.
+const BLINK_TIME := 5.0
+
+## Fell too deep into the sea (to show a warning).
+signal drowned
 
 var brain: SwanBrain
 var look := SwanLook.new()
@@ -33,6 +40,12 @@ var _bump_player := _make_player(-2.0)
 var _stun := 0.0
 var _recover_heading := 0.0
 var _render_ground := 0.0
+var _drown := 0.0
+var _respawn_position := Vector3.ZERO
+var _respawn_heading := 0.0
+var _blink := 0.0
+var _pet_player := _make_player(-6.0)
+var _pet_timer := 3.0
 
 
 func _ready() -> void:
@@ -49,7 +62,7 @@ func _ready() -> void:
 	_land_player.stream = Sfx.land()
 	_bump_player.stream = Sfx.land()
 	_bump_player.pitch_scale = 0.6
-	for player in [_step_player, _jump_player, _land_player, _bump_player]:
+	for player in [_step_player, _jump_player, _land_player, _bump_player, _pet_player]:
 		add_child(player)
 	model.stepped.connect(_on_stepped)
 	set_look(look)
@@ -71,7 +84,13 @@ func _process(delta: float) -> void:
 	while _accumulator >= TICK:
 		_previous_position = motor.position
 		_previous_heading = motor.heading
-		if _stun > 0.0:
+		if _drown > 0.0:
+			_drown -= TICK
+			intent.reset()
+			motor.speed = 0.0
+			if _drown <= 0.0:
+				_respawn()
+		elif _stun > 0.0:
 			# Dazed after hitting the forest: no control, turn back to the race.
 			_stun -= TICK
 			intent.reset()
@@ -93,6 +112,15 @@ func _process(delta: float) -> void:
 	position = _previous_position.lerp(motor.position, alpha)
 	_render_ground = lerpf(_render_ground, ground_y, 1.0 - exp(-10.0 * delta))
 	position.y += _render_ground
+	var sinking := 1.0 - _drown / DROWN_TIME if _drown > 0.0 else 0.0
+	position.y -= sinking * 1.2
+	model.drowning = sinking if _drown > 0.0 else 0.0
+	if _blink > 0.0:
+		_blink = maxf(_blink - delta, 0.0)
+		# Fades in from see-through to solid, blinking all the way.
+		var shown := 1.0 - _blink / BLINK_TIME
+		var on := fmod(_blink, 0.25) > 0.1
+		model.set_fade(maxf(shown, 0.15) * (1.0 if on else 0.4) if _blink > 0.0 else 1.0)
 	rotation.y = lerp_angle(_previous_heading, motor.heading, alpha)
 	if jumped:
 		model.take_off()
@@ -103,6 +131,7 @@ func _process(delta: float) -> void:
 		model.land(strength)
 		_land_player.volume_db = linear_to_db(lerpf(0.5, 1.0, strength)) - 4.0
 		_land_player.play()
+	_update_pet(delta)
 	model.wet = in_water
 	model.animate(delta, motor.speed_ratio(), intent.steer, intent.accel, motor.braking,
 			motor.on_ground)
@@ -133,3 +162,48 @@ static func _make_player(volume_db: float) -> AudioStreamPlayer3D:
 	player.unit_size = 6.0
 	player.position = Vector3(0, 0.3, 0)
 	return player
+
+
+func is_drowning() -> bool:
+	return _drown > 0.0
+
+
+## Too deep in the sea: sink and flap for a moment, then come back at
+## `at` (on the racing line), stopped and facing `heading`.
+func drown(at: Vector3, heading: float) -> void:
+	_drown = DROWN_TIME
+	_respawn_position = at
+	_respawn_heading = heading
+	motor.speed = 0.0
+	drowned.emit()
+
+
+func _respawn() -> void:
+	motor.position = _respawn_position
+	motor.heading = _respawn_heading
+	motor.speed = 0.0
+	motor.vertical_velocity = 0.0
+	motor.on_ground = true
+	_previous_position = motor.position
+	_previous_heading = motor.heading
+	ground_y = 0.0
+	_render_ground = 0.0
+	in_water = false
+	_blink = BLINK_TIME
+
+
+## A pet in the bag makes noise now and then (and when the swan bumps).
+func _update_pet(delta: float) -> void:
+	var sound: AudioStreamWAV = null
+	if look.is_wearing("dog_bag"):
+		sound = Sfx.bark()
+	elif look.is_wearing("cat_bag"):
+		sound = Sfx.meow()
+	if sound == null:
+		return
+	_pet_timer -= delta
+	if _pet_timer <= 0.0 or (is_stunned() and _pet_timer > 1.0 and _stun > STUN_TIME - 0.1):
+		_pet_timer = randf_range(5.0, 11.0)
+		_pet_player.stream = sound
+		_pet_player.pitch_scale = randf_range(0.92, 1.08)
+		_pet_player.play()

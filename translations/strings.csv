@@ -23,7 +23,7 @@ BAREFOOT,Barefoot,Descalço
 SNEAKERS,Sneakers,Tênis
 BOOTS,Boots,Botas
 SHOES,Shoes,Sapatos
-FLIP_FLOPS,Flip-flops,Chinelo
+FLIP_FLOPS,Japanese sandals,Chinelo japonês
 RACE,Race!,Correr!
 SETTINGS,Settings,Configurações
 QUIT,Quit,Sair
@@ -113,3 +113,38 @@ MASTER_VOLUME,Master volume,Volume geral
 MUSIC_VOLUME,Music,Música
 SFX_VOLUME,Sound effects,Efeitos sonoros
 SOUND_IN_BACKGROUND,Sound when the game is in the background,Som com o jogo em segundo plano
+HEAD,Head,Cabeça
+HEAD_COLOR,Head color,Cor (cabeça)
+STRAW_HAT,Straw hat,Chapéu de palha
+TOP_HAT,Top hat,Cartola
+COWBOY_HAT,Cowboy hat,Chapéu de cowboy
+BEANIE,Beanie,Gorro
+WIG_CURLY,Curly wig,Peruca cacheada
+WIG_LONG,Long wig,Peruca lisa
+GLASSES_ROUND,Round,Redondo
+GLASSES_SQUARE,Square,Quadrado
+GLASSES_AVIATOR,Aviator,Aviador
+GLASSES_VISOR,Visor,Viseira
+FRAME_COLOR,Frame color,Cor da armação
+LENS,Lens,Lente
+LENS_COLOR,Lens color,Cor da lente
+LENS_COLOR_2,Lens bottom color,Cor da lente (baixo)
+OUTFIT,Outfit,Roupa
+OUTFIT_COLOR,Outfit color,Cor da roupa
+LEATHER_JACKET,Leather jacket,Jaqueta de couro
+WINTER_JACKET,Winter jacket,Jaqueta de inverno
+TANK_TOP,Tank top,Regata
+HOODIE,Hoodie,Moletom
+BACK_ITEM,On the back,Costas
+BACK_COLOR,Back item color,Cor (costas)
+BACKPACK,Backpack,Mochila
+BAG,Shoulder bag,Bolsa
+CAPE,Superhero cape,Capa de super-herói
+DOG_BAG,Bag with a puppy,Bolsa com cachorrinho
+CAT_BAG,Bag with a kitten,Bolsa com gatinho
+OSTRICH_EGG,Ostrich egg,Ovo de avestruz
+SOCKS,Socks,Meias
+CAREFUL_WATER,Careful with the water!!!!,Cuidado com a água!!!!
+HINT_WARDROBE_KEYBOARD,↑↓ choose   ←→ change   Backspace: back   Q/E or mouse: turn the swan,↑↓ escolher   ←→ mudar   Backspace: voltar   Q/E ou mouse: girar o cisne
+HINT_WARDROBE_XBOX,↑↓ choose   A/X or ←→: change   LB/RB or right stick: turn the swan,↑↓ escolher   A/X ou ←→: mudar   LB/RB ou analógico direito: girar o cisne
+HINT_WARDROBE_PLAYSTATION,↑↓ choose   Cross/Square or ←→: change   L1/R1 or right stick: turn the swan,↑↓ escolher   Cruz/Quadrado ou ←→: mudar   L1/R1 ou analógico direito: girar o cisne

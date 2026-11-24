@@ -81,8 +81,9 @@ static func _beach_profile(track: IslandTrack, i: int) -> Array:
 		[forest - 6.0, 0.04, SAND_EDGE],
 		[forest, 0.0, SAND],
 		[water - 2.0, 0.0, SAND],
-		[water + 6.0, -0.35, WET_SAND],
-		[water + 18.0, -1.4, SEA_FLOOR],
+		[water + 3.0, -0.5, WET_SAND],
+		[water + 8.0, -1.6, SEA_FLOOR],
+		[water + 16.0, -3.4, SEA_FLOOR.darkened(0.2)],
 	]
 
 
@@ -118,10 +119,10 @@ static func _build_foam(parent: Node3D, track: IslandTrack) -> void:
 		var u0 := float(i) / IslandTrack.SAMPLES * 96.0
 		var u1 := float(i + 1) / IslandTrack.SAMPLES * 96.0
 		var y := SEA_LEVEL + 0.1
-		var outer_a := track.water_line(i) + 32.0
-		var outer_b := track.water_line(i + 1) + 32.0
-		var inner_a := track.water_line(i) + 8.0
-		var inner_b := track.water_line(i + 1) + 8.0
+		var outer_a := track.water_line(i) + 26.0
+		var outer_b := track.water_line(i + 1) + 26.0
+		var inner_a := track.water_line(i) + 3.2
+		var inner_b := track.water_line(i + 1) + 3.2
 		var p := [_v3(track.edge(i, outer_a), y), _v3(track.edge(i + 1, outer_b), y),
 				_v3(track.edge(i + 1, inner_b), y), _v3(track.edge(i, inner_a), y)]
 		var uv := [Vector2(u0, 0), Vector2(u1, 0), Vector2(u1, 1), Vector2(u0, 1)]
@@ -296,8 +297,10 @@ static func _build_forest_edge(parent: Node3D, track: IslandTrack,
 				Color("e83a5a") if k % 3 else Color("ff9ac0"))
 	_scatter_edge(parent, st.commit(), 130, track, rng, 0.5, 8.0, 0.7, 1.4, true)
 
-	# Boulders with a mossy top, half buried at the forest edge.
-	_scatter_edge(parent, _boulder_mesh(true), 70, track, rng, -0.5, 5.0, 0.8, 2.2, true)
+	# Boulders with a mossy top at the forest edge, some out on the sand. Solid.
+	for boulder in _scatter_edge(parent, _boulder_mesh(true), 70, track, rng, -1.5, 5.0, 0.8, 2.2,
+			true):
+		_add_rock_obstacle(track, boulder)
 
 
 static func _scatter_forest(parent: Node3D, mesh: Mesh, count: int, track: IslandTrack,
@@ -316,13 +319,14 @@ static func _scatter_forest(parent: Node3D, mesh: Mesh, count: int, track: Islan
 
 static func _scatter_edge(parent: Node3D, mesh: Mesh, count: int, track: IslandTrack,
 		rng: RandomNumberGenerator, depth_min: float, depth_max: float, scale_min: float,
-		scale_max: float, tint: bool) -> void:
+		scale_max: float, tint: bool) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
 	for n in count:
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
 		var p := track.edge(i, track.forest_edge(i) - rng.randf_range(depth_min, depth_max))
 		transforms.append(_varied(p, 0.0, rng, scale_min, scale_max))
 	_multimesh(parent, mesh, transforms, tint, rng)
+	return transforms
 
 
 static func _add_fronds(st: SurfaceTool, top: Vector3, count: int, length: float,
@@ -377,6 +381,11 @@ static func _build_beach_details(parent: Node3D, track: IslandTrack,
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
 		var p := track.edge(i, track.forest_edge(i) + rng.randf_range(0.5, 3.0))
 		logs.append(_placed(p, 0.0, rng.randf() * TAU, rng.randf_range(0.8, 1.3)))
+		# Low and solid: run around it or jump over it.
+		var log_xform := logs[logs.size() - 1]
+		var along := Vector2(log_xform.basis.x.x, log_xform.basis.x.z)
+		for k in [-0.8, 0.0, 0.8]:
+			track.add_obstacle(p + along * k, 0.3, 0.45)
 	_multimesh(parent, wood.commit(), logs, true, rng)
 
 
@@ -390,6 +399,7 @@ static func _build_sea_life(parent: Node3D, track: IslandTrack, radius: float,
 		var p := track.edge(i, track.water_line(i) + rng.randf_range(25.0, 120.0))
 		var s := rng.randf_range(1.2, 3.5)
 		rocks.append(_varied(p, SEA_LEVEL - 0.4, rng, s, s * 1.3))
+		_add_rock_obstacle(track, rocks[rocks.size() - 1])
 		rings.append(_placed(p, SEA_LEVEL + 0.05, 0.0, s * 1.6))
 	_multimesh(parent, _boulder_mesh(false), rocks, true, rng)
 	var ring := MeshKit.begin()
@@ -542,3 +552,11 @@ static func _varied(p: Vector2, y: float, rng: RandomNumberGenerator, scale_min:
 	var tilt := Basis(Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized(),
 			rng.randf_range(0.0, 0.08))
 	return Transform3D(tilt * Basis(Vector3.UP, rng.randf() * TAU).scaled(shape), _v3(p, y))
+
+
+## A boulder blocks a circle about the size of its two stones.
+static func _add_rock_obstacle(track: IslandTrack, xform: Transform3D) -> void:
+	var size := xform.basis.get_scale()
+	var center := Vector2(xform.origin.x, xform.origin.z) \
+			+ Vector2(xform.basis.x.x, xform.basis.x.z) * 0.3
+	track.add_obstacle(center, 1.2 * maxf(size.x, size.z), 1.0 * size.y + xform.origin.y)
