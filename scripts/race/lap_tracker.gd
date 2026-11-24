@@ -18,10 +18,6 @@ func _init(p_track: IslandTrack) -> void:
 	track = p_track
 
 
-func on_track() -> bool:
-	return lateral >= IslandTrack.FOREST_EDGE and lateral <= IslandTrack.WATER_LINE
-
-
 func update(position: Vector3, tick: float, timing: bool) -> void:
 	var info := track.locate(Vector2(position.x, position.z), hint)
 	hint = info["index"]

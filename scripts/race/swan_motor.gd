@@ -5,7 +5,7 @@ extends RefCounted
 
 ## A swan, not a car: slow build-up and at most 50 km/h on the ground.
 const MAX_SPEED := 13.9 # m/s, 50 km/h
-const ACCELERATION := 4.6 # about 3 s from 0 to top speed
+const ACCELERATION := 3.1 # about 4.5 s from 0 to top speed
 const BRAKE_DECELERATION := 9.0
 const COAST_DECELERATION := 1.6
 const TURN_RATE_SLOW := 2.4 # rad/s when almost stopped

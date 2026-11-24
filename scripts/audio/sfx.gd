@@ -8,15 +8,39 @@ const RATE := 22050
 static var _cache := {}
 
 
-## Soft step on sand: a short, muffled noise burst with a low thump.
-static func footstep() -> AudioStreamWAV:
-	if not _cache.has("footstep"):
-		_cache["footstep"] = _render(0.11, func(t: float, state: Dictionary) -> float:
-			var envelope := minf(t / 0.006, 1.0) * exp(-t * 38.0)
-			state.low = lerpf(state.get("low", 0.0), randf_range(-1.0, 1.0), 0.18)
-			var thump := sin(TAU * 85.0 * t) * exp(-t * 45.0)
-			return (state.low * 1.6 + thump * 0.5) * envelope)
-	return _cache["footstep"]
+## Steps on sand: a crunch of tiny grains over a soft thud. Four takes,
+## picked at random with small pitch and volume changes, so no two match.
+static func footsteps() -> AudioStreamRandomizer:
+	if not _cache.has("footsteps"):
+		var randomizer := AudioStreamRandomizer.new()
+		randomizer.random_pitch = 1.12
+		randomizer.random_volume_offset_db = 2.0
+		for take in 4:
+			randomizer.add_stream(-1, _sand_step(take))
+		_cache["footsteps"] = randomizer
+	return _cache["footsteps"]
+
+
+static func _sand_step(take: int) -> AudioStreamWAV:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1000 + take
+	# Grain times: most of them early, as the foot presses into the sand.
+	var grains := []
+	for n in 34:
+		grains.append([pow(rng.randf(), 1.8) * 0.09, rng.randf_range(0.3, 1.0)])
+	var thud_pitch := rng.randf_range(60.0, 80.0)
+	return _render(0.13, func(t: float, state: Dictionary) -> float:
+		var grain := 0.0
+		for g: Array in grains:
+			var age: float = t - g[0]
+			if age >= 0.0 and age < 0.004:
+				grain += randf_range(-1.0, 1.0) * g[1] * (1.0 - age / 0.004)
+		# Band-limit the grains: remove the hiss and the rumble.
+		state.lp = lerpf(state.get("lp", 0.0), grain, 0.45)
+		state.slow = lerpf(state.get("slow", 0.0), state.lp, 0.04)
+		var crunch: float = state.lp - state.slow
+		var thud := sin(TAU * thud_pitch * t) * exp(-t * 40.0) * minf(t / 0.004, 1.0)
+		return crunch * 1.3 + thud * 0.35)
 
 
 ## Jump: a quick wing whoosh rising in pitch plus a light "boing".
