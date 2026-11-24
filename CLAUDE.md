@@ -114,9 +114,18 @@ prioridade.
   grafismo na borda, um cipó de folhas que cresce com a velocidade e uma pena como
   ponteiro.
 
+## Idiomas
+- **Português** se o aparelho estiver em português; **inglês** em qualquer outro caso.
+  O jogador pode escolher em Configurações → Geral → Idioma (Automático, Português,
+  English); a escolha fica salva em `user://settings.cfg`.
+- **Nenhum texto de interface fixo no código:** use chaves em
+  `translations/strings.csv` (colunas `en` e `pt`) com `tr("CHAVE")`. Ao criar texto
+  novo, adicione a chave nas duas línguas. Apelidos sorteados têm listas por idioma.
+
 ## Configurações (autoload `Settings`, `user://settings.cfg`)
 Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 `scripts/ui/settings_menu.gd`, toda navegável por controle (LB/RB ou Q/E trocam de aba).
+- **Geral:** idioma.
 - **Vídeo:** modo de tela (janela, tela cheia, tela cheia exclusiva), resolução (em
   janela), monitor, qualidade **Baixa/Média/Alta** (ou Personalizada), campo de visão.
 - **Vídeo, avançado:** mostrar FPS e frequência da tela, VSync, limite de FPS, escala de
@@ -154,7 +163,7 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - **Água:** molhado e **55% mais lento**, afunda um pouco, respinga. Não dá para ir
   para o mar aberto (limite ~26 m além da linha da água).
 - **Mato:** **bate**, a velocidade vai a **0**, balança a cabeça com estrelinhas e se
-  vira de volta para a direção da corrida.
+  vira de volta para a direção da corrida. Leva **2,5 s** para se recuperar.
 - **Nunca na contramão:** o cisne não consegue virar mais de 80° da direção da pista.
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista

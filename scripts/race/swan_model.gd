@@ -123,7 +123,7 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	var neck_lean := -0.8 * speed_ratio - 0.1 * accel + sin(_phase * 2.0 + 0.8) * 0.14 * moving
 	_neck.rotation.x = lerpf(_neck.rotation.x, neck_lean, smooth)
 	# Shake the head when dazed.
-	_daze = move_toward(_daze, 0.0, delta * 0.9)
+	_daze = move_toward(_daze, 0.0, delta / Swan.STUN_TIME)
 	_neck.rotation.y = sin(Time.get_ticks_msec() * 0.03) * 0.55 * _daze
 	_neck.rotation.z = sin(Time.get_ticks_msec() * 0.021) * 0.25 * _daze
 	_head.rotation.x = -(_neck.rotation.x + _body_pivot.rotation.x) * 0.75

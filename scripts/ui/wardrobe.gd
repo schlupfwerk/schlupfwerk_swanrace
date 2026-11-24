@@ -3,19 +3,19 @@ extends Node3D
 ## controller; mouse and touch are optional.
 
 const RACE_SCENE := "res://scenes/race.tscn"
-const STYLE_OPTIONS: PackedStringArray = ["Sólido", "Gradiente"]
+const STYLE_OPTIONS: PackedStringArray = ["SOLID", "GRADIENT"]
 const ACCESSORY_LABELS := {
-	"cap": "Boné",
-	"wig": "Peruca",
-	"glasses": "Óculos",
-	"lashes": "Cílios",
-	"makeup": "Maquiagem",
-	"necklace": "Colar",
-	"jacket": "Jaqueta",
+	"cap": "CAP",
+	"wig": "WIG",
+	"glasses": "GLASSES",
+	"lashes": "LASHES",
+	"makeup": "MAKEUP",
+	"necklace": "NECKLACE",
+	"jacket": "JACKET",
 }
 ## Footwear options, in order. "" is barefoot.
 const FOOTWEAR_OPTIONS := ["", "sneakers", "boots", "shoes", "flip_flops"]
-const FOOTWEAR_LABELS: PackedStringArray = ["Descalço", "Tênis", "Botas", "Sapatos", "Chinelo"]
+const FOOTWEAR_LABELS: PackedStringArray = ["BAREFOOT", "SNEAKERS", "BOOTS", "SHOES", "FLIP_FLOPS"]
 const DEFAULT_FOOTWEAR_COLOR := Color("e8413c")
 
 var _look: SwanLook
@@ -91,7 +91,7 @@ func _build_menu() -> void:
 	panel.add_child(column)
 
 	var title := Label.new()
-	title.text = "Seu cisne"
+	title.text = tr("WARDROBE_TITLE")
 	title.add_theme_font_size_override("font_size", 32)
 	column.add_child(title)
 
@@ -107,52 +107,52 @@ func _build_menu() -> void:
 	scroll.add_child(list)
 
 	_nickname_edit.max_length = SwanLook.NICKNAME_MAX_LENGTH
-	_nickname_edit.placeholder_text = "Apelido"
+	_nickname_edit.placeholder_text = tr("NICKNAME_PLACEHOLDER")
 	_nickname_edit.text = _look.nickname
 	_nickname_edit.custom_minimum_size.y = 40
 	_nickname_edit.text_changed.connect(_on_nickname_changed)
 	list.add_child(_nickname_edit)
 
 	var random_button := Button.new()
-	random_button.text = "Sortear apelido"
+	random_button.text = tr("RANDOM_NICKNAME")
 	random_button.custom_minimum_size.y = 40
 	random_button.pressed.connect(_on_random_nickname)
 	list.add_child(random_button)
 
-	var style_row := OptionRow.new().setup("Penas", STYLE_OPTIONS, _look.feather_style)
+	var style_row := OptionRow.new().setup(tr("FEATHERS"), _translated(STYLE_OPTIONS), _look.feather_style)
 	style_row.value_changed.connect(func(i: int) -> void:
 		_look.feather_style = i as SwanLook.FeatherStyle
 		_refresh())
 	list.add_child(style_row)
 
 	var color_row := OptionRow.new().setup(
-			"Cor das penas", SwanPalette.names, SwanPalette.closest(_look.feather_color))
+			tr("FEATHER_COLOR"), SwanPalette.display_names(), SwanPalette.closest(_look.feather_color))
 	color_row.value_changed.connect(func(i: int) -> void:
 		_look.feather_color = SwanPalette.colors[i]
 		_refresh())
 	list.add_child(color_row)
 
 	_color_2_row = OptionRow.new().setup(
-			"Cor de cima", SwanPalette.names, SwanPalette.closest(_look.feather_color_2))
+			tr("TOP_COLOR"), SwanPalette.display_names(), SwanPalette.closest(_look.feather_color_2))
 	_color_2_row.value_changed.connect(func(i: int) -> void:
 		_look.feather_color_2 = SwanPalette.colors[i]
 		_refresh())
 	list.add_child(_color_2_row)
 
 	var legs_row := OptionRow.new().setup(
-			"Patas", SwanPalette.names, SwanPalette.closest(_look.leg_color))
+			tr("LEGS"), SwanPalette.display_names(), SwanPalette.closest(_look.leg_color))
 	legs_row.value_changed.connect(func(i: int) -> void:
 		_look.leg_color = SwanPalette.colors[i]
 		_refresh())
 	list.add_child(legs_row)
 
-	var accessory_options := PackedStringArray(["Nenhum"])
-	accessory_options.append_array(SwanPalette.names)
+	var accessory_options := PackedStringArray([tr("NONE")])
+	accessory_options.append_array(SwanPalette.display_names())
 	for id: String in ACCESSORY_LABELS:
 		var current := 0
 		if _look.is_wearing(id):
 			current = SwanPalette.closest(_look.accessories[id]) + 1
-		var row := OptionRow.new().setup(ACCESSORY_LABELS[id], accessory_options, current)
+		var row := OptionRow.new().setup(tr(ACCESSORY_LABELS[id]), accessory_options, current)
 		row.value_changed.connect(_on_accessory_changed.bind(id))
 		list.add_child(row)
 
@@ -160,14 +160,14 @@ func _build_menu() -> void:
 	if footwear != "":
 		_footwear_color = _look.accessories[footwear]
 	var footwear_row := OptionRow.new().setup(
-			"Calçado", FOOTWEAR_LABELS, FOOTWEAR_OPTIONS.find(footwear))
+			tr("FOOTWEAR"), _translated(FOOTWEAR_LABELS), FOOTWEAR_OPTIONS.find(footwear))
 	footwear_row.value_changed.connect(func(i: int) -> void:
 		_look.set_footwear(FOOTWEAR_OPTIONS[i], _footwear_color)
 		_refresh())
 	list.add_child(footwear_row)
 
 	_footwear_color_row = OptionRow.new().setup(
-			"Cor do calçado", SwanPalette.names, SwanPalette.closest(_footwear_color))
+			tr("FOOTWEAR_COLOR"), SwanPalette.display_names(), SwanPalette.closest(_footwear_color))
 	_footwear_color_row.value_changed.connect(func(i: int) -> void:
 		_footwear_color = SwanPalette.colors[i]
 		_look.set_footwear(_look.footwear(), _footwear_color)
@@ -177,20 +177,20 @@ func _build_menu() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	column.add_child(buttons)
-	_race_button.text = "Correr!"
+	_race_button.text = tr("RACE")
 	_race_button.custom_minimum_size.y = 56
 	_race_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_race_button.add_theme_font_size_override("font_size", 30)
 	_race_button.pressed.connect(_on_race)
 	buttons.add_child(_race_button)
 
-	_settings_button.text = "Configurações"
+	_settings_button.text = tr("SETTINGS")
 	_settings_button.custom_minimum_size = Vector2(0, 56)
 	_settings_button.pressed.connect(_on_settings)
 	buttons.add_child(_settings_button)
 
 	var quit_button := Button.new()
-	quit_button.text = "Sair"
+	quit_button.text = tr("QUIT")
 	quit_button.custom_minimum_size = Vector2(120, 56)
 	quit_button.pressed.connect(func() -> void: get_tree().quit())
 	buttons.add_child(quit_button)
@@ -215,7 +215,7 @@ func _refresh() -> void:
 
 
 func _on_nickname_changed(new_text: String) -> void:
-	_look.nickname = new_text.strip_edges() if not new_text.strip_edges().is_empty() else "Cisne"
+	_look.nickname = new_text.strip_edges() if not new_text.strip_edges().is_empty() else tr("DEFAULT_NICKNAME")
 
 
 func _on_random_nickname() -> void:
@@ -243,9 +243,21 @@ func _update_hint() -> void:
 
 func _on_settings() -> void:
 	_panel.visible = false
+	var language := TranslationServer.get_locale()
 	var menu := SettingsMenu.new()
 	menu.closed.connect(func() -> void:
+		if TranslationServer.get_locale() != language:
+			# Rebuild every text in the new language.
+			get_tree().reload_current_scene()
+			return
 		menu.queue_free()
 		_panel.visible = true
 		_settings_button.grab_focus())
 	_layer.add_child(menu)
+
+
+static func _translated(keys: PackedStringArray) -> PackedStringArray:
+	var out := PackedStringArray()
+	for key in keys:
+		out.append(TranslationServer.translate(key))
+	return out

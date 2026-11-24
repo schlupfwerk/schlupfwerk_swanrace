@@ -53,7 +53,7 @@ func _ready() -> void:
 	add_child(fish)
 
 	_hud.swan = _swan
-	_hud.terrain_name = "Ilha Deserta"
+	_hud.terrain_name = tr("MAP_DESERT_ISLAND")
 	add_child(_hud)
 	_hud.set_best(Profile.best_lap(TRACK_ID))
 
@@ -76,7 +76,7 @@ func _process(delta: float) -> void:
 		if _countdown <= 0.0:
 			_racing = true
 			_swan.controls_enabled = true
-			_hud.show_message("Vai!", 1.0)
+			_hud.show_message(tr("GO"), 1.0)
 		else:
 			_hud.show_countdown(ceili(_countdown))
 	_hud.set_lap(_laps.lap, _laps.lap_time, _last_lap)
@@ -91,9 +91,9 @@ func _on_lap_completed(lap_time: float) -> void:
 	_last_lap = lap_time
 	if Profile.submit_lap(TRACK_ID, lap_time):
 		_hud.set_best(lap_time)
-		_hud.show_message("Melhor volta!  %s" % Hud.format_time(lap_time), 2.5)
+		_hud.show_message(tr("MSG_BEST_LAP") % Hud.format_time(lap_time), 2.5)
 	else:
-		_hud.show_message("Volta  %s" % Hud.format_time(lap_time), 2.0)
+		_hud.show_message(tr("MSG_LAP") % Hud.format_time(lap_time), 2.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:

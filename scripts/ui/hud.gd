@@ -78,13 +78,13 @@ func _process(delta: float) -> void:
 
 
 func set_lap(lap: int, lap_time: float, last_lap: float) -> void:
-	_lap_label.text = "Volta %d" % lap
+	_lap_label.text = tr("HUD_LAP") % lap
 	_time_label.text = format_time(lap_time)
-	_last_label.text = "Última  %s" % format_time(last_lap) if last_lap > 0.0 else ""
+	_last_label.text = tr("HUD_LAST") % format_time(last_lap) if last_lap > 0.0 else ""
 
 
 func set_best(best: float) -> void:
-	_best_label.text = "Melhor  %s" % format_time(best) if best > 0.0 else "Melhor  --:--.--"
+	_best_label.text = tr("HUD_BEST") % (format_time(best) if best > 0.0 else "--:--.--")
 
 
 func show_countdown(seconds: int) -> void:

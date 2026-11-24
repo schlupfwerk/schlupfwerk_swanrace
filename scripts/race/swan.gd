@@ -5,6 +5,8 @@ extends Node3D
 ## interpolates between ticks so it stays smooth at any frame rate.
 
 const TICK := 1.0 / 60.0
+## Seconds without control after bumping into the forest.
+const STUN_TIME := 2.5
 
 var brain: SwanBrain
 var look := SwanLook.new()
@@ -73,7 +75,7 @@ func _process(delta: float) -> void:
 			# Dazed after hitting the forest: no control, turn back to the race.
 			_stun -= TICK
 			intent.reset()
-			motor.heading = lerp_angle(motor.heading, _recover_heading, 0.08)
+			motor.heading = lerp_angle(motor.heading, _recover_heading, 0.05)
 		elif brain and controls_enabled:
 			brain.update_intent(intent, TICK)
 		else:
@@ -113,7 +115,7 @@ func is_stunned() -> bool:
 ## Hit the forest: stop, daze for a moment, then face `race_heading` again.
 func bump(race_heading: float) -> void:
 	motor.speed = 0.0
-	_stun = 1.1
+	_stun = STUN_TIME
 	_recover_heading = race_heading
 	model.daze()
 	_bump_player.play()

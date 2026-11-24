@@ -1,18 +1,20 @@
 class_name SettingsMenu
 extends Control
-## Video and audio settings. Fully usable with keyboard or controller:
+## General (language), video and audio settings. Fully usable with keyboard or controller:
 ## up/down to choose, left/right to change, LB/RB (Q/E) to switch tabs,
 ## B/Esc to go back. Mouse and touch are optional.
 
 signal closed
 
-const WINDOW_MODES: PackedStringArray = ["Janela", "Tela cheia", "Tela cheia exclusiva"]
-const QUALITY_NAMES: PackedStringArray = ["Baixa", "Média", "Alta", "Personalizada"]
-const OFF_ON: PackedStringArray = ["Desligado", "Ligado"]
-const VSYNC_NAMES: PackedStringArray = ["Desligado", "Ligado", "Adaptativo"]
-const SHADOW_NAMES: PackedStringArray = ["Desligadas", "Baixas", "Médias", "Altas"]
-const DETAIL_NAMES: PackedStringArray = ["Baixos", "Médios", "Altos"]
+const WINDOW_MODES: PackedStringArray = ["WINDOWED", "FULLSCREEN", "EXCLUSIVE_FULLSCREEN"]
+const QUALITY_NAMES: PackedStringArray = ["QUALITY_LOW", "QUALITY_MEDIUM", "QUALITY_HIGH", "QUALITY_CUSTOM"]
+const OFF_ON: PackedStringArray = ["OFF", "ON"]
+const VSYNC_NAMES: PackedStringArray = ["OFF", "ON", "ADAPTIVE"]
+const SHADOW_NAMES: PackedStringArray = ["SHADOWS_OFF", "SHADOWS_LOW", "SHADOWS_MEDIUM", "SHADOWS_HIGH"]
+const DETAIL_NAMES: PackedStringArray = ["DETAIL_LOW", "DETAIL_MEDIUM", "DETAIL_HIGH"]
 
+## Tab to open first (0 general, 1 video, 2 audio).
+var start_tab := 0
 var _tab := 0
 var _tab_buttons: Array[Button] = []
 var _pages: Array[Control] = []
@@ -45,16 +47,16 @@ func _ready() -> void:
 	panel.add_child(column)
 
 	var title := Label.new()
-	title.text = "Configurações"
+	title.text = tr("SETTINGS")
 	title.add_theme_font_size_override("font_size", 32)
 	column.add_child(title)
 
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 10)
 	column.add_child(tabs)
-	for tab_name in ["Vídeo", "Áudio"]:
+	for tab_name in ["TAB_GENERAL", "TAB_VIDEO", "TAB_AUDIO"]:
 		var button := Button.new()
-		button.text = tab_name
+		button.text = tr(tab_name)
 		button.toggle_mode = true
 		button.focus_mode = Control.FOCUS_NONE
 		button.custom_minimum_size = Vector2(160, 44)
@@ -62,7 +64,7 @@ func _ready() -> void:
 		tabs.add_child(button)
 		_tab_buttons.append(button)
 
-	for builder in [_build_video_page, _build_audio_page]:
+	for builder in [_build_general_page, _build_video_page, _build_audio_page]:
 		var scroll := ScrollContainer.new()
 		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		scroll.follow_focus = true
@@ -79,12 +81,12 @@ func _ready() -> void:
 	buttons.add_theme_constant_override("separation", 10)
 	column.add_child(buttons)
 	var reset := Button.new()
-	reset.text = "Restaurar padrão"
+	reset.text = tr("RESET_DEFAULTS")
 	reset.custom_minimum_size.y = 48
 	reset.pressed.connect(_on_reset)
 	buttons.add_child(reset)
 	var back := Button.new()
-	back.text = "Voltar"
+	back.text = tr("BACK")
 	back.custom_minimum_size = Vector2(160, 48)
 	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	back.pressed.connect(_close)
@@ -94,7 +96,7 @@ func _ready() -> void:
 	column.add_child(_hint)
 	InputGlyphs.changed.connect(_update_hint)
 	_update_hint()
-	_show_tab(0)
+	_show_tab(start_tab)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -129,11 +131,23 @@ func _focus_first(node: Node) -> void:
 				return
 
 
+# --- General -------------------------------------------------------------------
+
+func _build_general_page(list: VBoxContainer) -> void:
+	var names := PackedStringArray([tr("LANGUAGE_AUTO"), "Português", "English"])
+	_add_row(list, "LANGUAGE", names, maxi(Settings.LANGUAGES.find(Settings.language), 0),
+			func(i: int) -> void:
+				Settings.language = Settings.LANGUAGES[i]
+				Settings.apply_language()
+				Settings.save_settings()
+				_rebuild())
+
+
 # --- Video --------------------------------------------------------------------
 
 func _build_video_page(list: VBoxContainer) -> void:
 	if Settings.is_desktop():
-		_add_row(list, "Modo de tela", WINDOW_MODES, Settings.window_mode, func(i: int) -> void:
+		_add_row(list, "WINDOW_MODE", WINDOW_MODES, Settings.window_mode, func(i: int) -> void:
 			Settings.window_mode = i as Settings.WindowMode
 			Settings.apply_window()
 			_refresh_rows())
@@ -143,7 +157,7 @@ func _build_video_page(list: VBoxContainer) -> void:
 		for r in _resolutions:
 			labels.append("%d × %d" % [r.x, r.y])
 		var current := _resolutions.find(Settings.resolution)
-		_resolution_row = _add_row(list, "Resolução", labels, maxi(current, 0),
+		_resolution_row = _add_row(list, "RESOLUTION", labels, maxi(current, 0),
 				func(i: int) -> void:
 					Settings.resolution = _resolutions[i]
 					Settings.apply_window())
@@ -151,12 +165,12 @@ func _build_video_page(list: VBoxContainer) -> void:
 		if DisplayServer.get_screen_count() > 1:
 			var screens := PackedStringArray()
 			for i in DisplayServer.get_screen_count():
-				screens.append("Monitor %d" % (i + 1))
-			_add_row(list, "Monitor", screens, Settings.monitor, func(i: int) -> void:
+				screens.append(tr("MONITOR_N") % (i + 1))
+			_add_row(list, "MONITOR", screens, Settings.monitor, func(i: int) -> void:
 				Settings.monitor = i
 				Settings.apply_window())
 
-	_quality_row = _add_row(list, "Qualidade gráfica", QUALITY_NAMES, Settings.quality,
+	_quality_row = _add_row(list, "GRAPHICS_QUALITY", QUALITY_NAMES, Settings.quality,
 			func(i: int) -> void:
 				Settings.set_quality(i as Settings.Quality)
 				_refresh_rows())
@@ -164,7 +178,7 @@ func _build_video_page(list: VBoxContainer) -> void:
 	var fovs := PackedStringArray()
 	for value in Settings.FOV_VALUES:
 		fovs.append("%d°" % value)
-	_add_row(list, "Campo de visão", fovs, Settings.FOV_VALUES.find(Settings.fov),
+	_add_row(list, "FIELD_OF_VIEW", fovs, Settings.FOV_VALUES.find(Settings.fov),
 			func(i: int) -> void:
 				Settings.fov = Settings.FOV_VALUES[i]
 				Settings.changed.emit())
@@ -181,7 +195,7 @@ func _build_video_page(list: VBoxContainer) -> void:
 	list.add_child(_advanced_box)
 	var box := _advanced_box
 
-	_advanced_rows.show_fps = _add_row(box, "Mostrar FPS e frequência da tela", OFF_ON,
+	_advanced_rows.show_fps = _add_row(box, "SHOW_FPS", OFF_ON,
 			int(Settings.show_fps), func(i: int) -> void:
 				Settings.show_fps = i == 1
 				Settings.changed.emit())
@@ -191,30 +205,30 @@ func _build_video_page(list: VBoxContainer) -> void:
 				Settings.apply_window())
 	var limits := PackedStringArray()
 	for value in Settings.FPS_LIMITS:
-		limits.append("Sem limite" if value == 0 else str(value))
-	_advanced_rows.fps_limit = _add_row(box, "Limite de FPS", limits,
+		limits.append(tr("NO_LIMIT") if value == 0 else str(value))
+	_advanced_rows.fps_limit = _add_row(box, "FPS_LIMIT", limits,
 			Settings.FPS_LIMITS.find(Settings.fps_limit), func(i: int) -> void:
 				Settings.fps_limit = Settings.FPS_LIMITS[i]
 				Settings.apply_window())
 	var scales := PackedStringArray()
 	for value in Settings.RENDER_SCALES:
 		scales.append("%d%%" % roundi(value * 100.0))
-	_advanced_rows.render_scale = _add_row(box, "Escala de renderização", scales,
+	_advanced_rows.render_scale = _add_row(box, "RENDER_SCALE", scales,
 			Settings.RENDER_SCALES.find(Settings.render_scale), func(i: int) -> void:
 				Settings.render_scale = Settings.RENDER_SCALES[i]
 				_custom())
 	var msaa_names := PackedStringArray()
 	for value in Settings.MSAA_LEVELS:
-		msaa_names.append("Desligado" if value == 0 else "MSAA %dx" % value)
-	_advanced_rows.msaa = _add_row(box, "Antisserrilhamento", msaa_names,
+		msaa_names.append(tr("OFF") if value == 0 else "MSAA %dx" % value)
+	_advanced_rows.msaa = _add_row(box, "ANTIALIASING", msaa_names,
 			Settings.MSAA_LEVELS.find(Settings.msaa), func(i: int) -> void:
 				Settings.msaa = Settings.MSAA_LEVELS[i]
 				_custom())
-	_advanced_rows.shadows = _add_row(box, "Sombras", SHADOW_NAMES, Settings.shadows,
+	_advanced_rows.shadows = _add_row(box, "SHADOWS", SHADOW_NAMES, Settings.shadows,
 			func(i: int) -> void:
 				Settings.shadows = i
 				_custom())
-	_advanced_rows.detail = _add_row(box, "Detalhes do cenário", DETAIL_NAMES, Settings.detail,
+	_advanced_rows.detail = _add_row(box, "SCENERY_DETAIL", DETAIL_NAMES, Settings.detail,
 			func(i: int) -> void:
 				Settings.detail = i
 				_custom())
@@ -222,11 +236,11 @@ func _build_video_page(list: VBoxContainer) -> void:
 	if Settings.is_desktop():
 		var gpus := Settings.gpu_options()
 		if gpus.size() > 1:
-			var gpu_row := _add_row(box, "Placa de vídeo", gpus, Settings.gpu_index + 1,
+			var gpu_row := _add_row(box, "GPU", gpus, Settings.gpu_index + 1,
 					func(_i: int) -> void:
-						_gpu_info.text = "Reinicie para aplicar. Em uso: %s" % Settings.current_gpu_text())
+						_gpu_info.text = tr("GPU_RESTART_HINT") % Settings.current_gpu_text())
 			var restart := Button.new()
-			restart.text = "Reiniciar com a placa escolhida"
+			restart.text = tr("GPU_RESTART")
 			restart.custom_minimum_size.y = 40
 			restart.pressed.connect(func() -> void: Settings.restart_on_gpu(gpu_row.index - 1))
 			box.add_child(restart)
@@ -252,25 +266,25 @@ func _refresh_rows() -> void:
 		_advanced_rows.msaa.set_index(Settings.MSAA_LEVELS.find(Settings.msaa))
 		_advanced_rows.shadows.set_index(Settings.shadows)
 		_advanced_rows.detail.set_index(Settings.detail)
-	_advanced_button.text = "Avançado  %s" % ("▲" if _advanced_box.visible else "▼")
+	_advanced_button.text = tr("ADVANCED") + "  %s" % ("▲" if _advanced_box.visible else "▼")
 	var hz := DisplayServer.screen_get_refresh_rate(DisplayServer.window_get_current_screen())
-	_gpu_info.text = "Placa de vídeo em uso: %s\nFrequência da tela: %s" % [
-			Settings.current_gpu_text(), "%d Hz" % roundi(hz) if hz > 0.0 else "desconhecida"]
+	_gpu_info.text = "%s\n%s" % [tr("GPU_INFO") % Settings.current_gpu_text(),
+			tr("REFRESH_RATE") % ("%d Hz" % roundi(hz) if hz > 0.0 else tr("UNKNOWN"))]
 	Settings.save_settings()
 
 
 # --- Audio --------------------------------------------------------------------
 
 func _build_audio_page(list: VBoxContainer) -> void:
-	for entry in [["Volume geral", "master_volume"], ["Música", "music_volume"],
-			["Efeitos sonoros", "sfx_volume"]]:
-		var row := SliderRow.new().setup(entry[0], Settings.get(entry[1]))
+	for entry in [["MASTER_VOLUME", "master_volume"], ["MUSIC_VOLUME", "music_volume"],
+			["SFX_VOLUME", "sfx_volume"]]:
+		var row := SliderRow.new().setup(tr(entry[0]), Settings.get(entry[1]))
 		row.value_changed.connect(func(value: int) -> void:
 			Settings.set(entry[1], value)
 			Settings.apply_audio()
 			Settings.save_settings())
 		list.add_child(row)
-	_add_row(list, "Som com o jogo em segundo plano", OFF_ON,
+	_add_row(list, "SOUND_IN_BACKGROUND", OFF_ON,
 			0 if Settings.mute_in_background else 1, func(i: int) -> void:
 				Settings.mute_in_background = i == 0
 				Settings.save_settings())
@@ -280,7 +294,10 @@ func _build_audio_page(list: VBoxContainer) -> void:
 
 func _add_row(parent: Control, label: String, options: PackedStringArray, index: int,
 		on_change: Callable) -> OptionRow:
-	var row := OptionRow.new().setup(label, options, index)
+	var translated := PackedStringArray()
+	for option in options:
+		translated.append(tr(option))
+	var row := OptionRow.new().setup(tr(label), translated, index)
 	row.value_changed.connect(func(i: int) -> void:
 		on_change.call(i)
 		Settings.save_settings())
@@ -290,10 +307,15 @@ func _add_row(parent: Control, label: String, options: PackedStringArray, index:
 
 func _on_reset() -> void:
 	Settings.reset_to_defaults()
-	var parent := get_parent()
+	_rebuild()
+
+
+## Builds the menu again (new language or defaults), on the same tab.
+func _rebuild() -> void:
 	var replacement := SettingsMenu.new()
+	replacement.start_tab = _tab
 	replacement.closed.connect(func() -> void: closed.emit())
-	parent.add_child(replacement)
+	get_parent().add_child(replacement)
 	queue_free()
 
 
@@ -303,12 +325,4 @@ func _close() -> void:
 
 
 func _update_hint() -> void:
-	var tabs: String
-	match InputGlyphs.kind:
-		InputGlyphs.Kind.XBOX:
-			tabs = "LB/RB: abas   B: voltar"
-		InputGlyphs.Kind.PLAYSTATION:
-			tabs = "L1/R1: abas   Círculo: voltar"
-		_:
-			tabs = "Q/E: abas   Esc: voltar"
-	_hint.text = "%s   %s" % [InputGlyphs.menu_hint(), tabs]
+	_hint.text = "%s   %s" % [InputGlyphs.menu_hint(), InputGlyphs.tabs_hint()]

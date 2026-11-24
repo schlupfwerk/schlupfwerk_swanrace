@@ -29,23 +29,25 @@ func _input(event: InputEvent) -> void:
 
 
 func race_hint() -> String:
-	match kind:
-		Kind.XBOX:
-			return "Analógico: virar   RT: acelerar   LT: frear   A: pular   Start: menu"
-		Kind.PLAYSTATION:
-			return "Analógico: virar   R2: acelerar   L2: frear   Cruz: pular   Options: menu"
-		_:
-			return "WASD ou setas: mover   Espaço: pular   Esc: menu"
+	return tr("HINT_RACE_" + _suffix())
 
 
 func menu_hint() -> String:
+	return tr("HINT_MENU_" + _suffix())
+
+
+func tabs_hint() -> String:
+	return tr("HINT_TABS_" + _suffix())
+
+
+func _suffix() -> String:
 	match kind:
 		Kind.XBOX:
-			return "↑↓ escolher   ←→ mudar   A: confirmar"
+			return "XBOX"
 		Kind.PLAYSTATION:
-			return "↑↓ escolher   ←→ mudar   Cruz: confirmar"
+			return "PLAYSTATION"
 		_:
-			return "↑↓ escolher   ←→ mudar   Enter: confirmar"
+			return "KEYBOARD"
 
 
 static func _pad_kind(device: int) -> Kind:

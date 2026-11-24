@@ -1,0 +1,115 @@
+keys,en,pt
+DEFAULT_NICKNAME,Swan,Cisne
+WARDROBE_TITLE,Your swan,Seu cisne
+NICKNAME_PLACEHOLDER,Nickname,Apelido
+RANDOM_NICKNAME,Random nickname,Sortear apelido
+FEATHERS,Feathers,Penas
+SOLID,Solid,Sólido
+GRADIENT,Gradient,Gradiente
+FEATHER_COLOR,Feather color,Cor das penas
+TOP_COLOR,Top color,Cor de cima
+LEGS,Legs,Patas
+CAP,Cap,Boné
+WIG,Wig,Peruca
+GLASSES,Glasses,Óculos
+LASHES,Lashes,Cílios
+MAKEUP,Makeup,Maquiagem
+NECKLACE,Necklace,Colar
+JACKET,Jacket,Jaqueta
+NONE,None,Nenhum
+FOOTWEAR,Footwear,Calçado
+FOOTWEAR_COLOR,Footwear color,Cor do calçado
+BAREFOOT,Barefoot,Descalço
+SNEAKERS,Sneakers,Tênis
+BOOTS,Boots,Botas
+SHOES,Shoes,Sapatos
+FLIP_FLOPS,Flip-flops,Chinelo
+RACE,Race!,Correr!
+SETTINGS,Settings,Configurações
+QUIT,Quit,Sair
+BACK,Back,Voltar
+RESET_DEFAULTS,Restore defaults,Restaurar padrão
+COLOR_WHITE,White,Branco
+COLOR_CREAM,Cream,Creme
+COLOR_BLACK,Black,Preto
+COLOR_GRAY,Gray,Cinza
+COLOR_PINK,Pink,Rosa
+COLOR_RED,Red,Vermelho
+COLOR_ORANGE,Orange,Laranja
+COLOR_YELLOW,Yellow,Amarelo
+COLOR_GOLD,Gold,Dourado
+COLOR_GREEN,Green,Verde
+COLOR_MINT,Mint,Menta
+COLOR_SKY_BLUE,Sky blue,Azul-céu
+COLOR_BLUE,Blue,Azul
+COLOR_PURPLE,Purple,Roxo
+COLOR_BROWN,Brown,Marrom
+MAP_DESERT_ISLAND,Desert Island,Ilha Deserta
+HUD_LAP,Lap %d,Volta %d
+HUD_LAST,Last  %s,Última  %s
+HUD_BEST,Best  %s,Melhor  %s
+GO,Go!,Vai!
+MSG_BEST_LAP,Best lap!  %s,Melhor volta!  %s
+MSG_LAP,Lap  %s,Volta  %s
+HINT_RACE_KEYBOARD,WASD or arrows: move   Space: jump   Esc: menu,WASD ou setas: mover   Espaço: pular   Esc: menu
+HINT_RACE_XBOX,Stick: steer   RT: accelerate   LT: brake   A: jump   Start: menu,Analógico: virar   RT: acelerar   LT: frear   A: pular   Start: menu
+HINT_RACE_PLAYSTATION,Stick: steer   R2: accelerate   L2: brake   Cross: jump   Options: menu,Analógico: virar   R2: acelerar   L2: frear   Cruz: pular   Options: menu
+HINT_MENU_KEYBOARD,↑↓ choose   ←→ change   Enter: confirm,↑↓ escolher   ←→ mudar   Enter: confirmar
+HINT_MENU_XBOX,↑↓ choose   ←→ change   A: confirm,↑↓ escolher   ←→ mudar   A: confirmar
+HINT_MENU_PLAYSTATION,↑↓ choose   ←→ change   Cross: confirm,↑↓ escolher   ←→ mudar   Cruz: confirmar
+HINT_TABS_KEYBOARD,Q/E: tabs   Esc: back,Q/E: abas   Esc: voltar
+HINT_TABS_XBOX,LB/RB: tabs   B: back,LB/RB: abas   B: voltar
+HINT_TABS_PLAYSTATION,L1/R1: tabs   Circle: back,L1/R1: abas   Círculo: voltar
+TAB_GENERAL,General,Geral
+TAB_VIDEO,Video,Vídeo
+TAB_AUDIO,Audio,Áudio
+LANGUAGE,Language,Idioma
+LANGUAGE_AUTO,Automatic (device),Automático (do aparelho)
+WINDOW_MODE,Display mode,Modo de tela
+WINDOWED,Windowed,Janela
+FULLSCREEN,Fullscreen,Tela cheia
+EXCLUSIVE_FULLSCREEN,Exclusive fullscreen,Tela cheia exclusiva
+RESOLUTION,Resolution,Resolução
+MONITOR,Monitor,Monitor
+MONITOR_N,Monitor %d,Monitor %d
+GRAPHICS_QUALITY,Graphics quality,Qualidade gráfica
+QUALITY_LOW,Low,Baixa
+QUALITY_MEDIUM,Medium,Média
+QUALITY_HIGH,High,Alta
+QUALITY_CUSTOM,Custom,Personalizada
+FIELD_OF_VIEW,Field of view,Campo de visão
+ADVANCED,Advanced,Avançado
+SHOW_FPS,Show FPS and refresh rate,Mostrar FPS e frequência da tela
+OFF,Off,Desligado
+ON,On,Ligado
+ADAPTIVE,Adaptive,Adaptativo
+VSYNC,VSync,VSync
+FPS_LIMIT,FPS limit,Limite de FPS
+NO_LIMIT,No limit,Sem limite
+RENDER_SCALE,Render scale,Escala de renderização
+ANTIALIASING,Anti-aliasing,Antisserrilhamento
+SHADOWS,Shadows,Sombras
+SHADOWS_OFF,Off,Desligadas
+SHADOWS_LOW,Low,Baixas
+SHADOWS_MEDIUM,Medium,Médias
+SHADOWS_HIGH,High,Altas
+SCENERY_DETAIL,Scenery detail,Detalhes do cenário
+DETAIL_LOW,Low,Baixos
+DETAIL_MEDIUM,Medium,Médios
+DETAIL_HIGH,High,Altos
+GPU,Graphics card,Placa de vídeo
+GPU_AUTO,Automatic (dedicated),Automática (dedicada)
+GPU_N,Card %d,Placa %d
+GPU_RESTART,Restart with the chosen card,Reiniciar com a placa escolhida
+GPU_RESTART_HINT,Restart to apply. In use: %s,Reinicie para aplicar. Em uso: %s
+GPU_INFO,Graphics card in use: %s,Placa de vídeo em uso: %s
+REFRESH_RATE,Screen refresh rate: %s,Frequência da tela: %s
+UNKNOWN,unknown,desconhecida
+GPU_DISCRETE,dedicated,dedicada
+GPU_INTEGRATED,integrated,integrada
+GPU_VIRTUAL,virtual,virtual
+GPU_CPU,processor,processador
+MASTER_VOLUME,Master volume,Volume geral
+MUSIC_VOLUME,Music,Música
+SFX_VOLUME,Sound effects,Efeitos sonoros
+SOUND_IN_BACKGROUND,Sound when the game is in the background,Som com o jogo em segundo plano

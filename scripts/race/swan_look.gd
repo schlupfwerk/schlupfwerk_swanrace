@@ -14,7 +14,7 @@ const ACCESSORY_IDS := [
 ]
 const NICKNAME_MAX_LENGTH := 16
 
-@export var nickname := "Cisne"
+@export var nickname := TranslationServer.translate("DEFAULT_NICKNAME")
 @export var feather_style := FeatherStyle.SOLID
 @export var feather_color := Color("f7f5ee")
 ## Top color when feather_style is GRADIENT.

@@ -23,12 +23,18 @@ const FOV_VALUES := [60, 65, 70, 75, 80, 85, 90]
 const DETAIL_RATIOS := [0.35, 0.7, 1.0]
 ## Shadow distance per shadow level (0 = off).
 const SHADOW_DISTANCES := [0.0, 40.0, 60.0, 90.0]
+## Language choices: "" follows the device (Portuguese if it is in Portuguese,
+## otherwise English).
+const LANGUAGES := ["", "pt", "en"]
+
 const PRESETS := {
 	Quality.LOW: {"render_scale": 0.75, "msaa": 0, "shadows": 0, "detail": 0},
 	Quality.MEDIUM: {"render_scale": 1.0, "msaa": 2, "shadows": 1, "detail": 1},
 	Quality.HIGH: {"render_scale": 1.0, "msaa": 4, "shadows": 3, "detail": 2},
 }
 
+# General
+var language := ""
 # Video
 var window_mode := WindowMode.WINDOWED
 var resolution := Vector2i(1280, 720)
@@ -62,10 +68,24 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_set_platform_defaults()
 	load_settings()
+	apply_language()
 	if _apply_gpu_choice():
 		return
 	apply_all()
 	_build_fps_overlay()
+
+
+## Sets the game language: the saved choice, or the device language.
+func apply_language() -> void:
+	TranslationServer.set_locale(current_language())
+	changed.emit()
+
+
+## "pt" or "en".
+func current_language() -> String:
+	if language != "":
+		return language
+	return "pt" if OS.get_locale_language() == "pt" else "en"
 
 
 func apply_all() -> void:
@@ -201,10 +221,10 @@ func _notification(what: int) -> void:
 ## Name and kind of the GPU in use, e.g. "NVIDIA GeForce RTX 5060 (dedicada)".
 func current_gpu_text() -> String:
 	var kinds := {
-		RenderingDevice.DEVICE_TYPE_DISCRETE_GPU: "dedicada",
-		RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU: "integrada",
-		RenderingDevice.DEVICE_TYPE_VIRTUAL_GPU: "virtual",
-		RenderingDevice.DEVICE_TYPE_CPU: "processador",
+		RenderingDevice.DEVICE_TYPE_DISCRETE_GPU: tr("GPU_DISCRETE"),
+		RenderingDevice.DEVICE_TYPE_INTEGRATED_GPU: tr("GPU_INTEGRATED"),
+		RenderingDevice.DEVICE_TYPE_VIRTUAL_GPU: tr("GPU_VIRTUAL"),
+		RenderingDevice.DEVICE_TYPE_CPU: tr("GPU_CPU"),
 	}
 	var kind: String = kinds.get(RenderingServer.get_video_adapter_type(), "")
 	var adapter := RenderingServer.get_video_adapter_name()
@@ -213,9 +233,9 @@ func current_gpu_text() -> String:
 
 ## Option labels for the GPU row: automatic, then one per installed GPU.
 func gpu_options() -> PackedStringArray:
-	var options := PackedStringArray(["Automática (dedicada)"])
+	var options := PackedStringArray([tr("GPU_AUTO")])
 	for i in _gpu_count():
-		options.append(_known_gpus.get(i, "Placa %d" % (i + 1)))
+		options.append(_known_gpus.get(i, tr("GPU_N") % (i + 1)))
 	return options
 
 
@@ -331,6 +351,7 @@ func _process(delta: float) -> void:
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("meta", "version", SAVE_VERSION)
+	cfg.set_value("general", "language", language)
 	for key in ["window_mode", "resolution", "monitor", "quality", "render_scale", "msaa",
 			"shadows", "detail", "vsync", "fps_limit", "show_fps", "fov", "gpu_index"]:
 		cfg.set_value("video", key, get(key))
@@ -347,6 +368,7 @@ func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) != OK:
 		return
+	language = _pick(cfg.get_value("general", "language", language), LANGUAGES, "")
 	window_mode = clampi(cfg.get_value("video", "window_mode", window_mode), 0, 2) as WindowMode
 	var saved_resolution = cfg.get_value("video", "resolution", resolution)
 	if saved_resolution is Vector2i and saved_resolution.x >= 640 and saved_resolution.y >= 360:
