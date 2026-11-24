@@ -1,6 +1,6 @@
 # Swan Race *(working title)*
 
-A light 3D racing game for Android and iOS, made with Godot by **Schlupfwerk**.
+A light 3D racing game for Android, iOS and PC (Steam: Windows, Linux/Steam Deck and macOS), made with Godot by **Schlupfwerk**.
 Race as a swan through four kinds of terrain in a single run:
 
 1. **Downhill**: slide down a mountain at full speed
@@ -17,10 +17,11 @@ Janeiro, with more to come.
 
 - **Offline first**: plays fully offline against AI swans with their own
   personalities.
-- **No ads, no data collection.** Online leaderboards (Game Center and Google
-  Play Games) and multiplayer will be optional.
-- **Fair monetization**: cosmetic skins only, plus an optional tip. Nothing
-  that affects the race.
+- **No ads, no data collection.** Online leaderboards (Game Center, Google
+  Play Games and Steam) and multiplayer will be optional.
+- **No paid items**: skins are earned by playing. The only purchase is an
+  optional tip, which unlocks nothing.
+- **Your progress follows you** through your Google, Apple or Steam account.
 - **Family friendly.**
 
 ## Controls
@@ -34,6 +35,10 @@ Janeiro, with more to come.
 
 Steering can also use the phone's tilt (optional, with calibration).
 
+Play with touch, keyboard or a controller (Xbox, PlayStation and generic
+Bluetooth controllers, also on phones). Switch any time: the game follows
+whatever you use.
+
 ## Status
 
 🥚 Early development: still inside the egg. Nothing playable yet.
@@ -44,6 +49,7 @@ Requirements will be listed here as the project grows:
 - Godot 4.x (exact version to be pinned)
 - Android: Android SDK and JDK, as described in Godot's export docs
 - iOS: a Mac with Xcode
+- PC: Windows, Linux/SteamOS and macOS exports from Godot, published on Steam
 
 ## Contributing
 
@@ -61,7 +67,7 @@ first.
 
 ## 🇧🇷 Português
 
-Jogo de corrida 3D leve para Android e iOS, feito em Godot pela
+Jogo de corrida 3D leve para Android, iOS e PC (Steam), feito em Godot pela
 **Schlupfwerk**. Você corre como um cisne por quatro terrenos numa mesma
 corrida: **descida** de montanha, **corrida**, **nado** (com decolagem correndo
 sobre a água) e **voo** até a linha de chegada. As pistas são inspiradas na
@@ -70,7 +76,11 @@ Suíça, na Alemanha e no Rio de Janeiro.
 - Funciona **offline**, contra cisnes controlados por IA.
 - **Sem anúncios e sem coleta de dados.** Placares e multiplayer serão
   opcionais.
-- Monetização **só com skins cosméticas** e uma gorjeta opcional.
+- **Sem itens pagos:** as skins são ganhas jogando. A única compra é uma
+  gorjeta opcional, que não libera nada.
+- O progresso acompanha você pela sua conta Google, Apple ou Steam.
+- Jogue com toque, teclado ou controle (Xbox, PlayStation e controles
+  Bluetooth genéricos, inclusive no celular), trocando quando quiser.
 - Feito para **toda a família**.
 
 O código é **GPLv3** (com permissão extra para lojas de apps), os assets são
