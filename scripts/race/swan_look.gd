@@ -6,7 +6,12 @@ extends Resource
 enum FeatherStyle { SOLID, GRADIENT }
 
 ## Stable item ids (ADR 0012). Never rename an id: saves refer to them.
-const ACCESSORY_IDS := ["cap", "wig", "makeup", "jacket", "sneakers"]
+## Footwear is one slot: at most one pair is worn; none means barefoot.
+const FOOTWEAR_IDS := ["sneakers", "boots", "shoes", "flip_flops"]
+const ACCESSORY_IDS := [
+	"cap", "wig", "glasses", "lashes", "makeup", "necklace", "jacket",
+	"sneakers", "boots", "shoes", "flip_flops",
+]
 const NICKNAME_MAX_LENGTH := 16
 
 @export var nickname := "Cisne"
@@ -21,6 +26,22 @@ const NICKNAME_MAX_LENGTH := 16
 
 func is_wearing(id: String) -> bool:
 	return accessories.has(id)
+
+
+## The footwear id being worn, or "" when barefoot.
+func footwear() -> String:
+	for id: String in FOOTWEAR_IDS:
+		if accessories.has(id):
+			return id
+	return ""
+
+
+## Puts on one pair (removing any other), or goes barefoot with id "".
+func set_footwear(id: String, color: Color) -> void:
+	for other: String in FOOTWEAR_IDS:
+		accessories.erase(other)
+	if id in FOOTWEAR_IDS:
+		accessories[id] = color
 
 
 func to_dict() -> Dictionary:
@@ -49,7 +70,10 @@ static func from_dict(data: Dictionary) -> SwanLook:
 	if worn is Dictionary:
 		for id in worn:
 			if id in ACCESSORY_IDS:
-				look.accessories[id] = _color(worn[id], Color.WHITE)
+				if id in FOOTWEAR_IDS:
+					look.set_footwear(id, _color(worn[id], Color.WHITE))
+				else:
+					look.accessories[id] = _color(worn[id], Color.WHITE)
 	return look
 
 

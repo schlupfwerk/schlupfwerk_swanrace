@@ -30,7 +30,7 @@ func _process(delta: float) -> void:
 	_yaw = lerp_angle(_yaw, target.rotation.y, 1.0 - exp(-5.0 * delta))
 	_height = lerpf(_height, target.global_position.y * JUMP_FOLLOW, 1.0 - exp(-6.0 * delta))
 	_place()
-	var target_fov := 68.0 + 14.0 * target.motor.speed_ratio()
+	var target_fov := 68.0 + 8.0 * target.motor.speed_ratio()
 	fov = lerpf(fov, target_fov, 1.0 - exp(-4.0 * delta))
 
 

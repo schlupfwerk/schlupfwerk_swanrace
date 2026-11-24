@@ -84,16 +84,31 @@ prioridade.
 - **Personalização** (tudo só visual):
   - penas em **cor sólida ou gradiente** (cor de baixo → cor de cima);
   - cor das **patas**;
-  - acessórios: **boné, peruca, maquiagem, jaqueta e tênis**, cada um com cor. Com a
-    jaqueta, as asas viram as mangas; com o tênis, os pés somem.
+  - acessórios: **boné, peruca, óculos, cílios, maquiagem, colar e jaqueta**, cada um
+    com cor. Com a jaqueta, as asas viram as mangas.
+  - **calçado** (um por vez): **descalço, tênis, botas, sapatos ou chinelo**, com cor.
+    Calçado fechado esconde os pés; o chinelo deixa os pés à mostra.
   - cores escolhidas de uma **paleta** (esquerda/direita), para funcionar no controle.
 - **Apelido** de até 16 caracteres, com botão de sortear (para quem está sem teclado).
   Aparece acima do cisne e no HUD.
 - **Todos os cisnes têm exatamente a mesma habilidade.** Não existem cisnes mais
   rápidos, mais leves ou com atributos diferentes; os números do movimento são os
   mesmos para todos (`SwanMotor`).
+- **É um cisne, não um carro:** no chão, no máximo **50 km/h**, chegando lá em uns
+  **3 s**. Passadas longas, pernas afastadas.
 - **Efeitos:** ao **acelerar**, solta um rastro de fumaça/poeira; ao **frear**, abre as
-  asas e solta um vento.
+  asas e solta um vento; ao **cair de um pulo**, o corpo achata e solta um anel de poeira.
+- **Sons:** passos (um por passada, mais fortes com a velocidade), pulo e aterrissagem.
+  Por enquanto são sintetizados no código (`scripts/audio/sfx.gd`), sem arquivos.
+- **HUD com cara de selva, nunca de carro:** o velocímetro é um disco de madeira com
+  grafismo na borda, um cipó de folhas que cresce com a velocidade e uma pena como
+  ponteiro.
+
+## Áudio
+- Barramentos: `Master`, `Music` e `SFX` (`default_bus_layout.tres`).
+- **Música:** cada país/pista terá a sua, **sem direitos autorais** (licença compatível,
+  com entrada em `assets/CREDITS.md`). A primeira pista, na praia, pede algo que lembre
+  praia. O dono do projeto escolhe as músicas; não adicione música por conta própria.
 
 ## Pistas
 Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:

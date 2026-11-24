@@ -7,15 +7,23 @@ const STYLE_OPTIONS: PackedStringArray = ["Sólido", "Gradiente"]
 const ACCESSORY_LABELS := {
 	"cap": "Boné",
 	"wig": "Peruca",
+	"glasses": "Óculos",
+	"lashes": "Cílios",
 	"makeup": "Maquiagem",
+	"necklace": "Colar",
 	"jacket": "Jaqueta",
-	"sneakers": "Tênis",
 }
+## Footwear options, in order. "" is barefoot.
+const FOOTWEAR_OPTIONS := ["", "sneakers", "boots", "shoes", "flip_flops"]
+const FOOTWEAR_LABELS: PackedStringArray = ["Descalço", "Tênis", "Botas", "Sapatos", "Chinelo"]
+const DEFAULT_FOOTWEAR_COLOR := Color("e8413c")
 
 var _look: SwanLook
 var _model := SwanModel.new()
 var _nickname_edit := LineEdit.new()
 var _color_2_row: OptionRow
+var _footwear_color_row: OptionRow
+var _footwear_color := DEFAULT_FOOTWEAR_COLOR
 var _hint := Label.new()
 var _race_button := Button.new()
 
@@ -135,13 +143,31 @@ func _build_menu() -> void:
 
 	var accessory_options := PackedStringArray(["Nenhum"])
 	accessory_options.append_array(SwanPalette.names)
-	for id: String in SwanLook.ACCESSORY_IDS:
+	for id: String in ACCESSORY_LABELS:
 		var current := 0
 		if _look.is_wearing(id):
 			current = SwanPalette.closest(_look.accessories[id]) + 1
 		var row := OptionRow.new().setup(ACCESSORY_LABELS[id], accessory_options, current)
 		row.value_changed.connect(_on_accessory_changed.bind(id))
 		list.add_child(row)
+
+	var footwear := _look.footwear()
+	if footwear != "":
+		_footwear_color = _look.accessories[footwear]
+	var footwear_row := OptionRow.new().setup(
+			"Calçado", FOOTWEAR_LABELS, FOOTWEAR_OPTIONS.find(footwear))
+	footwear_row.value_changed.connect(func(i: int) -> void:
+		_look.set_footwear(FOOTWEAR_OPTIONS[i], _footwear_color)
+		_refresh())
+	list.add_child(footwear_row)
+
+	_footwear_color_row = OptionRow.new().setup(
+			"Cor do calçado", SwanPalette.names, SwanPalette.closest(_footwear_color))
+	_footwear_color_row.value_changed.connect(func(i: int) -> void:
+		_footwear_color = SwanPalette.colors[i]
+		_look.set_footwear(_look.footwear(), _footwear_color)
+		_refresh())
+	list.add_child(_footwear_color_row)
 
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
@@ -167,6 +193,7 @@ func _build_menu() -> void:
 
 func _refresh() -> void:
 	_color_2_row.disabled = _look.feather_style != SwanLook.FeatherStyle.GRADIENT
+	_footwear_color_row.disabled = _look.footwear() == ""
 	_model.apply_look(_look)
 
 

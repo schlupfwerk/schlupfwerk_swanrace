@@ -4,6 +4,9 @@ extends Node3D
 ## Origin on the ground between the feet, facing -Z.
 ## Visual only: nothing here affects movement or collisions.
 
+## A foot touched the ground while running. `strength` is 0..1 (speed).
+signal stepped(strength: float)
+
 const FEATHER_SHADER := preload("res://shaders/feather.gdshader")
 
 const BODY_HEIGHT := 1.15
@@ -29,6 +32,10 @@ var _wind: Array[CPUParticles3D] = []
 var _phase := 0.0
 var _wing_open := 0.0
 var _jacket_on := false
+var _land_dust: CPUParticles3D
+## Landing squash and take-off stretch, 1 right after the event, fading to 0.
+var _squash := 0.0
+var _stretch := 0.0
 
 
 func _init() -> void:
@@ -54,8 +61,10 @@ func apply_look(look: SwanLook) -> void:
 			mesh.visible = worn
 		if worn:
 			(_accessory_mats[id] as StandardMaterial3D).albedo_color = look.accessories[id]
+	# Closed footwear hides the bare feet; flip-flops show them.
+	var footwear := look.footwear()
 	for foot in _bare_feet:
-		foot.visible = not look.is_wearing("sneakers")
+		foot.visible = footwear == "" or footwear == "flip_flops"
 	# With a jacket on, the wings become its sleeves.
 	_jacket_on = look.is_wearing("jacket")
 	for wing in _wing_meshes:
@@ -67,11 +76,16 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 		braking: bool, on_ground: bool) -> void:
 	var moving := clampf(speed_ratio * 2.0, 0.0, 1.0)
 	if on_ground:
-		_phase += (5.0 + 11.0 * speed_ratio) * delta * moving
-		var swing := sin(_phase) * 0.9 * moving
+		var previous_phase := _phase
+		# Long, bouncy strides: few steps per second, big swing.
+		_phase += (3.2 + 5.5 * speed_ratio) * delta * moving
+		# One step every half stride.
+		if moving > 0.1 and floori(_phase / PI) != floori(previous_phase / PI):
+			stepped.emit(moving)
+		var swing := sin(_phase) * 1.15 * moving
 		_leg_l.rotation.x = lerpf(_leg_l.rotation.x, swing, 1.0 - exp(-25.0 * delta))
 		_leg_r.rotation.x = lerpf(_leg_r.rotation.x, -swing, 1.0 - exp(-25.0 * delta))
-		var bob := absf(sin(_phase)) * 0.07 * moving
+		var bob := absf(sin(_phase)) * 0.1 * moving
 		var breathe := sin(Time.get_ticks_msec() * 0.003) * 0.015 * (1.0 - moving)
 		_body_pivot.position.y = BODY_HEIGHT + bob + breathe
 	else:
@@ -93,7 +107,27 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_smoke.emitting = on_ground and accel > 0.2 and speed_ratio > 0.05
 	for wind in _wind:
 		wind.emitting = braking and _wing_open > 0.6
+	# Squash on landing, stretch on take-off.
+	_squash = move_toward(_squash, 0.0, delta * 4.0)
+	_stretch = move_toward(_stretch, 0.0, delta * 3.0)
+	var squash := _squash * _squash
+	var stretch := sin(_stretch * PI)
+	_body_pivot.scale = Vector3(1.0 + 0.16 * squash - 0.06 * stretch,
+			1.0 - 0.24 * squash + 0.12 * stretch, 1.0 + 0.16 * squash - 0.06 * stretch)
+	_body_pivot.position.y -= 0.14 * squash
 	_feather_mat.set_shader_parameter("root_y", global_position.y)
+
+
+## Called when the swan touches the ground after a jump.
+func land(strength: float) -> void:
+	_squash = clampf(strength, 0.4, 1.0)
+	_land_dust.amount = 10 + int(14 * _squash)
+	_land_dust.restart()
+
+
+## Called when the swan jumps.
+func take_off() -> void:
+	_stretch = 1.0
 
 
 # --- Building -----------------------------------------------------------
@@ -141,7 +175,7 @@ func _build_wings() -> void:
 func _build_legs() -> void:
 	for side in [-1.0, 1.0]:
 		var pivot := _leg_l if side < 0 else _leg_r
-		pivot.position = Vector3(0.2 * side, 0.85, 0.05)
+		pivot.position = Vector3(0.3 * side, 0.85, 0.05)
 		add_child(pivot)
 		# Fluffy thigh, like an ostrich.
 		_sphere(pivot, 0.13, Vector3(1.0, 1.3, 1.0), Vector3(0, 0.02, 0), _feather_mat)
@@ -155,7 +189,6 @@ func _build_accessories() -> void:
 		_accessory_meshes[id] = []
 		_accessory_mats[id] = _toon(Color.WHITE)
 	var white := _toon(Color("f4f4f4"))
-	var black := _toon(Color("151518"))
 
 	# Cap.
 	var cap_mat: StandardMaterial3D = _accessory_mats["cap"]
@@ -181,19 +214,59 @@ func _build_accessories() -> void:
 			Vector3(0, 0.02, 0.2), Vector3(-0.06, 0.2, -0.08), Vector3(0.06, 0.2, -0.08)]:
 		_wear("wig", _sphere(_head, 0.1, Vector3.ONE, p, wig_mat, Vector3.ZERO, 10, 6))
 
-	# Makeup: blush, eye shadow and lashes.
+	# Makeup: blush and eye shadow.
 	var makeup_mat: StandardMaterial3D = _accessory_mats["makeup"]
 	for side in [-1.0, 1.0]:
 		_wear("makeup", _sphere(_head, 0.055, Vector3(0.35, 0.8, 1.0),
 				Vector3(0.185 * side, -0.05, -0.08), makeup_mat))
 		_wear("makeup", _sphere(_head, 0.07, Vector3(1.0, 0.6, 1.0),
 				Vector3(0.115 * side, 0.1, -0.1), makeup_mat))
+
+	# Lashes: three long curved lashes over each eye.
+	var lash_mat: StandardMaterial3D = _accessory_mats["lashes"]
+	for side in [-1.0, 1.0]:
 		for i in 3:
-			var lash := BoxMesh.new()
-			lash.size = Vector3(0.012, 0.06, 0.012)
-			_wear("makeup", _add(_head, lash,
-					Vector3((0.13 + 0.02 * i) * side, 0.135, -0.14 - 0.012 * i), Vector3.ONE, black,
-					Vector3(0, 0, -0.4 * side * (i + 1) / 3.0)))
+			_wear("lashes", _add(_head, _box(Vector3(0.014, 0.075, 0.014)),
+					Vector3((0.125 + 0.022 * i) * side, 0.14, -0.13 - 0.014 * i), Vector3.ONE,
+					lash_mat, Vector3(0.3, 0, -0.45 * side * (i + 1) / 3.0)))
+
+	# Glasses: round frames in front of the eyes, a bridge and the arms.
+	var glasses_mat: StandardMaterial3D = _accessory_mats["glasses"]
+	var lens := _toon(Color(0.75, 0.9, 1.0, 0.35))
+	lens.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	for side in [-1.0, 1.0]:
+		var frame := TorusMesh.new()
+		frame.inner_radius = 0.06
+		frame.outer_radius = 0.078
+		frame.rings = 16
+		frame.ring_segments = 6
+		_wear("glasses", _add(_head, frame, Vector3(0.1 * side, 0.06, -0.205), Vector3.ONE,
+				glasses_mat, Vector3(PI / 2, 0, 0)))
+		var glass := CylinderMesh.new()
+		glass.top_radius = 0.062
+		glass.bottom_radius = 0.062
+		glass.height = 0.005
+		glass.radial_segments = 16
+		glass.rings = 1
+		_wear("glasses", _add(_head, glass, Vector3(0.1 * side, 0.06, -0.205), Vector3.ONE, lens,
+				Vector3(PI / 2, 0, 0)))
+		_wear("glasses", _add(_head, _box(Vector3(0.015, 0.015, 0.2)),
+				Vector3(0.185 * side, 0.07, -0.11), Vector3.ONE, glasses_mat))
+	_wear("glasses", _add(_head, _box(Vector3(0.05, 0.015, 0.015)), Vector3(0, 0.07, -0.215),
+			Vector3.ONE, glasses_mat))
+
+	# Necklace: a thin ring around the neck with a round pendant.
+	var necklace_mat: StandardMaterial3D = _accessory_mats["necklace"]
+	necklace_mat.metallic = 0.6
+	var chain := TorusMesh.new()
+	chain.inner_radius = 0.145
+	chain.outer_radius = 0.17
+	chain.rings = 20
+	chain.ring_segments = 6
+	_wear("necklace", _add(_body_pivot, chain, Vector3(0, 0.6, -0.55), Vector3.ONE, necklace_mat,
+			Vector3(-0.6, 0, 0)))
+	_wear("necklace", _sphere(_body_pivot, 0.04, Vector3(1, 1, 0.5), Vector3(0, 0.5, -0.71),
+			necklace_mat, Vector3(-0.6, 0, 0)))
 
 	# Jacket: shell over the body, collar and zipper. Wings become sleeves.
 	var jacket_mat: StandardMaterial3D = _accessory_mats["jacket"]
@@ -211,22 +284,48 @@ func _build_accessories() -> void:
 	_wear("jacket", _add(_body_pivot, zipper, Vector3(0, 0.02, -0.66), Vector3.ONE,
 			_toon(Color("3a3a40")), Vector3(-0.5, 0, 0)))
 
-	# Sneakers replace the bare feet.
-	var shoe_mat: StandardMaterial3D = _accessory_mats["sneakers"]
+	# Footwear: one pair at a time (see SwanLook.FOOTWEAR_IDS).
+	var dark_sole := _toon(Color("3b2a1e"))
 	for leg in [_leg_l, _leg_r]:
-		var shoe := CapsuleMesh.new()
-		shoe.radius = 0.1
-		shoe.height = 0.38
-		shoe.radial_segments = 12
-		shoe.rings = 4
-		_wear("sneakers", _add(leg, shoe, Vector3(0, -0.79, -0.08), Vector3(1.1, 1.0, 0.75),
-				shoe_mat, Vector3(PI / 2, 0, 0)))
-		var sole := BoxMesh.new()
-		sole.size = Vector3(0.23, 0.04, 0.38)
-		_wear("sneakers", _add(leg, sole, Vector3(0, -0.855, -0.08), Vector3.ONE, white))
-		var laces := BoxMesh.new()
-		laces.size = Vector3(0.1, 0.02, 0.12)
-		_wear("sneakers", _add(leg, laces, Vector3(0, -0.715, -0.15), Vector3.ONE, white))
+		# Sneakers: chunky rounded shoe, white sole and laces.
+		_wear("sneakers", _add(leg, _shoe_mesh(0.1, 0.38), Vector3(0, -0.79, -0.08),
+				Vector3(1.1, 1.0, 0.75), _accessory_mats["sneakers"], Vector3(PI / 2, 0, 0)))
+		_wear("sneakers", _add(leg, _box(Vector3(0.23, 0.04, 0.38)), Vector3(0, -0.85, -0.08),
+				Vector3.ONE, white))
+		_wear("sneakers", _add(leg, _box(Vector3(0.1, 0.02, 0.12)), Vector3(0, -0.715, -0.15),
+				Vector3.ONE, white))
+
+		# Boots: rounded foot plus a tall shaft around the shin.
+		var boot_mat: StandardMaterial3D = _accessory_mats["boots"]
+		_wear("boots", _add(leg, _shoe_mesh(0.1, 0.36), Vector3(0, -0.79, -0.07),
+				Vector3(1.05, 1.0, 0.75), boot_mat, Vector3(PI / 2, 0, 0)))
+		var shaft := CylinderMesh.new()
+		shaft.top_radius = 0.085
+		shaft.bottom_radius = 0.08
+		shaft.height = 0.36
+		shaft.radial_segments = 12
+		shaft.rings = 1
+		_wear("boots", _add(leg, shaft, Vector3(0, -0.6, 0.0), Vector3.ONE, boot_mat))
+		_wear("boots", _add(leg, _box(Vector3(0.22, 0.04, 0.36)), Vector3(0, -0.85, -0.07),
+				Vector3.ONE, dark_sole))
+
+		# Shoes: low and sleek, with a small heel.
+		var shoes_mat: StandardMaterial3D = _accessory_mats["shoes"]
+		_wear("shoes", _add(leg, _shoe_mesh(0.085, 0.36), Vector3(0, -0.8, -0.08),
+				Vector3(1.05, 1.0, 0.6), shoes_mat, Vector3(PI / 2, 0, 0)))
+		_wear("shoes", _add(leg, _box(Vector3(0.18, 0.025, 0.34)), Vector3(0, -0.845, -0.08),
+				Vector3.ONE, dark_sole))
+		_wear("shoes", _add(leg, _box(Vector3(0.12, 0.05, 0.07)), Vector3(0, -0.84, 0.06),
+				Vector3.ONE, dark_sole))
+
+		# Flip-flops: colored sole under the bare foot and a thin strap.
+		var flip_mat: StandardMaterial3D = _accessory_mats["flip_flops"]
+		_wear("flip_flops", _add(leg, _box(Vector3(0.24, 0.03, 0.42)), Vector3(0, -0.84, -0.08),
+				Vector3.ONE, flip_mat))
+		for side in [-1.0, 1.0]:
+			_wear("flip_flops", _add(leg, _box(Vector3(0.015, 0.015, 0.14)),
+					Vector3(0.06 * side, -0.8, -0.16), Vector3.ONE, white,
+					Vector3(0, 0.5 * side, 0)))
 
 
 func _build_effects() -> void:
@@ -250,6 +349,33 @@ func _build_effects() -> void:
 	_smoke.scale_amount_curve = _curve(0.5, 1.8)
 	_smoke.color_ramp = _fade(Color(0.92, 0.87, 0.8, 0.75))
 	add_child(_smoke)
+
+	# Ring of dust when landing.
+	_land_dust = CPUParticles3D.new()
+	_land_dust.position = Vector3(0, 0.08, 0)
+	_land_dust.emitting = false
+	_land_dust.one_shot = true
+	_land_dust.explosiveness = 1.0
+	_land_dust.local_coords = false
+	_land_dust.amount = 20
+	_land_dust.lifetime = 0.6
+	_land_dust.mesh = _particle_sphere(0.16)
+	_land_dust.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+	_land_dust.emission_ring_axis = Vector3.UP
+	_land_dust.emission_ring_radius = 0.35
+	_land_dust.emission_ring_inner_radius = 0.2
+	_land_dust.emission_ring_height = 0.0
+	_land_dust.direction = Vector3(1, 0, 0)
+	_land_dust.spread = 180.0
+	_land_dust.flatness = 1.0
+	_land_dust.initial_velocity_min = 2.0
+	_land_dust.initial_velocity_max = 3.5
+	_land_dust.gravity = Vector3(0, 0.8, 0)
+	_land_dust.damping_min = 4.0
+	_land_dust.damping_max = 6.0
+	_land_dust.scale_amount_curve = _curve(0.6, 1.6)
+	_land_dust.color_ramp = _fade(Color(0.92, 0.86, 0.76, 0.85))
+	add_child(_land_dust)
 
 	# Wind gusts from the open wings while braking.
 	for side in [-1.0, 1.0]:
@@ -277,6 +403,21 @@ func _build_effects() -> void:
 
 
 # --- Helpers ------------------------------------------------------------
+
+static func _shoe_mesh(radius: float, length: float) -> CapsuleMesh:
+	var mesh := CapsuleMesh.new()
+	mesh.radius = radius
+	mesh.height = length
+	mesh.radial_segments = 12
+	mesh.rings = 4
+	return mesh
+
+
+static func _box(box_size: Vector3) -> BoxMesh:
+	var mesh := BoxMesh.new()
+	mesh.size = box_size
+	return mesh
+
 
 func _wear(id: String, mesh: MeshInstance3D) -> void:
 	mesh.visible = false

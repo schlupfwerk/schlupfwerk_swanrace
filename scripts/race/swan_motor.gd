@@ -3,14 +3,15 @@ extends RefCounted
 ## Handwritten, deterministic arcade movement on flat ground (ADR 0006).
 ## Every swan uses exactly these numbers: there are no faster or slower swans.
 
-const MAX_SPEED := 22.0 # m/s, about 80 km/h
-const ACCELERATION := 10.0
-const BRAKE_DECELERATION := 24.0
-const COAST_DECELERATION := 3.0
-const TURN_RATE_SLOW := 2.6 # rad/s when almost stopped
-const TURN_RATE_FAST := 1.4 # rad/s at top speed
+## A swan, not a car: slow build-up and at most 50 km/h on the ground.
+const MAX_SPEED := 13.9 # m/s, 50 km/h
+const ACCELERATION := 4.6 # about 3 s from 0 to top speed
+const BRAKE_DECELERATION := 9.0
+const COAST_DECELERATION := 1.6
+const TURN_RATE_SLOW := 2.4 # rad/s when almost stopped
+const TURN_RATE_FAST := 1.6 # rad/s at top speed
 const AIR_CONTROL := 0.35
-const JUMP_VELOCITY := 7.5
+const JUMP_VELOCITY := 6.5
 const GRAVITY := 24.0
 
 var position := Vector3.ZERO
