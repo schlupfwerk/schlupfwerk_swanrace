@@ -50,7 +50,7 @@ func _build_stage() -> void:
 	var floor_instance := MeshInstance3D.new()
 	floor_instance.mesh = floor_mesh
 	floor_instance.position = Vector3(1.6, -0.1, 0)
-	floor_instance.material_override = Scenery._flat(Scenery.SAND, 1.0)
+	floor_instance.material_override = Scenery.flat(Scenery.SAND, 1.0)
 	add_child(floor_instance)
 
 	_model.position = Vector3(1.6, 0, 0)

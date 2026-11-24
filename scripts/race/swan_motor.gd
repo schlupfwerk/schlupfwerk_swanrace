@@ -19,6 +19,8 @@ var position := Vector3.ZERO
 var heading := 0.0
 var speed := 0.0
 var vertical_velocity := 0.0
+## Set by the terrain each tick (1 = normal). The same rule for every swan.
+var max_speed_scale := 1.0
 var on_ground := true
 var accelerating := false
 var braking := false
@@ -33,7 +35,7 @@ func forward() -> Vector3:
 
 
 func speed_ratio() -> float:
-	return speed / MAX_SPEED
+	return minf(speed / MAX_SPEED, 1.0)
 
 
 func step(intent: SwanIntent, tick: float) -> void:
@@ -52,6 +54,9 @@ func step(intent: SwanIntent, tick: float) -> void:
 	speed -= BRAKE_DECELERATION * intent.brake * control * tick
 	speed -= COAST_DECELERATION * (1.0 - intent.accel) * tick
 	speed = clampf(speed, 0.0, MAX_SPEED)
+	var limit := MAX_SPEED * max_speed_scale
+	if speed > limit:
+		speed = move_toward(speed, limit, BRAKE_DECELERATION * tick)
 
 	var turn_rate := lerpf(TURN_RATE_SLOW, TURN_RATE_FAST, speed_ratio())
 	heading = wrapf(heading - intent.steer * turn_rate * control * tick, -PI, PI)

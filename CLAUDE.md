@@ -111,7 +111,19 @@ prioridade.
   praia. O dono do projeto escolhe as músicas; não adicione música por conta própria.
 
 ## Pistas
-Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
+**Primeiro circuito (feito): Praia da Ilha** (`IslandTrack`, `IslandScenery`). Voltas
+na praia de uma ilha: **Mata Atlântica à esquerda** (morros, árvores, ipês amarelos,
+quaresmeiras roxas, coqueiros) e **mar à direita** (ondas, espuma, peixes pulando).
+Linha de largada com faixa e pórtico quadriculados, contagem regressiva, voltas
+cronometradas e melhor volta salva. Fora da areia (mata ou água) o cisne fica mais lento.
+
+**Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Um bom
+jogador, sem bater em obstáculos, fecha a volta em **~1:15**; um jogador ruim, em
+**~2:00**. Hoje: 1.000 m de volta; o piloto automático perfeito fez 1:13,7 saindo
+parado. Se mudar velocidade ou aceleração, recalcule (ver comentário em `IslandTrack`).
+
+Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
+descida:
 - **Suíça**: neve nos Alpes → vilarejo → lago alpino → voo pelos vales
 - **Alemanha**: Floresta Negra/Baviera → cidade medieval → rio Reno → voo sobre castelos
 - **Rio de Janeiro**: sandboard ou descida na grama de um morro → vielas e escadarias
@@ -176,7 +188,10 @@ O protótipo é feito e testado **no Windows**, com teclado e controles de Xbox 
    pedrinhas só de enfeite (nada afeta o cisne). Cisne andando com esquerda/direita,
    acelerar, frear e pular; velocímetro; rastro ao acelerar e vento ao frear;
    vestiário com personalização e apelido, salvo localmente.
-2. **Sensação de corrida:** ajustar velocidade, curva, pulo e câmera até ficar gostoso.
+2. **Praia da Ilha (feito):** circuito em volta da ilha, com largada, voltas e tempos.
+   **Sensação de corrida:** ajustar velocidade, curva, pulo e câmera até ficar gostoso.
+   Obstáculos na praia vêm depois. O **voo** será explicado pelo dono do projeto antes
+   de ser feito.
 3. **Os 4 terrenos** numa pista reta e curta (cerca de 1 minuto), com as transições,
    principalmente a decolagem da água.
 4. **2 bots** com personalidades diferentes (mesma habilidade, ver Bots).

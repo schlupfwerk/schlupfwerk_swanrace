@@ -11,6 +11,10 @@ var look := SwanLook.new()
 var motor := SwanMotor.new()
 var intent := SwanIntent.new()
 var model := SwanModel.new()
+## When false the swan ignores its brain (countdown, results).
+var controls_enabled := true
+## Called after every simulation tick with this swan (terrain, laps, timing).
+var on_tick: Callable
 
 var _accumulator := 0.0
 var _previous_position := Vector3.ZERO
@@ -55,12 +59,14 @@ func _process(delta: float) -> void:
 	while _accumulator >= TICK:
 		_previous_position = motor.position
 		_previous_heading = motor.heading
-		if brain:
+		if brain and controls_enabled:
 			brain.update_intent(intent, TICK)
 		else:
 			intent.reset()
 		var vertical_before := motor.vertical_velocity
 		motor.step(intent, TICK)
+		if on_tick.is_valid():
+			on_tick.call(self)
 		jumped = jumped or motor.jumped
 		if motor.landed:
 			landed = true
