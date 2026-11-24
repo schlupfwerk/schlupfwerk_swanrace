@@ -166,8 +166,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 
 ## Pistas
 **Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
-`desert_island`). Voltas na praia de uma ilha deserta, **1.280 m**, com curvas fechadas para a
-**esquerda (~35 m de raio) e grampos para a direita (~18 m) nas baías** e **largura da areia variável** (~20 a 40 m).
+`desert_island`). Voltas na praia de uma ilha deserta, **880 m**, com curvas fechadas para a
+**esquerda (~19 m de raio) e grampos para a direita (~10 m) nas baías** e **largura da areia variável** (~20 a 40 m).
 - **Mata Atlântica à esquerda:** morros, árvores de copa redonda, emergentes, embaúbas,
   palmitos-juçara, ipês amarelos e rosas, quaresmeiras, coqueiros, bananeiras,
   samambaias, bromélias, helicônias, hibiscos e pedras com musgo. Tudo com tamanho,
@@ -221,8 +221,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   turbo!!" numa subida forte): automático (ligado no fácil e no médio), ligado ou desligado.
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
-plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Hoje (1.280 m, com
-relevo): volta perfeita **~1:42**, ou **~1:37** usando o turbo nas subidas. Se mudar velocidade ou aceleração, recalcule (ver
+plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Alvo atual: **volta perfeita
+~1:10** → 880 m com relevo (1:11,6 saindo parado, 1:09 lançada, ~1:07 com turbo nas subidas). Se mudar velocidade ou aceleração, recalcule (ver
 `IslandTrack`).
 
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de

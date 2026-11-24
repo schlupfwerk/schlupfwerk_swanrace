@@ -5,11 +5,12 @@ extends RefCounted
 ## left-hand ones. Pure geometry and lap math, no visuals.
 ##
 ## Lap length comes from SwanMotor (13.9 m/s top speed, ~3 s to reach it).
-## 1000 m gave ~1:15 for a clean lap on flat sand. Now 1280 m with hills and
-## banked curves: a clean lap is ~1:42 (~1:37 using the turbo on climbs).
+## Target: a clean lap of ~1:10. With hills and banked curves that is 880 m:
+## first lap from a standstill ~1:11.6, flying laps ~1:09 (~1:07 with turbo on
+## the climbs). Hill heights scale with the length, so grades stay ~16%.
 ## Keep this in sync when the motor or the track changes.
 
-const LAP_LENGTH := 1280.0
+const LAP_LENGTH := 880.0
 const SAMPLES := 800
 ## Shape harmonics of the coastline (2nd, 3rd, 5th, 7th, 9th). Tight curves:
 ## about 35 m radius to the left and 18 m hairpins to the right in the bays.
@@ -242,7 +243,9 @@ func _shape_ground() -> void:
 	for i in SAMPLES:
 		var u := TAU * i / SAMPLES
 		# Two rolling hills and a few smaller bumps, back to the start height.
-		_height.append(BASE_HEIGHT + 5.0 * (1.0 - cos(3.0 * u)) + 2.6 * (1.0 - cos(7.0 * u + 1.0)))
+		# Hill heights scale with the lap, so the grades stay the same (~16%).
+		var hill := LAP_LENGTH / 1280.0
+		_height.append(BASE_HEIGHT + hill * (5.0 * (1.0 - cos(3.0 * u)) + 2.6 * (1.0 - cos(7.0 * u + 1.0))))
 		var smooth := 0.0
 		for k in range(-12, 13):
 			smooth += curvature[wrapi(i + k, 0, SAMPLES)]
