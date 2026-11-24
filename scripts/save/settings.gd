@@ -26,6 +26,8 @@ const SHADOW_DISTANCES := [0.0, 40.0, 60.0, 90.0]
 ## Language choices: "" follows the device (Portuguese if it is in Portuguese,
 ## otherwise English).
 const LANGUAGES := ["", "pt", "en"]
+## Choices for the number of laps.
+const LAP_OPTIONS := [1, 2, 3, 4, 5, 7, 10]
 
 const PRESETS := {
 	Quality.LOW: {"render_scale": 0.75, "msaa": 0, "shadows": 0, "detail": 0},
@@ -37,6 +39,8 @@ const PRESETS := {
 var language := ""
 ## 0 easy, 1 medium, 2 hard. Bots will use it; today it sets the defaults below.
 var difficulty := 1
+## Laps per race.
+var laps := 3
 ## Direction arrow on screen: 0 automatic (on in easy and medium), 1 on, 2 off.
 var direction_indicator := 0
 # Video
@@ -357,6 +361,7 @@ func save_settings() -> void:
 	cfg.set_value("meta", "version", SAVE_VERSION)
 	cfg.set_value("general", "language", language)
 	cfg.set_value("general", "difficulty", difficulty)
+	cfg.set_value("general", "laps", laps)
 	cfg.set_value("general", "direction_indicator", direction_indicator)
 	for key in ["window_mode", "resolution", "monitor", "quality", "render_scale", "msaa",
 			"shadows", "detail", "vsync", "fps_limit", "show_fps", "fov", "gpu_index"]:
@@ -376,6 +381,7 @@ func load_settings() -> void:
 		return
 	language = _pick(cfg.get_value("general", "language", language), LANGUAGES, "")
 	difficulty = clampi(cfg.get_value("general", "difficulty", difficulty), 0, 2)
+	laps = _pick(int(cfg.get_value("general", "laps", laps)), LAP_OPTIONS, 3)
 	direction_indicator = clampi(cfg.get_value("general", "direction_indicator", direction_indicator), 0, 2)
 	window_mode = clampi(cfg.get_value("video", "window_mode", window_mode), 0, 2) as WindowMode
 	var saved_resolution = cfg.get_value("video", "resolution", resolution)

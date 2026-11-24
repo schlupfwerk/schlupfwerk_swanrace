@@ -154,3 +154,11 @@ DIFFICULTY_MEDIUM,Medium,Médio
 DIFFICULTY_HARD,Hard,Difícil
 DIRECTION_INDICATOR,Direction indicator,Indicador de direção
 AUTO_BY_DIFFICULTY,Automatic (easy and medium),Automático (fácil e médio)
+LAPS,Laps,Voltas
+HUD_LAP_OF,Lap %d/%d,Volta %d/%d
+HUD_TOTAL,Total  %s,Total  %s
+FINAL_LAP,Final lap!,Última volta!
+FINISHED,Finished!,Chegada!
+RESULTS_HINT_KEYBOARD,Enter: race again   Esc: menu,Enter: correr de novo   Esc: menu
+RESULTS_HINT_XBOX,A: race again   B: menu,A: correr de novo   B: menu
+RESULTS_HINT_PLAYSTATION,Cross: race again   Circle: menu,Cruz: correr de novo   Círculo: menu

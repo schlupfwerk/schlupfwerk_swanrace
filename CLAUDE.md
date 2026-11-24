@@ -191,6 +191,11 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   **inclinada nas curvas** (até ~12°, o lado de dentro mais baixo). Subida: perde velocidade e
   o máximo cai até 75%; descida: ganha velocidade e passa dos 50 km/h (até 130%). O cisne
   inclina com o chão; praias altas descem em barranco até o mar.
+- **Voltas:** número de voltas em Configurações → Geral (1 a 10, padrão 3). HUD mostra
+  "Volta 2/3" e o tempo total. **Última volta:** aviso e a música troca (com fade) para uma
+  versão mais rápida e animada (`scripts/audio/final_lap_music.gd`). **Chegada:** apito de 2 s,
+  a câmera se afasta girando, resultado (tempo total, melhor volta) e opção de correr de novo
+  ou voltar ao menu.
 - **Largada com semáforo:** 3 luzes vermelhas com "tu", verde com "tuuuu" e "Corra!".
 - **Afogamento:** som de derrota e 5 bolhas subindo em zigue-zague e estourando com som.
 - **Curva custa:** segurando a curva, o limite de velocidade cai 1% a cada 0,1 s (até

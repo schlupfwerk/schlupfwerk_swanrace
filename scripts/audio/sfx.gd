@@ -161,3 +161,17 @@ static func pop() -> AudioStreamWAV:
 			state.phase = state.get("phase", 0.0) + TAU * lerpf(500.0, 1600.0, t / 0.08) / RATE
 			return sin(state.phase) * exp(-t * 45.0) * 0.6)
 	return _cache["pop"]
+
+
+## Referee whistle at the finish line: two seconds of a trilling pea whistle.
+static func whistle() -> AudioStreamWAV:
+	if not _cache.has("whistle"):
+		_cache["whistle"] = _render(2.0, func(t: float, state: Dictionary) -> float:
+			# The pea makes the pitch and the volume flutter quickly.
+			var trill := sin(TAU * 32.0 * t)
+			state.phase = state.get("phase", 0.0) + TAU * (2850.0 + 90.0 * trill) / RATE
+			var breath := randf_range(-1.0, 1.0) * 0.08
+			var tone := sin(state.phase) + 0.25 * sin(state.phase * 2.0)
+			var envelope := minf(t / 0.03, 1.0) * clampf((2.0 - t) / 0.15, 0.0, 1.0)
+			return (tone * (0.75 + 0.25 * trill) + breath) * 0.32 * envelope)
+	return _cache["whistle"]
