@@ -4,18 +4,28 @@ extends Node3D
 ## Origin on the ground between the feet, facing -Z.
 ## Visual only: nothing here affects movement or collisions.
 
-## A foot touched the ground while running. `strength` is 0..1 (speed).
-signal stepped(strength: float)
+## A foot touched the ground while running. `strength` is 0..1 (speed),
+## `foot` is -1 (left) or 1 (right).
+signal stepped(strength: float, foot: int)
 
 const FEATHER_SHADER := preload("res://shaders/feather.gdshader")
 
 const BODY_HEIGHT := 1.15
 const WING_OPEN_ANGLE := 1.35
 const BEAK_COLOR := Color("ff9a1f")
+## Thin black outline around the whole swan (inverted hull, drawn as a second
+## pass of every opaque material).
+const OUTLINE_WIDTH := 0.011
+
+static var _outline: StandardMaterial3D
 
 var _feather_mat := ShaderMaterial.new()
 var _leg_mat := _toon(Color("2b2b30"))
+## True while wading in the sea: splashes at the feet.
+var wet := false
+
 var _body_pivot := Node3D.new()
+var _neck := Node3D.new()
 var _head := Node3D.new()
 var _wing_l := Node3D.new()
 var _wing_r := Node3D.new()
@@ -36,6 +46,10 @@ var _land_dust: CPUParticles3D
 ## Landing squash and take-off stretch, 1 right after the event, fading to 0.
 var _squash := 0.0
 var _stretch := 0.0
+## Dazed after bumping into the forest: 1 right after the bump, fading to 0.
+var _daze := 0.0
+var _daze_stars := Node3D.new()
+var _splash: CPUParticles3D
 
 
 func _init() -> void:
@@ -75,36 +89,57 @@ func apply_look(look: SwanLook) -> void:
 func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 		braking: bool, on_ground: bool) -> void:
 	var moving := clampf(speed_ratio * 2.0, 0.0, 1.0)
+	var smooth := 1.0 - exp(-10.0 * delta)
 	if on_ground:
 		var previous_phase := _phase
 		# Long, bouncy strides: few steps per second, big swing.
 		_phase += (3.2 + 5.5 * speed_ratio) * delta * moving
-		# One step every half stride.
+		# One step every half stride, alternating feet.
 		if moving > 0.1 and floori(_phase / PI) != floori(previous_phase / PI):
-			stepped.emit(moving)
+			stepped.emit(moving, -1 if floori(_phase / PI) % 2 == 0 else 1)
 		var swing := sin(_phase) * 1.15 * moving
 		_leg_l.rotation.x = lerpf(_leg_l.rotation.x, swing, 1.0 - exp(-25.0 * delta))
 		_leg_r.rotation.x = lerpf(_leg_r.rotation.x, -swing, 1.0 - exp(-25.0 * delta))
-		var bob := absf(sin(_phase)) * 0.1 * moving
+		# Gangly: knees flick out a little on every stride.
+		_leg_l.rotation.z = -0.07 - maxf(sin(_phase), 0.0) * 0.12 * moving
+		_leg_r.rotation.z = 0.07 + maxf(-sin(_phase), 0.0) * 0.12 * moving
+		var bob := absf(sin(_phase)) * 0.12 * moving
 		var breathe := sin(Time.get_ticks_msec() * 0.003) * 0.015 * (1.0 - moving)
 		_body_pivot.position.y = BODY_HEIGHT + bob + breathe
 	else:
 		# Tuck the legs back while in the air.
 		_leg_l.rotation.x = lerpf(_leg_l.rotation.x, -0.9, 1.0 - exp(-12.0 * delta))
 		_leg_r.rotation.x = lerpf(_leg_r.rotation.x, -0.7, 1.0 - exp(-12.0 * delta))
-		_body_pivot.position.y = lerpf(_body_pivot.position.y, BODY_HEIGHT, 1.0 - exp(-10.0 * delta))
+		_body_pivot.position.y = lerpf(_body_pivot.position.y, BODY_HEIGHT, smooth)
 
-	var lean := -0.2 * accel * moving + (0.15 if braking else 0.0)
+	# Clumsy waddle: the body rolls and twists with each stride.
+	var lean := -0.25 * accel * moving + (0.15 if braking else 0.0)
 	_body_pivot.rotation.x = lerpf(_body_pivot.rotation.x, lean, 1.0 - exp(-8.0 * delta))
+	_body_pivot.rotation.z = sin(_phase) * 0.13 * moving
+	_body_pivot.rotation.y = sin(_phase + 0.6) * 0.09 * moving
 	rotation.z = lerpf(rotation.z, -steer * 0.16 * moving, 1.0 - exp(-8.0 * delta))
-	_head.rotation.x = -_body_pivot.rotation.x * 0.6
 
+	# The faster it runs, the lower the head goes, bobbing forward and back.
+	var neck_lean := -0.8 * speed_ratio - 0.1 * accel + sin(_phase * 2.0 + 0.8) * 0.14 * moving
+	_neck.rotation.x = lerpf(_neck.rotation.x, neck_lean, smooth)
+	# Shake the head when dazed.
+	_daze = move_toward(_daze, 0.0, delta * 0.9)
+	_neck.rotation.y = sin(Time.get_ticks_msec() * 0.03) * 0.55 * _daze
+	_neck.rotation.z = sin(Time.get_ticks_msec() * 0.021) * 0.25 * _daze
+	_head.rotation.x = -(_neck.rotation.x + _body_pivot.rotation.x) * 0.75
+	_daze_stars.visible = _daze > 0.05
+	_daze_stars.rotation.y += delta * 6.0
+
+	# Braking opens the wings; running sweeps them back, flapping a little.
 	_wing_open = move_toward(_wing_open, 1.0 if braking else 0.0, delta * 7.0)
-	var open := ease(_wing_open, -2.0) * WING_OPEN_ANGLE
-	_wing_l.rotation.z = -open
-	_wing_r.rotation.z = open
+	var run_open := (0.45 + sin(_phase * 2.0) * 0.12) * speed_ratio
+	var open := maxf(ease(_wing_open, -2.0) * WING_OPEN_ANGLE, run_open)
+	var sweep := 0.45 * speed_ratio * (1.0 - _wing_open)
+	_wing_l.rotation = Vector3(0.0, -sweep, -open)
+	_wing_r.rotation = Vector3(0.0, sweep, open)
 
-	_smoke.emitting = on_ground and accel > 0.2 and speed_ratio > 0.05
+	_splash.emitting = wet and moving > 0.15
+	_smoke.emitting = on_ground and not wet and accel > 0.2 and speed_ratio > 0.05
 	for wind in _wind:
 		wind.emitting = braking and _wing_open > 0.6
 	# Squash on landing, stretch on take-off.
@@ -130,23 +165,46 @@ func take_off() -> void:
 	_stretch = 1.0
 
 
+## Called when the swan bumps into the forest: head shake and little stars.
+func daze() -> void:
+	_daze = 1.0
+
+
 # --- Building -----------------------------------------------------------
 
 func _build_body() -> void:
 	_body_pivot.position.y = BODY_HEIGHT
 	add_child(_body_pivot)
 	_sphere(_body_pivot, 0.5, Vector3(1.0, 0.85, 1.3), Vector3.ZERO, _feather_mat)
-	# Tail tuft.
+	# Tail: a tuft with a small fan of long feathers.
 	_sphere(_body_pivot, 0.16, Vector3(1.1, 0.7, 1.3), Vector3(0, 0.22, 0.62), _feather_mat,
 			Vector3(0.7, 0, 0))
-	# S-shaped neck.
-	_capsule(_body_pivot, 0.15, 0.7, Vector3(0, 0.45, -0.5), _feather_mat, Vector3(-0.35, 0, 0))
-	_capsule(_body_pivot, 0.12, 0.65, Vector3(0, 0.9, -0.64), _feather_mat, Vector3(0.12, 0, 0))
+	for k in 5:
+		var fan := (k - 2) * 0.32
+		_sphere(_body_pivot, 0.5, Vector3(0.09, 0.03, 0.42), Vector3(fan * 0.25, 0.3, 0.72),
+				_feather_mat, Vector3(0.55, fan, 0), 10, 5)
+	# S-shaped neck on its own pivot, so the head can lower when running.
+	_neck.position = Vector3(0, 0.3, -0.42)
+	_body_pivot.add_child(_neck)
+	_capsule(_neck, 0.15, 0.7, Vector3(0, 0.15, -0.08), _feather_mat, Vector3(-0.35, 0, 0))
+	_capsule(_neck, 0.12, 0.65, Vector3(0, 0.6, -0.22), _feather_mat, Vector3(0.12, 0, 0))
 
 
 func _build_head() -> void:
-	_head.position = Vector3(0, 1.24, -0.62)
-	_body_pivot.add_child(_head)
+	_head.position = Vector3(0, 0.94, -0.2)
+	_neck.add_child(_head)
+	# Little stars that spin around the head when dazed.
+	_daze_stars.position = Vector3(0, 0.38, 0)
+	_daze_stars.visible = false
+	_head.add_child(_daze_stars)
+	var star_mat := _toon(Color("ffd23f"))
+	star_mat.emission_enabled = true
+	star_mat.emission = Color("ffd23f")
+	star_mat.emission_energy_multiplier = 0.6
+	for k in 3:
+		var a := TAU * k / 3.0
+		_sphere(_daze_stars, 0.06, Vector3.ONE, Vector3(cos(a) * 0.3, 0.0, sin(a) * 0.3), star_mat,
+				Vector3.ZERO, 6, 4)
 	_sphere(_head, 0.21, Vector3(0.95, 0.95, 1.1), Vector3.ZERO, _feather_mat)
 	var beak := CylinderMesh.new()
 	beak.top_radius = 0.015
@@ -170,6 +228,11 @@ func _build_wings() -> void:
 		var wing := _sphere(pivot, 0.5, Vector3(0.14, 0.55, 0.95), Vector3(0.03 * side, -0.24, 0.08),
 				_feather_mat)
 		_wing_meshes.append(wing)
+		# Long flight feathers fanning out from the back of the wing.
+		for k in 4:
+			_sphere(pivot, 0.5, Vector3(0.05, 0.13, 0.5),
+					Vector3(0.04 * side, -0.38 + 0.09 * k, 0.55 + 0.03 * k), _feather_mat,
+					Vector3(0.25 + 0.12 * k, 0, 0), 10, 5)
 
 
 func _build_legs() -> void:
@@ -188,6 +251,7 @@ func _build_accessories() -> void:
 	for id: String in SwanLook.ACCESSORY_IDS:
 		_accessory_meshes[id] = []
 		_accessory_mats[id] = _toon(Color.WHITE)
+		_add_outline(_accessory_mats[id])
 	var white := _toon(Color("f4f4f4"))
 
 	# Cap.
@@ -263,9 +327,9 @@ func _build_accessories() -> void:
 	chain.outer_radius = 0.17
 	chain.rings = 20
 	chain.ring_segments = 6
-	_wear("necklace", _add(_body_pivot, chain, Vector3(0, 0.6, -0.55), Vector3.ONE, necklace_mat,
+	_wear("necklace", _add(_neck, chain, Vector3(0, 0.3, -0.13), Vector3.ONE, necklace_mat,
 			Vector3(-0.6, 0, 0)))
-	_wear("necklace", _sphere(_body_pivot, 0.04, Vector3(1, 1, 0.5), Vector3(0, 0.5, -0.71),
+	_wear("necklace", _sphere(_neck, 0.04, Vector3(1, 1, 0.5), Vector3(0, 0.2, -0.29),
 			necklace_mat, Vector3(-0.6, 0, 0)))
 
 	# Jacket: shell over the body, collar and zipper. Wings become sleeves.
@@ -377,6 +441,24 @@ func _build_effects() -> void:
 	_land_dust.color_ramp = _fade(Color(0.92, 0.86, 0.76, 0.85))
 	add_child(_land_dust)
 
+	# Water splashing at the feet while wading in the sea.
+	_splash = CPUParticles3D.new()
+	_splash.position = Vector3(0, 0.1, 0)
+	_splash.emitting = false
+	_splash.local_coords = false
+	_splash.amount = 40
+	_splash.lifetime = 0.6
+	_splash.mesh = _particle_sphere(0.07)
+	_splash.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	_splash.emission_sphere_radius = 0.35
+	_splash.direction = Vector3(0, 1, 0.4)
+	_splash.spread = 40.0
+	_splash.initial_velocity_min = 2.0
+	_splash.initial_velocity_max = 3.5
+	_splash.gravity = Vector3(0, -9.8, 0)
+	_splash.color_ramp = _fade(Color(0.85, 0.95, 1.0, 0.9))
+	add_child(_splash)
+
 	# Wind gusts from the open wings while braking.
 	for side in [-1.0, 1.0]:
 		var wind := CPUParticles3D.new()
@@ -451,6 +533,7 @@ func _add(parent: Node3D, mesh: Mesh, pos: Vector3, scl: Vector3, mat: Material,
 	instance.position = pos
 	instance.rotation = rot
 	instance.scale = scl
+	_add_outline(mat)
 	instance.material_override = mat
 	parent.add_child(instance)
 	return instance
@@ -499,3 +582,19 @@ static func _fade(color: Color) -> Gradient:
 	gradient.set_color(0, color)
 	gradient.set_color(1, Color(color, 0.0))
 	return gradient
+
+
+static func _add_outline(mat: Material) -> void:
+	if mat == null or mat.next_pass != null:
+		return
+	if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+		return
+	if _outline == null:
+		_outline = StandardMaterial3D.new()
+		_outline.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_outline.albedo_color = Color("141418")
+		_outline.cull_mode = BaseMaterial3D.CULL_FRONT
+		_outline.grow = true
+		_outline.grow_amount = OUTLINE_WIDTH
+		_outline.disable_receive_shadows = true
+	mat.next_pass = _outline

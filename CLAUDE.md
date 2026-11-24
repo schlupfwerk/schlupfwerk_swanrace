@@ -95,11 +95,21 @@ prioridade.
   rápidos, mais leves ou com atributos diferentes; os números do movimento são os
   mesmos para todos (`SwanMotor`).
 - **É um cisne, não um carro:** no chão, no máximo **50 km/h**, chegando lá em uns
-  **3 s**. Passadas longas, pernas afastadas.
+  **4,5 s**. Passadas longas, pernas afastadas.
+- **Jeito desengonçado:** o corpo balança e torce a cada passada, os joelhos abrem; quanto
+  mais rápido, **mais baixa a cabeça** e **mais as asas apontam para trás**.
+- **Contorno preto fino** em todo o cisne (casca invertida, segunda passada dos
+  materiais) e **penas visíveis** (escamas de penas no shader, penas longas nas asas e
+  leque na cauda).
+- **Rastro de pegadas** de até 3 s, que muda com o calçado: patinha de cisne descalço,
+  e marcas diferentes para tênis, bota, sapato e chinelo. Nada de pegada na água.
 - **Efeitos:** ao **acelerar**, solta um rastro de fumaça/poeira; ao **frear**, abre as
   asas e solta um vento; ao **cair de um pulo**, o corpo achata e solta um anel de poeira.
-- **Sons:** passos (um por passada, mais fortes com a velocidade), pulo e aterrissagem.
-  Por enquanto são sintetizados no código (`scripts/audio/sfx.gd`), sem arquivos.
+- **Sons:** passos na areia (grãos + baque, 4 variações sorteadas), pulo, aterrissagem
+  e batida no mato. Por enquanto são sintetizados no código (`scripts/audio/sfx.gd`).
+- **Música provisória da Ilha Deserta:** composta e sintetizada no código
+  (`scripts/audio/island_music.gd`: ukulele, steel guitar, baixo e chocalho, clima
+  havaiano), gerada numa thread e guardada em `user://`. Será trocada pela definitiva.
 - **HUD com cara de selva, nunca de carro:** o velocímetro é um disco de madeira com
   grafismo na borda, um cipó de folhas que cresce com a velocidade e uma pena como
   ponteiro.
@@ -127,16 +137,31 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   praia. O dono do projeto escolhe as músicas; não adicione música por conta própria.
 
 ## Pistas
-**Primeiro circuito (feito): Praia da Ilha** (`IslandTrack`, `IslandScenery`). Voltas
-na praia de uma ilha: **Mata Atlântica à esquerda** (morros, árvores, ipês amarelos,
-quaresmeiras roxas, coqueiros) e **mar à direita** (ondas, espuma, peixes pulando).
-Linha de largada com faixa e pórtico quadriculados, contagem regressiva, voltas
-cronometradas e melhor volta salva. Fora da areia (mata ou água) o cisne fica mais lento.
+**Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
+`desert_island`). Voltas na praia de uma ilha deserta, **1.600 m**, com curvas para a
+**esquerda e para a direita** (baías) e **largura da areia variável** (~20 a 40 m).
+- **Mata Atlântica à esquerda:** morros, árvores de copa redonda, emergentes, embaúbas,
+  palmitos-juçara, ipês amarelos e rosas, quaresmeiras, coqueiros, bananeiras,
+  samambaias, bromélias, helicônias, hibiscos e pedras com musgo. Tudo com tamanho,
+  proporção e inclinação variados (nada repetido).
+- **Mar à direita:** ondas, manchas de cor, espuma rolando na praia, rochas com espuma,
+  ilhéu com farol, veleiros ao longe e peixes pulando.
+- Sol visível no céu e sombras longas. Música provisória com cara de Havaí.
+- Largada com faixa e pórtico quadriculados, contagem regressiva, voltas cronometradas
+  e melhor volta salva.
 
-**Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Um bom
-jogador, sem bater em obstáculos, fecha a volta em **~1:15**; um jogador ruim, em
-**~2:00**. Hoje: 1.000 m de volta; o piloto automático perfeito fez 1:13,7 saindo
-parado. Se mudar velocidade ou aceleração, recalcule (ver comentário em `IslandTrack`).
+**Regras do terreno** (`TrackRules`, iguais para todos os cisnes):
+- **Água:** molhado e **55% mais lento**, afunda um pouco, respinga. Não dá para ir
+  para o mar aberto (limite ~26 m além da linha da água).
+- **Mato:** **bate**, a velocidade vai a **0**, balança a cabeça com estrelinhas e se
+  vira de volta para a direção da corrida.
+- **Nunca na contramão:** o cisne não consegue virar mais de 80° da direção da pista.
+
+**Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
+de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**; a pista foi aumentada
+em 60% e os tempos subiram na mesma proporção: hoje o piloto automático perfeito faz
+**~1:57** saindo parado. Se mudar velocidade ou aceleração, recalcule (ver
+`IslandTrack`).
 
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
 descida:
@@ -220,6 +245,9 @@ iOS fica para quando houver um Mac; o Steam, para depois do protótipo.
 
 Critério de sucesso: **é divertido nos primeiros 30 segundos?**
 
+**Depois (anotado):** controle de hora do dia e clima; neve escorregadia; o voo (o dono
+do projeto vai explicar antes); obstáculos na praia; bots.
+
 ## Ambiente de desenvolvimento (Windows)
 1. **Godot 4**, a versão estável padrão (**não** a .NET), de godotengine.org.
 2. **JDK 17** (por exemplo, OpenJDK da Adoptium/Temurin).
@@ -244,6 +272,15 @@ compilado e enviado ao TestFlight. No futuro, isso pode rodar no GitHub Actions
 **Steam (depois):** conta no Steamworks e pagamento da taxa do Steam Direct (confira o
 valor atual). A Godot exporta para Windows/Linux; o upload é feito com o SteamPipe.
 O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
+
+## Versionamento
+- **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.1**;
+  só o dono do projeto decide quando ela sobe.
+- **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
+  Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada
+  exportação (com o hash do commit) e preenche o versionCode/versionName do Android e a
+  versão do executável do Windows. Pelo editor, `GameVersion` lê direto do git.
 
 ## Regras do repositório
 - Decisões de arquitetura ficam em `docs/adr/` (ADRs, em inglês). Mudou uma decisão?

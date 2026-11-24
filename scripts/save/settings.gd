@@ -22,7 +22,7 @@ const FOV_VALUES := [60, 65, 70, 75, 80, 85, 90]
 ## Share of decorative instances (trees, shells...) drawn per detail level.
 const DETAIL_RATIOS := [0.35, 0.7, 1.0]
 ## Shadow distance per shadow level (0 = off).
-const SHADOW_DISTANCES := [0.0, 30.0, 50.0, 80.0]
+const SHADOW_DISTANCES := [0.0, 40.0, 60.0, 90.0]
 const PRESETS := {
 	Quality.LOW: {"render_scale": 0.75, "msaa": 0, "shadows": 0, "detail": 0},
 	Quality.MEDIUM: {"render_scale": 1.0, "msaa": 2, "shadows": 1, "detail": 1},

@@ -35,7 +35,7 @@ func race_hint() -> String:
 		Kind.PLAYSTATION:
 			return "Analógico: virar   R2: acelerar   L2: frear   Cruz: pular   Options: menu"
 		_:
-			return "A/D: virar   W: acelerar   S: frear   Espaço: pular   Esc: menu"
+			return "WASD ou setas: mover   Espaço: pular   Esc: menu"
 
 
 func menu_hint() -> String:

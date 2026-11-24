@@ -3,7 +3,7 @@ extends Node3D
 ## on the right). Countdown, lap timing in simulation time, best lap saved.
 
 const WARDROBE_SCENE := "res://scenes/wardrobe.tscn"
-const TRACK_ID := "island_beach"
+const TRACK_ID := "desert_island"
 const COUNTDOWN := 3.0
 ## The swan starts this many meters behind the start line.
 const GRID_OFFSET := 6.0
@@ -15,6 +15,10 @@ var _hud := Hud.new()
 var _countdown := COUNTDOWN
 var _racing := false
 var _last_lap := 0.0
+var _music := AudioStreamPlayer.new()
+
+static var _music_stream: AudioStreamWAV
+static var _music_rendering := false
 
 
 func _ready() -> void:
@@ -34,6 +38,10 @@ func _ready() -> void:
 	_laps.distance = IslandTrack.LAP_LENGTH - GRID_OFFSET
 	_laps.lap_completed.connect(_on_lap_completed)
 
+	var footprints := Footprints.new()
+	footprints.swan = _swan
+	add_child(footprints)
+
 	var camera := ChaseCamera.new()
 	camera.target = _swan
 	add_child(camera)
@@ -45,12 +53,24 @@ func _ready() -> void:
 	add_child(fish)
 
 	_hud.swan = _swan
-	_hud.terrain_name = "Praia da Ilha"
+	_hud.terrain_name = "Ilha Deserta"
 	add_child(_hud)
 	_hud.set_best(Profile.best_lap(TRACK_ID))
 
+	_music.bus = &"Music"
+	_music.volume_db = -6.0
+	add_child(_music)
+	if _music_stream == null and not _music_rendering:
+		# Rendering the loop takes a moment: do it off the main thread.
+		_music_rendering = true
+		WorkerThreadPool.add_task(func() -> void:
+			_music_stream = IslandMusic.load_or_render())
+
 
 func _process(delta: float) -> void:
+	if _music_stream and not _music.playing:
+		_music.stream = _music_stream
+		_music.play()
 	if not _racing:
 		_countdown -= delta
 		if _countdown <= 0.0:
@@ -64,8 +84,7 @@ func _process(delta: float) -> void:
 
 func _on_swan_tick(swan: Swan) -> void:
 	_laps.update(swan.motor.position, Swan.TICK, _racing)
-	# Off the sand (forest or water) the swan is slower. Same rule for everyone.
-	swan.motor.max_speed_scale = 1.0 if _laps.on_track() else IslandTrack.OFF_TRACK_SPEED_SCALE
+	TrackRules.apply(swan, _laps, _track)
 
 
 func _on_lap_completed(lap_time: float) -> void:

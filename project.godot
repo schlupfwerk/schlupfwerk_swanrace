@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="Swan Race"
+config/version="0.0.1"
 run/main_scene="res://scenes/wardrobe.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 
@@ -68,3 +69,7 @@ menu_next_tab={
 
 renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/build_info/plugin.cfg")
