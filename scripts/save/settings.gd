@@ -35,6 +35,10 @@ const PRESETS := {
 
 # General
 var language := ""
+## 0 easy, 1 medium, 2 hard. Bots will use it; today it sets the defaults below.
+var difficulty := 1
+## Direction arrow on screen: 0 automatic (on in easy and medium), 1 on, 2 off.
+var direction_indicator := 0
 # Video
 var window_mode := WindowMode.WINDOWED
 var resolution := Vector2i(1280, 720)
@@ -352,6 +356,8 @@ func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("meta", "version", SAVE_VERSION)
 	cfg.set_value("general", "language", language)
+	cfg.set_value("general", "difficulty", difficulty)
+	cfg.set_value("general", "direction_indicator", direction_indicator)
 	for key in ["window_mode", "resolution", "monitor", "quality", "render_scale", "msaa",
 			"shadows", "detail", "vsync", "fps_limit", "show_fps", "fov", "gpu_index"]:
 		cfg.set_value("video", key, get(key))
@@ -369,6 +375,8 @@ func load_settings() -> void:
 	if cfg.load(SAVE_PATH) != OK:
 		return
 	language = _pick(cfg.get_value("general", "language", language), LANGUAGES, "")
+	difficulty = clampi(cfg.get_value("general", "difficulty", difficulty), 0, 2)
+	direction_indicator = clampi(cfg.get_value("general", "direction_indicator", direction_indicator), 0, 2)
 	window_mode = clampi(cfg.get_value("video", "window_mode", window_mode), 0, 2) as WindowMode
 	var saved_resolution = cfg.get_value("video", "resolution", resolution)
 	if saved_resolution is Vector2i and saved_resolution.x >= 640 and saved_resolution.y >= 360:
@@ -405,3 +413,13 @@ func _screen() -> int:
 
 static func _pick(value, allowed: Array, fallback):
 	return value if value in allowed else fallback
+
+
+## Whether the race shows the direction arrow.
+func shows_direction() -> bool:
+	match direction_indicator:
+		1:
+			return true
+		2:
+			return false
+	return difficulty < 2

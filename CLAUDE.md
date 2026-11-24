@@ -160,8 +160,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 
 ## Pistas
 **Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
-`desert_island`). Voltas na praia de uma ilha deserta, **1.600 m**, com curvas para a
-**esquerda e para a direita** (baías) e **largura da areia variável** (~20 a 40 m).
+`desert_island`). Voltas na praia de uma ilha deserta, **1.600 m**, com curvas fechadas para a
+**esquerda (~35 m de raio) e grampos para a direita (~18 m) nas baías** e **largura da areia variável** (~20 a 40 m).
 - **Mata Atlântica à esquerda:** morros, árvores de copa redonda, emergentes, embaúbas,
   palmitos-juçara, ipês amarelos e rosas, quaresmeiras, coqueiros, bananeiras,
   samambaias, bromélias, helicônias, hibiscos e pedras com musgo. Tudo com tamanho,
@@ -184,7 +184,10 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - **Nunca na contramão:** o cisne não consegue virar mais de 80° da direção da pista.
 - **Curva custa:** segurando a curva, o limite de velocidade cai 1% a cada 0,1 s (até
   −30%) e volta ao soltar. **Pouso** de pulo tira 5% da velocidade.
-- **Minimapa** à esquerda com o ponto de GPS de cada cisne.
+- **Minimapa** no canto superior esquerdo com o ponto de GPS de cada cisne.
+- **Dificuldade** (Fácil, Médio, Difícil) em Configurações → Geral; os bots vão usar.
+  **Indicador de direção** (seta no alto da tela apontando para onde a pista vai):
+  automático (ligado no fácil e no médio), ligado ou desligado.
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
 de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**; a pista foi aumentada

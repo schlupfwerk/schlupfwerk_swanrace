@@ -97,10 +97,10 @@ static func _build_beach(parent: Node3D, track: IslandTrack, rng: RandomNumberGe
 		var b_profile := _beach_profile(track, i + 1)
 		for j in a_profile.size() - 1:
 			var corners := [
-				_v3(track.edge(i, a_profile[j][0]), a_profile[j][1]),
-				_v3(track.edge(i + 1, b_profile[j][0]), b_profile[j][1]),
-				_v3(track.edge(i + 1, b_profile[j + 1][0]), b_profile[j + 1][1]),
-				_v3(track.edge(i, a_profile[j + 1][0]), a_profile[j + 1][1]),
+				_v3(track.safe_edge(i, a_profile[j][0]), a_profile[j][1]),
+				_v3(track.safe_edge(i + 1, b_profile[j][0]), b_profile[j][1]),
+				_v3(track.safe_edge(i + 1, b_profile[j + 1][0]), b_profile[j + 1][1]),
+				_v3(track.safe_edge(i, a_profile[j + 1][0]), a_profile[j + 1][1]),
 			]
 			var colors := [a_profile[j][2], b_profile[j][2], b_profile[j + 1][2], a_profile[j + 1][2]]
 			for n in 4:
@@ -123,8 +123,8 @@ static func _build_foam(parent: Node3D, track: IslandTrack) -> void:
 		var outer_b := track.water_line(i + 1) + 26.0
 		var inner_a := track.water_line(i) + 3.2
 		var inner_b := track.water_line(i + 1) + 3.2
-		var p := [_v3(track.edge(i, outer_a), y), _v3(track.edge(i + 1, outer_b), y),
-				_v3(track.edge(i + 1, inner_b), y), _v3(track.edge(i, inner_a), y)]
+		var p := [_v3(track.safe_edge(i, outer_a), y), _v3(track.safe_edge(i + 1, outer_b), y),
+				_v3(track.safe_edge(i + 1, inner_b), y), _v3(track.safe_edge(i, inner_a), y)]
 		var uv := [Vector2(u0, 0), Vector2(u1, 0), Vector2(u1, 1), Vector2(u0, 1)]
 		for k: int in [0, 1, 2, 0, 2, 3]:
 			st.set_uv(uv[k])
@@ -397,6 +397,8 @@ static func _build_sea_life(parent: Node3D, track: IslandTrack, radius: float,
 	for n in 26:
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
 		var p := track.edge(i, track.water_line(i) + rng.randf_range(25.0, 120.0))
+		if not track.is_open_sea(p, 20.0):
+			continue
 		var s := rng.randf_range(1.2, 3.5)
 		rocks.append(_varied(p, SEA_LEVEL - 0.4, rng, s, s * 1.3))
 		_add_rock_obstacle(track, rocks[rocks.size() - 1])

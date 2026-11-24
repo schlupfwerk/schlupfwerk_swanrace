@@ -148,3 +148,9 @@ CAREFUL_WATER,Careful with the water!!!!,Cuidado com a água!!!!
 HINT_WARDROBE_KEYBOARD,↑↓ choose   ←→ change   Backspace: back   Q/E or mouse: turn the swan,↑↓ escolher   ←→ mudar   Backspace: voltar   Q/E ou mouse: girar o cisne
 HINT_WARDROBE_XBOX,↑↓ choose   A/X or ←→: change   LB/RB or right stick: turn the swan,↑↓ escolher   A/X ou ←→: mudar   LB/RB ou analógico direito: girar o cisne
 HINT_WARDROBE_PLAYSTATION,↑↓ choose   Cross/Square or ←→: change   L1/R1 or right stick: turn the swan,↑↓ escolher   Cruz/Quadrado ou ←→: mudar   L1/R1 ou analógico direito: girar o cisne
+DIFFICULTY,Difficulty,Dificuldade
+DIFFICULTY_EASY,Easy,Fácil
+DIFFICULTY_MEDIUM,Medium,Médio
+DIFFICULTY_HARD,Hard,Difícil
+DIRECTION_INDICATOR,Direction indicator,Indicador de direção
+AUTO_BY_DIFFICULTY,Automatic (easy and medium),Automático (fácil e médio)

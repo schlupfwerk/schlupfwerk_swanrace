@@ -141,6 +141,14 @@ func _build_general_page(list: VBoxContainer) -> void:
 				Settings.apply_language()
 				Settings.save_settings()
 				_rebuild())
+	_add_row(list, "DIFFICULTY", ["DIFFICULTY_EASY", "DIFFICULTY_MEDIUM", "DIFFICULTY_HARD"],
+			Settings.difficulty, func(i: int) -> void:
+				Settings.difficulty = i
+				Settings.changed.emit())
+	_add_row(list, "DIRECTION_INDICATOR", ["AUTO_BY_DIFFICULTY", "ON", "OFF"],
+			Settings.direction_indicator, func(i: int) -> void:
+				Settings.direction_indicator = i
+				Settings.changed.emit())
 
 
 # --- Video --------------------------------------------------------------------

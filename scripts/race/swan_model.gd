@@ -110,6 +110,10 @@ func apply_look(look: SwanLook) -> void:
 		foot.visible = (footwear == "" or footwear == "flip_flops") and not socks
 	# Jackets and the hoodie turn the wings into sleeves.
 	var outfit := look.slot_item("outfit")
+	# Roomy clothes: move the wings out so they sit on top of the fabric.
+	var wing_x := 0.47 if outfit == "" else 0.56
+	_wing_l.position.x = -wing_x
+	_wing_r.position.x = wing_x
 	for wing in _wing_meshes:
 		wing.material_override = _item_mats[outfit] if outfit in SLEEVED else _feather_mat
 
@@ -229,13 +233,17 @@ func _build_body() -> void:
 	_body_pivot.position.y = BODY_HEIGHT
 	add_child(_body_pivot)
 	_sphere(_body_pivot, 0.5, Vector3(1.0, 0.85, 1.3), Vector3.ZERO, _feather_mat)
-	# Tail: a tuft with a small fan of long feathers.
-	_sphere(_body_pivot, 0.16, Vector3(1.1, 0.7, 1.3), Vector3(0, 0.22, 0.62), _feather_mat,
+	# Tail: a fluffy tuft and two layers of long plumes fanning up and back.
+	_sphere(_body_pivot, 0.2, Vector3(1.3, 0.8, 1.3), Vector3(0, 0.2, 0.6), _feather_mat,
 			Vector3(0.7, 0, 0))
-	for k in 5:
-		var fan := (k - 2) * 0.32
-		_sphere(_body_pivot, 0.5, Vector3(0.09, 0.03, 0.42), Vector3(fan * 0.25, 0.3, 0.72),
-				_feather_mat, Vector3(0.55, fan, 0), 10, 5)
+	for k in 9:
+		var fan := (k - 4) * 0.2
+		_sphere(_body_pivot, 0.5, Vector3(0.13, 0.05, 0.62), Vector3(fan * 0.35, 0.34, 0.78),
+				_feather_mat, Vector3(0.75 - absf(fan) * 0.25, fan, fan * 0.3), 10, 5)
+	for k in 7:
+		var fan := (k - 3) * 0.26
+		_sphere(_body_pivot, 0.5, Vector3(0.11, 0.045, 0.48), Vector3(fan * 0.3, 0.16, 0.74),
+				_feather_mat, Vector3(0.35 - absf(fan) * 0.15, fan, fan * 0.3), 10, 5)
 	# S-shaped neck on its own pivot, so the head can lower when running.
 	_neck.position = Vector3(0, 0.3, -0.42)
 	_body_pivot.add_child(_neck)
@@ -466,24 +474,24 @@ func _build_outfits() -> void:
 	# Leather jacket: roomy shell with lapels, collar and zipper. Sleeves on the wings.
 	var leather := _item("jacket")
 	leather.roughness = 0.35
-	_wear("jacket", _sphere(_body_pivot, 0.5, Vector3(1.13, 0.98, 1.25), Vector3(0, 0.03, -0.07),
+	_wear("jacket", _sphere(_body_pivot, 0.5, Vector3(1.24, 1.06, 1.34), Vector3(0, -0.02, -0.06),
 			leather))
-	_wear("jacket", _add(_body_pivot, _torus(0.42, 0.52), Vector3(0, -0.28, -0.05),
+	_wear("jacket", _add(_body_pivot, _torus(0.5, 0.62), Vector3(0, -0.34, -0.05),
 			Vector3(1.05, 0.6, 1.25), leather))
 	for side in [-1.0, 1.0]:
 		_wear("jacket", _add(_body_pivot, _box(Vector3(0.16, 0.32, 0.03)),
-				Vector3(0.11 * side, 0.22, -0.64), Vector3.ONE, leather,
+				Vector3(0.12 * side, 0.22, -0.7), Vector3.ONE, leather,
 				Vector3(-0.5, 0.35 * side, 0.35 * side)))
 	_wear("jacket", _add(_body_pivot, _torus(0.12, 0.22), Vector3(0, 0.42, -0.47), Vector3.ONE,
 			leather, Vector3(-0.35, 0, 0)))
-	_wear("jacket", _add(_body_pivot, _box(Vector3(0.03, 0.5, 0.03)), Vector3(0, 0.0, -0.71),
+	_wear("jacket", _add(_body_pivot, _box(Vector3(0.03, 0.5, 0.03)), Vector3(0, -0.02, -0.77),
 			Vector3.ONE, _toon(Color("b8b8c0")), Vector3(-0.45, 0, 0)))
 
 	# Winter jacket: puffy quilted rings and a thick collar.
 	var winter := _item("winter_jacket")
-	_wear("winter_jacket", _sphere(_body_pivot, 0.5, Vector3(1.1, 0.95, 1.22), Vector3(0, 0.02, -0.05),
+	_wear("winter_jacket", _sphere(_body_pivot, 0.5, Vector3(1.22, 1.06, 1.32), Vector3(0, -0.01, -0.05),
 			winter))
-	var rings := [[-0.24, 0.5, 0.62], [-0.06, 0.53, 0.66], [0.12, 0.5, 0.63], [0.28, 0.42, 0.53]]
+	var rings := [[-0.3, 0.6, 0.74], [-0.1, 0.64, 0.78], [0.1, 0.6, 0.74], [0.28, 0.5, 0.62]]
 	for ring: Array in rings:
 		_wear("winter_jacket", _add(_body_pivot, _torus(ring[1] * 0.62, ring[2]),
 				Vector3(0, ring[0], -0.06), Vector3(1.0, 0.7, 1.22), winter))
@@ -492,23 +500,23 @@ func _build_outfits() -> void:
 
 	# Tank top: a roomy vest with straps; the wings stay feathers.
 	var tank := _item("tank_top")
-	_wear("tank_top", _sphere(_body_pivot, 0.5, Vector3(1.08, 0.88, 1.18), Vector3(0, -0.04, -0.06),
+	_wear("tank_top", _sphere(_body_pivot, 0.5, Vector3(1.18, 0.94, 1.28), Vector3(0, -0.07, -0.06),
 			tank))
-	_wear("tank_top", _add(_body_pivot, _torus(0.43, 0.5), Vector3(0, -0.3, -0.05),
+	_wear("tank_top", _add(_body_pivot, _torus(0.5, 0.6), Vector3(0, -0.36, -0.05),
 			Vector3(1.05, 0.5, 1.22), tank))
 	for side in [-1.0, 1.0]:
 		_wear("tank_top", _add(_body_pivot, _box(Vector3(0.08, 0.04, 0.6)),
-				Vector3(0.24 * side, 0.4, -0.12), Vector3.ONE, tank, Vector3(0.2, 0, 0.25 * side)))
+				Vector3(0.26 * side, 0.42, -0.12), Vector3.ONE, tank, Vector3(0.2, 0, 0.25 * side)))
 
 	# Hoodie: roomy shell, a hood behind the neck, front pocket and strings.
 	var hoodie := _item("hoodie")
-	_wear("hoodie", _sphere(_body_pivot, 0.5, Vector3(1.14, 1.0, 1.26), Vector3(0, 0.03, -0.06),
+	_wear("hoodie", _sphere(_body_pivot, 0.5, Vector3(1.25, 1.08, 1.36), Vector3(0, -0.02, -0.06),
 			hoodie))
-	_wear("hoodie", _add(_body_pivot, _torus(0.43, 0.53), Vector3(0, -0.29, -0.05),
+	_wear("hoodie", _add(_body_pivot, _torus(0.52, 0.64), Vector3(0, -0.36, -0.05),
 			Vector3(1.05, 0.6, 1.25), hoodie))
 	_wear("hoodie", _sphere(_body_pivot, 0.28, Vector3(1.1, 0.8, 0.9), Vector3(0, 0.45, -0.18),
 			hoodie, Vector3(0.6, 0, 0)))
-	_wear("hoodie", _add(_body_pivot, _box(Vector3(0.42, 0.18, 0.05)), Vector3(0, -0.1, -0.7),
+	_wear("hoodie", _add(_body_pivot, _box(Vector3(0.44, 0.2, 0.05)), Vector3(0, -0.14, -0.76),
 			Vector3.ONE, hoodie, Vector3(-0.35, 0, 0)))
 	for side in [-1.0, 1.0]:
 		_wear("hoodie", _capsule(_body_pivot, 0.012, 0.22, Vector3(0.06 * side, 0.18, -0.66),

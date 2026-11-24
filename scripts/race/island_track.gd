@@ -11,8 +11,9 @@ extends RefCounted
 
 const LAP_LENGTH := 1600.0
 const SAMPLES := 800
-## Shape harmonics of the coastline (2nd, 3rd, 5th, 7th).
-const SHAPE := [0.27, 0.16, 0.09, 0.045]
+## Shape harmonics of the coastline (2nd, 3rd, 5th, 7th, 9th). Tight curves:
+## about 35 m radius to the left and 18 m hairpins to the right in the bays.
+const SHAPE := [0.3, 0.2, 0.12, 0.06, 0.02]
 ## Average half-widths of the sand from the racing line; they vary along the lap.
 const FOREST_EDGE := -15.0
 const WATER_LINE := 15.0
@@ -34,6 +35,10 @@ var _water := PackedFloat32Array()
 ## Solid things on or near the sand (rocks, logs): {"p": Vector2, "r": radius,
 ## "h": height}. A swan in the air above "h" passes over it.
 var obstacles: Array[Dictionary] = []
+## How far you can go to each side at point i before the ground folds over
+## itself in a tight curve (positive = sea side).
+var _room_right := PackedFloat32Array()
+var _room_left := PackedFloat32Array()
 var _buckets := {}
 
 
@@ -43,21 +48,26 @@ func _init() -> void:
 		# Decreasing angle: the island's center stays on the swan's left.
 		var a := -TAU * i / SAMPLES
 		var r := 1.0 + SHAPE[0] * sin(2.0 * a + 0.6) + SHAPE[1] * sin(3.0 * a + 2.1) \
-				+ SHAPE[2] * sin(5.0 * a + 1.0) + SHAPE[3] * sin(7.0 * a + 0.3)
+				+ SHAPE[2] * sin(5.0 * a + 1.0) + SHAPE[3] * sin(7.0 * a + 0.3) \
+				+ SHAPE[4] * sin(9.0 * a + 1.7)
 		raw.append(Vector2(cos(a), sin(a)) * r)
 	var raw_length := 0.0
 	for i in SAMPLES:
 		raw_length += raw[i].distance_to(raw[(i + 1) % SAMPLES])
 	for i in SAMPLES:
 		points.append(raw[i] * LAP_LENGTH / raw_length)
+	_measure_room()
 	var total := 0.0
 	for i in SAMPLES:
 		lengths.append(total)
 		total += points[i].distance_to(points[(i + 1) % SAMPLES])
 		# The sand gets wider and narrower along the lap (about 20 to 38 m).
 		var u := TAU * i / SAMPLES
-		_forest.append(FOREST_EDGE - 4.0 * sin(3.0 * u + 1.0) - 1.5 * sin(7.0 * u))
-		_water.append(WATER_LINE + 5.0 * sin(4.0 * u + 2.0) + 1.5 * sin(9.0 * u + 0.5))
+		var forest := FOREST_EDGE - 4.0 * sin(3.0 * u + 1.0) - 1.5 * sin(7.0 * u)
+		var water := WATER_LINE + 5.0 * sin(4.0 * u + 2.0) + 1.5 * sin(9.0 * u + 0.5)
+		# Narrower sand inside the tightest curves.
+		_forest.append(maxf(forest, -0.6 * _room_left[i]))
+		_water.append(minf(water, 0.6 * _room_right[i]))
 
 
 func tangent(i: int) -> Vector2:
@@ -161,3 +171,38 @@ func obstacles_near(i: int) -> Array[Dictionary]:
 		for n: int in _buckets.get(b, []):
 			found.append(obstacles[n])
 	return found
+
+
+## Like edge(), but never past the point where a tight curve folds the ground.
+func safe_edge(i: int, offset: float) -> Vector2:
+	i = wrapi(i, 0, SAMPLES)
+	return edge(i, clampf(offset, -0.9 * _room_left[i], 0.9 * _room_right[i]))
+
+
+## True when `p` is out in open sea (not across a bay on another beach).
+func is_open_sea(p: Vector2, margin := 12.0) -> bool:
+	var info := locate(p, -1)
+	return info["lateral"] > water_line(info["index"]) + margin
+
+
+func _measure_room() -> void:
+	var radius_right := PackedFloat32Array()
+	var radius_left := PackedFloat32Array()
+	for i in SAMPLES:
+		var a := points[wrapi(i - 1, 0, SAMPLES)]
+		var b := points[i]
+		var c := points[(i + 1) % SAMPLES]
+		var turn := (b - a).angle_to(c - b)
+		var radius := (b - a).length() / maxf(absf(turn), 0.0001)
+		# A right turn folds the sea side; a left turn folds the forest side.
+		radius_right.append(radius if turn > 0.0 else INF)
+		radius_left.append(radius if turn < 0.0 else INF)
+	# Use the tightest curve nearby, so the limit is smooth along the lap.
+	for i in SAMPLES:
+		var right := INF
+		var left := INF
+		for k in range(-10, 11):
+			right = minf(right, radius_right[wrapi(i + k, 0, SAMPLES)])
+			left = minf(left, radius_left[wrapi(i + k, 0, SAMPLES)])
+		_room_right.append(minf(right, 400.0))
+		_room_left.append(minf(left, 400.0))

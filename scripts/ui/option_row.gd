@@ -69,6 +69,9 @@ func _build() -> void:
 
 	_name.text = label_text + ":"
 	_name.custom_minimum_size.x = 185
+	# Grows on wide panels so long names fit.
+	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_name.size_flags_stretch_ratio = 0.75
 	_name.clip_text = true
 	_name.add_theme_font_size_override("font_size", 21)
 	_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

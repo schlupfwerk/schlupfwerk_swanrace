@@ -26,7 +26,7 @@ func _ready() -> void:
 	add_child(root)
 
 	var info := VBoxContainer.new()
-	info.position = Vector2(24, 18)
+	info.position = Vector2(24, 286 if track else 18)
 	root.add_child(info)
 	var nickname := Label.new()
 	nickname.text = swan.look.nickname if swan else ""
@@ -62,7 +62,14 @@ func _ready() -> void:
 		minimap.swans = [swan]
 		minimap.size = Vector2(250, 250)
 		root.add_child(minimap)
-		minimap.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_KEEP_SIZE, 20)
+		minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_KEEP_SIZE, 20)
+
+		var arrow := DirectionArrow.new()
+		arrow.track = track
+		arrow.swan = swan
+		arrow.size = Vector2(120, 120)
+		root.add_child(arrow)
+		arrow.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_KEEP_SIZE, 14)
 
 	_speedometer.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_speedometer.custom_minimum_size = Vector2(230, 230)
