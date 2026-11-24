@@ -187,6 +187,13 @@ func _build_menu() -> void:
 
 	_hint.add_theme_font_size_override("font_size", 18)
 	column.add_child(_hint)
+
+	var version := Label.new()
+	version.text = GameVersion.label()
+	version.add_theme_font_size_override("font_size", 16)
+	version.modulate = Color(1, 1, 1, 0.75)
+	root.add_child(version)
+	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
 	InputGlyphs.changed.connect(_update_hint)
 	_update_hint()
 

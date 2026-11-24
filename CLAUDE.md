@@ -257,6 +257,15 @@ compilado e enviado ao TestFlight. No futuro, isso pode rodar no GitHub Actions
 valor atual). A Godot exporta para Windows/Linux; o upload é feito com o SteamPipe.
 O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
+## Versionamento
+- **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.1**;
+  só o dono do projeto decide quando ela sobe.
+- **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
+  Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada
+  exportação (com o hash do commit) e preenche o versionCode/versionName do Android e a
+  versão do executável do Windows. Pelo editor, `GameVersion` lê direto do git.
+
 ## Regras do repositório
 - Decisões de arquitetura ficam em `docs/adr/` (ADRs, em inglês). Mudou uma decisão?
   Escreva uma ADR nova que substitui a antiga e atualize este arquivo.
