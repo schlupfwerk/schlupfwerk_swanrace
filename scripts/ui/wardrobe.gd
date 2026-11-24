@@ -183,6 +183,17 @@ func _build_menu() -> void:
 			else:
 				_look.accessories[id] = SwanPalette.colors[i - 1])
 
+	# Number of laps, right above the race button.
+	var lap_names := PackedStringArray()
+	for value in Settings.LAP_OPTIONS:
+		lap_names.append(str(value))
+	var laps_row := OptionRow.new().setup(tr("LAPS"), lap_names,
+			maxi(Settings.LAP_OPTIONS.find(Settings.laps), 0))
+	laps_row.value_changed.connect(func(i: int) -> void:
+		Settings.laps = Settings.LAP_OPTIONS[i]
+		Settings.save_settings())
+	column.add_child(laps_row)
+
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	column.add_child(buttons)

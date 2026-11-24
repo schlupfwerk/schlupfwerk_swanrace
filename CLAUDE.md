@@ -131,6 +131,8 @@ prioridade.
 - **Português** se o aparelho estiver em português; **inglês** em qualquer outro caso.
   O jogador pode escolher em Configurações → Geral → Idioma (Automático, Português,
   English); a escolha fica salva em `user://settings.cfg`.
+- **Confirmar e voltar** estão declarados no projeto: `ui_accept` = Enter, Espaço, A/Cruz;
+  `ui_cancel` = Esc, B/Círculo (não dependa dos padrões da Godot).
 - **Nenhum texto de interface fixo no código:** use chaves em
   `translations/strings.csv` (colunas `en` e `pt`) com `tr("CHAVE")`. Ao criar texto
   novo, adicione a chave nas duas línguas. Apelidos sorteados têm listas por idioma.
@@ -160,7 +162,7 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 
 ## Pistas
 **Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
-`desert_island`). Voltas na praia de uma ilha deserta, **1.600 m**, com curvas fechadas para a
+`desert_island`). Voltas na praia de uma ilha deserta, **1.280 m**, com curvas fechadas para a
 **esquerda (~35 m de raio) e grampos para a direita (~18 m) nas baías** e **largura da areia variável** (~20 a 40 m).
 - **Mata Atlântica à esquerda:** morros, árvores de copa redonda, emergentes, embaúbas,
   palmitos-juçara, ipês amarelos e rosas, quaresmeiras, coqueiros, bananeiras,
@@ -198,6 +200,9 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   ou voltar ao menu.
 - **Largada com semáforo:** 3 luzes vermelhas com "tu", verde com "tuuuu" e "Corra!".
 - **Afogamento:** som de derrota e 5 bolhas subindo em zigue-zague e estourando com som.
+- **Turbo com stamina:** X/Quadrado (Shift no teclado) dá mais aceleração e +22% de
+  velocidade máxima; a stamina (barra acima do velocímetro) acaba em ~3,6 s e recarrega
+  depois de 1 s solto (~8 s para encher). Ajuda nas subidas e melhora a volta.
 - **Curva custa:** segurando a curva, o limite de velocidade cai 1% a cada 0,1 s (até
   −30%) e volta ao soltar. **Pouso** de pulo tira 5% da velocidade.
 - **Minimapa** no canto superior esquerdo com o ponto de GPS de cada cisne.
@@ -206,9 +211,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   automático (ligado no fácil e no médio), ligado ou desligado.
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
-de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**; a pista foi aumentada
-em 60% e os tempos subiram na mesma proporção: hoje o piloto automático perfeito faz
-**~1:57** saindo parado. Se mudar velocidade ou aceleração, recalcule (ver
+plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Hoje (1.280 m, com
+relevo): volta perfeita **~1:42**, ou **~1:37** usando o turbo nas subidas. Se mudar velocidade ou aceleração, recalcule (ver
 `IslandTrack`).
 
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de

@@ -11,6 +11,8 @@ var accel: float = 0.0
 var brake: float = 0.0
 ## True only on the tick the jump button went down.
 var jump: bool = false
+## True while the turbo button is held.
+var turbo: bool = false
 
 
 func reset() -> void:
@@ -18,3 +20,4 @@ func reset() -> void:
 	accel = 0.0
 	brake = 0.0
 	jump = false
+	turbo = false

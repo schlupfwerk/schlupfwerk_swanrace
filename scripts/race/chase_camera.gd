@@ -41,7 +41,7 @@ func _process(delta: float) -> void:
 	var ground := target.global_position.y - target.motor.position.y
 	_height = lerpf(_height, ground + target.motor.position.y * JUMP_FOLLOW, 1.0 - exp(-6.0 * delta))
 	_place()
-	var target_fov := Settings.fov + 8.0 * target.motor.speed_ratio()
+	var target_fov := Settings.fov + 8.0 * target.motor.speed_ratio() + (6.0 if target.motor.boosting else 0.0)
 	fov = lerpf(fov, target_fov, 1.0 - exp(-4.0 * delta))
 
 

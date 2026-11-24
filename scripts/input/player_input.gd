@@ -10,6 +10,7 @@ func update_intent(intent: SwanIntent, _tick: float) -> void:
 	intent.steer = Input.get_axis("steer_left", "steer_right")
 	intent.accel = Input.get_action_strength("accel")
 	intent.brake = Input.get_action_strength("brake")
+	intent.turbo = Input.is_action_pressed("turbo")
 	# Edge detection per tick, so a press is never lost or repeated when a
 	# frame runs zero or several simulation ticks.
 	var jump_down := Input.is_action_pressed("jump")

@@ -28,6 +28,8 @@ static var _outline: StandardMaterial3D
 var wet := false
 ## 0..1 while drowning: flailing wings, head up, bubbles.
 var drowning := 0.0
+## True while the turbo is pushing: speed streaks behind the swan.
+var boosting := false
 
 var _feather_mat := ShaderMaterial.new()
 var _leg_mat := _toon(Color("2b2b30"))
@@ -50,6 +52,7 @@ var _smoke: CPUParticles3D
 var _wind: Array[CPUParticles3D] = []
 var _land_dust: CPUParticles3D
 var _splash: CPUParticles3D
+var _boost: CPUParticles3D
 var _phase := 0.0
 var _wing_open := 0.0
 ## Landing squash and take-off stretch, 1 right after the event, fading to 0.
@@ -201,6 +204,7 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_cape.rotation.x = lerpf(_cape.rotation.x, cape_lift, smooth)
 
 	_splash.emitting = (wet and moving > 0.15) or drowning > 0.1
+	_boost.emitting = boosting
 	_smoke.emitting = on_ground and not wet and accel > 0.2 and speed_ratio > 0.05
 	for wind in _wind:
 		wind.emitting = braking and _wing_open > 0.3
@@ -721,6 +725,21 @@ func _build_effects() -> void:
 	_splash.initial_velocity_min = 2.0
 	_splash.initial_velocity_max = 3.5
 	_splash.gravity = Vector3(0, -9.8, 0)
+
+	# Speed streaks flying back while the turbo pushes.
+	var boost_streak := BoxMesh.new()
+	boost_streak.size = Vector3(0.03, 0.9, 0.03)
+	boost_streak.material = _particle_material()
+	_boost = _particles(40, 0.4, boost_streak, Color(0.75, 1.0, 1.0, 0.85))
+	_boost.position = Vector3(0, 1.1, 0.4)
+	_boost.particle_flag_align_y = true
+	_boost.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
+	_boost.emission_box_extents = Vector3(0.7, 0.5, 0.3)
+	_boost.direction = Vector3(0, 0.05, 1)
+	_boost.spread = 6.0
+	_boost.initial_velocity_min = 6.0
+	_boost.initial_velocity_max = 9.0
+	_boost.gravity = Vector3.ZERO
 
 	# Wind gusts from the open wings while braking.
 	for side in [-1.0, 1.0]:

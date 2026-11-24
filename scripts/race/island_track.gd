@@ -5,11 +5,11 @@ extends RefCounted
 ## left-hand ones. Pure geometry and lap math, no visuals.
 ##
 ## Lap length comes from SwanMotor (13.9 m/s top speed, ~3 s to reach it).
-## The first version (1000 m) gave ~1:15 for a clean lap; this one is 60%
-## longer, so a clean lap is ~1:57 and a struggling one ~3:10. Keep this in
-## sync when the motor changes.
+## 1000 m gave ~1:15 for a clean lap on flat sand. Now 1280 m with hills and
+## banked curves: a clean lap is ~1:42 (~1:37 using the turbo on climbs).
+## Keep this in sync when the motor or the track changes.
 
-const LAP_LENGTH := 1600.0
+const LAP_LENGTH := 1280.0
 const SAMPLES := 800
 ## Shape harmonics of the coastline (2nd, 3rd, 5th, 7th, 9th). Tight curves:
 ## about 35 m radius to the left and 18 m hairpins to the right in the bays.

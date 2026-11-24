@@ -146,6 +146,7 @@ func _process(delta: float) -> void:
 		_land_player.play()
 	_update_pet(delta)
 	model.wet = in_water
+	model.boosting = motor.boosting
 	model.animate(delta, motor.speed_ratio(), intent.steer, intent.accel,
 			intent.brake if motor.braking else 0.0,
 			motor.on_ground)

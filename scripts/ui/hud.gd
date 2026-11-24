@@ -99,6 +99,15 @@ func _ready() -> void:
 	_speedometer.position = Vector2(-254, -254)
 	root.add_child(_speedometer)
 
+	var stamina := StaminaBar.new()
+	stamina.swan = swan
+	root.add_child(stamina)
+	stamina.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	stamina.offset_left = -340
+	stamina.offset_right = -24
+	stamina.offset_top = -300
+	stamina.offset_bottom = -262
+
 	var pedals := PedalBars.new()
 	pedals.swan = swan
 	root.add_child(pedals)
