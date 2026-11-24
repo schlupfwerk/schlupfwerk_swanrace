@@ -5,27 +5,36 @@ extends Node3D
 
 const RACE_SCENE := "res://scenes/race.tscn"
 const STYLE_OPTIONS: PackedStringArray = ["SOLID", "GRADIENT"]
-## Slot rows: slot, label, color label, [item id, item label]... ("" = none).
+## Slot rows: slot, label, color label, camera zone, [item id, item label]...
+## ("" = none).
 const SLOT_ROWS := [
-	["head", "HEAD", "HEAD_COLOR", [["", "NONE"], ["cap", "CAP"], ["straw_hat", "STRAW_HAT"],
+	["head", "HEAD", "HEAD_COLOR", "head", [["", "NONE"], ["cap", "CAP"], ["straw_hat", "STRAW_HAT"],
 			["top_hat", "TOP_HAT"], ["cowboy_hat", "COWBOY_HAT"], ["beanie", "BEANIE"],
 			["wig", "WIG_CURLY"], ["wig_long", "WIG_LONG"]]],
-	["outfit", "OUTFIT", "OUTFIT_COLOR", [["", "NONE"], ["jacket", "LEATHER_JACKET"],
+	["outfit", "OUTFIT", "OUTFIT_COLOR", "body", [["", "NONE"], ["jacket", "LEATHER_JACKET"],
 			["winter_jacket", "WINTER_JACKET"], ["tank_top", "TANK_TOP"], ["hoodie", "HOODIE"]]],
-	["back", "BACK_ITEM", "BACK_COLOR", [["", "NONE"], ["backpack", "BACKPACK"], ["bag", "BAG"],
+	["necklace", "NECKLACE", "NECKLACE_COLOR", "neck", [["", "NONE"],
+			["necklace_round", "NECKLACE_ROUND"], ["necklace", "NECKLACE_V"],
+			["necklace_pearls", "NECKLACE_PEARLS"]]],
+	["back", "BACK_ITEM", "BACK_COLOR", "back", [["", "NONE"], ["backpack", "BACKPACK"], ["bag", "BAG"],
 			["cape", "CAPE"], ["dog_bag", "DOG_BAG"], ["cat_bag", "CAT_BAG"],
 			["ostrich_egg", "OSTRICH_EGG"]]],
-	["footwear", "FOOTWEAR", "FOOTWEAR_COLOR", [["", "BAREFOOT"], ["sneakers", "SNEAKERS"],
+	["footwear", "FOOTWEAR", "FOOTWEAR_COLOR", "feet", [["", "BAREFOOT"], ["sneakers", "SNEAKERS"],
 			["boots", "BOOTS"], ["shoes", "SHOES"], ["flip_flops", "FLIP_FLOPS"]]],
 ]
-## Items that are simply on or off, with a color.
-const EXTRA_ROWS := [["lashes", "LASHES"], ["makeup", "MAKEUP"], ["necklace", "NECKLACE"],
-		["socks", "SOCKS"]]
+## Items that are on or off with a color (lipstick, socks), or just on or off
+## (lashes). Each with its camera zone.
+const EXTRA_ROWS := [["lipstick", "LIPSTICK", "head", true], ["lashes", "LASHES", "head", false],
+		["socks", "SOCKS", "feet", true]]
 const GLASSES_LABELS: PackedStringArray = ["NONE", "GLASSES_ROUND", "GLASSES_SQUARE",
 		"GLASSES_AVIATOR", "GLASSES_VISOR"]
 const TURN_SPEED := 2.2
 const AUTO_TURN_SPEED := 0.4
 const DEFAULT_ITEM_COLOR := Color("e8413c")
+## How close the camera gets to each part (smaller = closer).
+const ZOOM := {"head": 0.7, "neck": 0.9, "body": 1.4, "back": 1.5, "feet": 1.0}
+const FULL_CAMERA := Vector3(0, 1.6, 5.2)
+const FULL_LOOK := Vector3(0, 1.3, 0)
 
 var _look: SwanLook
 var _model := SwanModel.new()
@@ -39,6 +48,14 @@ var _settings_button := Button.new()
 var _panel: PanelContainer
 var _layer: CanvasLayer
 var _auto_turn := true
+## Part of the swan the focused row is about ("full", "head", "neck", ...).
+var _zone := "full"
+## Zone given to the rows being built.
+var _building_zone := "full"
+## True once the player turns the swan by hand (until the zone changes).
+var _manual_turn := false
+var _camera := Camera3D.new()
+var _look_at := FULL_LOOK
 
 
 func _ready() -> void:
@@ -53,16 +70,22 @@ func _process(delta: float) -> void:
 	var turn := Input.get_axis("turn_model_left", "turn_model_right") if _panel.visible else 0.0
 	if absf(turn) > 0.1:
 		_auto_turn = false
+		_manual_turn = true
 		_model.rotation.y += turn * TURN_SPEED * delta
+	elif _zone != "full" and not _manual_turn:
+		# Show the part being edited.
+		_model.rotation.y = lerp_angle(_model.rotation.y, _zone_yaw(), 1.0 - exp(-4.0 * delta))
 	elif _auto_turn:
 		_model.rotation.y += delta * AUTO_TURN_SPEED
 	_model.animate(delta, 0.0, 0.0, 0.0, 0.0, true)
+	_move_camera(delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	# Drag on the swan (outside the menu) to turn it.
 	if event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
 		_auto_turn = false
+		_manual_turn = true
 		_model.rotation.y += event.relative.x * 0.01
 
 
@@ -82,12 +105,11 @@ func _build_stage() -> void:
 	_model.rotation.y = PI - 0.6
 	add_child(_model)
 
-	var camera := Camera3D.new()
-	camera.position = Vector3(0, 1.6, 5.2)
-	camera.fov = 50.0
-	add_child(camera)
-	camera.look_at(Vector3(0, 1.3, 0))
-	camera.make_current()
+	_camera.position = FULL_CAMERA
+	_camera.fov = 50.0
+	add_child(_camera)
+	_camera.look_at(FULL_LOOK)
+	_camera.make_current()
 
 
 func _build_menu() -> void:
@@ -142,20 +164,24 @@ func _build_menu() -> void:
 	list.add_child(random_button)
 
 	# Feathers and legs.
+	_building_zone = "full"
 	_row(list, "FEATHERS", _translated(STYLE_OPTIONS), _look.feather_style, func(i: int) -> void:
 		_look.feather_style = i as SwanLook.FeatherStyle)
 	_color_row(list, "FEATHER_COLOR", _look.feather_color, func(c: Color) -> void:
 		_look.feather_color = c)
 	_color_2_row = _color_row(list, "TOP_COLOR", _look.feather_color_2, func(c: Color) -> void:
 		_look.feather_color_2 = c)
+	_building_zone = "feet"
 	_color_row(list, "LEGS", _look.leg_color, func(c: Color) -> void:
 		_look.leg_color = c)
 
 	# Head, outfit, back and footwear: pick the item, then its color.
 	for slot_row: Array in SLOT_ROWS:
-		_add_slot_rows(list, slot_row[0], slot_row[1], slot_row[2], slot_row[3])
+		_building_zone = slot_row[3]
+		_add_slot_rows(list, slot_row[0], slot_row[1], slot_row[2], slot_row[4])
 
 	# Glasses: shape, frame color, lens color (solid or gradient).
+	_building_zone = "head"
 	_row(list, "GLASSES", _translated(GLASSES_LABELS),
 			SwanLook.GLASSES_STYLES.find(_look.glasses_style) + 1, func(i: int) -> void:
 				_look.glasses_style = "" if i == 0 else SwanLook.GLASSES_STYLES[i - 1])
@@ -171,17 +197,23 @@ func _build_menu() -> void:
 		_look.glasses_lens_2 = c)] = func() -> bool:
 			return _look.glasses_style != "" and _look.glasses_lens_gradient
 
-	# Simple extras: none, or a color.
+	# Extras: none or a color (lipstick, socks), or no/yes (lashes).
 	var extra_options := PackedStringArray([tr("NONE")])
 	extra_options.append_array(SwanPalette.display_names())
+	var yes_no := PackedStringArray([tr("NO"), tr("YES")])
 	for extra: Array in EXTRA_ROWS:
 		var id: String = extra[0]
-		var current := SwanPalette.closest(_look.accessories[id]) + 1 if _look.is_wearing(id) else 0
-		_row(list, extra[1], extra_options, current, func(i: int) -> void:
+		var colored: bool = extra[3]
+		_building_zone = extra[2]
+		var current := 0
+		if _look.is_wearing(id):
+			current = SwanPalette.closest(_look.accessories[id]) + 1 if colored else 1
+		_row(list, extra[1], extra_options if colored else yes_no, current, func(i: int) -> void:
 			if i == 0:
 				_look.accessories.erase(id)
 			else:
-				_look.accessories[id] = SwanPalette.colors[i - 1])
+				_look.accessories[id] = SwanPalette.colors[i - 1] if colored else Color.BLACK)
+	_building_zone = "full"
 
 	# Number of laps, right above the race button.
 	var lap_names := PackedStringArray()
@@ -202,6 +234,7 @@ func _build_menu() -> void:
 	_race_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_race_button.add_theme_font_size_override("font_size", 30)
 	_race_button.pressed.connect(_on_race)
+	_race_button.focus_entered.connect(_focus_zone.bind("full"))
 	buttons.add_child(_race_button)
 
 	_settings_button.text = tr("SETTINGS")
@@ -249,6 +282,7 @@ func _add_slot_rows(list: VBoxContainer, slot: String, label: String, color_labe
 func _row(list: VBoxContainer, label: String, options: PackedStringArray, index: int,
 		on_change: Callable) -> OptionRow:
 	var row := OptionRow.new().setup(tr(label), options, index)
+	row.focus_entered.connect(_focus_zone.bind(_building_zone))
 	row.value_changed.connect(func(i: int) -> void:
 		on_change.call(i)
 		_refresh())
@@ -308,3 +342,37 @@ static func _translated(keys: PackedStringArray) -> PackedStringArray:
 	for key in keys:
 		out.append(TranslationServer.translate(key))
 	return out
+
+
+func _focus_zone(zone: String) -> void:
+	if zone != _zone:
+		_zone = zone
+		_manual_turn = false
+		if zone == "full":
+			_auto_turn = true
+
+
+## Which way to turn the swan to show the part being edited.
+func _zone_yaw() -> float:
+	if _zone == "back":
+		match _look.slot_item("back"):
+			"bag":
+				return -PI / 2.0
+			"dog_bag", "cat_bag":
+				return PI / 2.0
+		return 0.35
+	return PI - 0.45
+
+
+## Glide the camera to the part being edited (or the whole swan).
+func _move_camera(delta: float) -> void:
+	var target := FULL_CAMERA
+	var look := FULL_LOOK
+	if _zone != "full":
+		var distance: float = ZOOM.get(_zone, 1.0)
+		look = _model.anchor(_zone) + Vector3(-0.55 * distance, 0.0, 0.0)
+		target = look + Vector3(0.0, 0.25 * distance, 2.0 * distance)
+	var blend := 1.0 - exp(-5.0 * delta)
+	_camera.position = _camera.position.lerp(target, blend)
+	_look_at = _look_at.lerp(look, blend)
+	_camera.look_at(_look_at)

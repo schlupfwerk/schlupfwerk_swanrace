@@ -14,6 +14,8 @@ var target: Swan
 var finish := false
 
 var _finish_time := 0.0
+## Smoothed slope under the swan: the camera dips on climbs.
+var _slope := 0.0
 
 var _yaw := 0.0
 var _height := 0.0
@@ -41,6 +43,7 @@ func _process(delta: float) -> void:
 	var ground := target.global_position.y - target.motor.position.y
 	_height = lerpf(_height, ground + target.motor.position.y * JUMP_FOLLOW, 1.0 - exp(-6.0 * delta))
 	_place()
+	_slope = lerpf(_slope, target.motor.slope, 1.0 - exp(-3.0 * delta))
 	var target_fov := Settings.fov + 8.0 * target.motor.speed_ratio() + (6.0 if target.motor.boosting else 0.0)
 	fov = lerpf(fov, target_fov, 1.0 - exp(-4.0 * delta))
 
@@ -49,5 +52,9 @@ func _place() -> void:
 	var basis := Basis(Vector3.UP, _yaw)
 	var ground := Vector3(target.global_position.x, _height, target.global_position.z)
 	var away := smoothstep(0.0, 3.0, _finish_time)
-	global_position = ground + basis * Vector3(0, lerpf(HEIGHT, 9.0, away), lerpf(DISTANCE, 18.0, away))
-	look_at(ground + Vector3.UP * LOOK_HEIGHT + basis * Vector3(0, 0, -LOOK_AHEAD))
+	# Climbing: lower and closer, looking up the hill. Descending: a bit higher.
+	var climb := clampf(_slope * 6.0, -0.6, 1.0)
+	var height := HEIGHT - 1.3 * maxf(climb, 0.0) + 0.6 * maxf(-climb, 0.0)
+	global_position = ground + basis * Vector3(0, lerpf(height, 9.0, away),
+			lerpf(DISTANCE - 0.8 * maxf(climb, 0.0), 18.0, away))
+	look_at(ground + Vector3.UP * (LOOK_HEIGHT + 1.2 * maxf(climb, 0.0)) + basis * Vector3(0, 0, -LOOK_AHEAD))

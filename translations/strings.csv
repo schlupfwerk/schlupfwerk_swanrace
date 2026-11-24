@@ -152,7 +152,7 @@ DIFFICULTY,Difficulty,Dificuldade
 DIFFICULTY_EASY,Easy,Fácil
 DIFFICULTY_MEDIUM,Medium,Médio
 DIFFICULTY_HARD,Hard,Difícil
-DIRECTION_INDICATOR,Direction indicator,Indicador de direção
+DIRECTION_INDICATOR,Tips (arrow and hints),Dicas (seta e avisos)
 AUTO_BY_DIFFICULTY,Automatic (easy and medium),Automático (fácil e médio)
 LAPS,Laps,Voltas
 HUD_LAP_OF,Lap %d/%d,Volta %d/%d
@@ -169,3 +169,11 @@ ACCEL_SHORT,Accelerate,Acelerar
 STEER_SHORT,Steer,Virar
 HORN,Horn,Buzina
 LAPS_LEFT,%d laps to go!,Faltam %d voltas!
+USE_TURBO,Use the turbo!!,Use o turbo!!
+NECKLACE_ROUND,Round,Círculo
+NECKLACE_V,V-shape,Em V
+NECKLACE_PEARLS,Pearls,Pérolas
+NECKLACE_COLOR,Necklace color,Cor do colar
+LIPSTICK,Lipstick (beak),Batom (bico)
+NO,No,Não
+YES,Yes,Sim

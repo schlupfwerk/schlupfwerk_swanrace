@@ -12,9 +12,10 @@ const SLOTS := {
 	"outfit": ["jacket", "winter_jacket", "tank_top", "hoodie"],
 	"footwear": ["sneakers", "boots", "shoes", "flip_flops"],
 	"back": ["backpack", "bag", "cape", "dog_bag", "cat_bag", "ostrich_egg"],
+	"necklace": ["necklace_round", "necklace", "necklace_pearls"],
 }
 ## Items that are simply worn or not, each with one color.
-const EXTRAS := ["lashes", "makeup", "necklace", "socks"]
+const EXTRAS := ["lashes", "lipstick", "socks"]
 ## Glasses shapes ("" = no glasses).
 const GLASSES_STYLES := ["round", "square", "aviator", "visor"]
 const NICKNAME_MAX_LENGTH := 16

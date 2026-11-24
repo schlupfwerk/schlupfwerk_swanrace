@@ -96,8 +96,12 @@ prioridade.
       japonês (geta).
   - **Óculos:** formato (redondo, quadrado, aviador, viseira), cor da armação e lente
     sólida ou em gradiente.
-  - **Extras liga/desliga com cor:** cílios, maquiagem, colar (alto, em V), meias (até
-    a metade da perna).
+  - **Colar** (slot): círculo, em V ou pérolas, com cor.
+  - **Extras:** batom (pinta o bico, com cor), cílios (sim/não, longos para cima), meias
+    (até a metade da perna, com cor).
+  - **Óculos** ficam no meio do bico. **Jaquetas abertas na frente**, sem barra embaixo.
+  - No vestiário a **câmera vai até a parte editada** (rosto, pescoço, corpo, costas, pés)
+    e vira o cisne para mostrá-la.
   - No vestiário o cisne gira sozinho até o jogador girar (Q/E, LB/RB, analógico direito
     ou arrastando com o mouse). Cada opção é **‹ | valor | ›**: A/Cruz avança, X/Quadrado
     ou Backspace volta.
@@ -189,7 +193,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   progressivo**: gatilho todo abre a asa inteira e para em ~1,2 s; meio gatilho abre meia asa
   e freia pela metade.
 - **Na curva** o cisne inclina o corpo e vira a cabeça para o lado da curva.
-- **Relevo:** a pista tem subidas e descidas (até ~11 m, rampas de até ~10%) e é
+- **Relevo:** a pista tem subidas e descidas (até ~15 m, rampas de até ~16%; na subida a
+  câmera abaixa e o cisne sua) e é
   **inclinada nas curvas** (até ~12°, o lado de dentro mais baixo). Subida: perde velocidade e
   o máximo cai até 75%; descida: ganha velocidade e passa dos 50 km/h (até 130%). O cisne
   inclina com o chão; praias altas descem em barranco até o mar.
@@ -205,15 +210,15 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   apertado: WASD ou setas (troca sozinho), Xbox (A B X Y, LT/RT) ou PlayStation (✕ ○ □ △, L2/R2).
 - **Largada com semáforo:** 3 luzes vermelhas com "tu", verde com "tuuuu" e "Corra!".
 - **Afogamento:** som de derrota e 5 bolhas subindo em zigue-zague e estourando com som.
-- **Turbo com stamina:** X/Quadrado (Shift no teclado) dá mais aceleração e +22% de
-  velocidade máxima; a stamina (barra acima do velocímetro) acaba em ~3,6 s e recarrega
-  depois de 1 s solto (~8 s para encher). Ajuda nas subidas e melhora a volta.
+- **Turbo com stamina:** X/Quadrado (Shift no teclado) dá mais aceleração e **+20%** de
+  velocidade máxima; a stamina (barra acima do velocímetro) **acaba em 3 s** e leva **10 s**
+  para encher de novo. O jogador precisa escolher onde usar (subidas).
 - **Curva custa:** segurando a curva, o limite de velocidade cai 1% a cada 0,1 s (até
   −30%) e volta ao soltar. **Pouso** de pulo tira 5% da velocidade.
 - **Minimapa** no canto superior esquerdo com o ponto de GPS de cada cisne.
 - **Dificuldade** (Fácil, Médio, Difícil) em Configurações → Geral; os bots vão usar.
-  **Indicador de direção** (seta no alto da tela apontando para onde a pista vai):
-  automático (ligado no fácil e no médio), ligado ou desligado.
+  **Dicas** (seta no alto da tela apontando para onde a pista vai e avisos como "Use o
+  turbo!!" numa subida forte): automático (ligado no fácil e no médio), ligado ou desligado.
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
 plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Hoje (1.280 m, com

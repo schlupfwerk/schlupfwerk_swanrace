@@ -31,6 +31,8 @@ var _beep := AudioStreamPlayer.new()
 var _whistle := AudioStreamPlayer.new()
 var _lights_lit := 0
 var _go_time := 0.0
+## Seconds until the next "use the turbo" tip may show.
+var _tip_cooldown := 8.0
 
 static var _music_stream: AudioStreamWAV
 static var _final_stream: AudioStreamWAV
@@ -116,6 +118,7 @@ func _process(delta: float) -> void:
 		_go_time -= delta
 		if _go_time <= 0.0:
 			_hud.set_start_lights(-1)
+	_update_tips(delta)
 	if not _finished:
 		_hud.set_lap(mini(_laps.lap, _total_laps), _total_laps, _laps.lap_time, _last_lap,
 				_race_time)
@@ -185,3 +188,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().change_scene_to_file(RACE_SCENE)
 	elif event.is_action_pressed("pause") or (_finished and event.is_action_pressed("ui_cancel")):
 		get_tree().change_scene_to_file(WARDROBE_SCENE)
+
+
+## Tips mode: suggest the turbo on a steep climb when there is stamina for it.
+func _update_tips(delta: float) -> void:
+	_tip_cooldown -= delta
+	if not _racing or _finished or _tip_cooldown > 0.0 or not Settings.shows_direction():
+		return
+	var motor := _swan.motor
+	if motor.slope > 0.08 and motor.stamina > 0.6 and not motor.boosting:
+		_hud.show_message(tr("USE_TURBO"), 2.0)
+		_tip_cooldown = 15.0

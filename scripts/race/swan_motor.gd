@@ -28,10 +28,10 @@ const SLOPE_LIMIT_MAX := 1.3
 ## Turbo: while held (and stamina lasts) more push and a higher top speed. Stamina
 ## (0..1) drains while boosting and refills after a short pause.
 const TURBO_ACCEL_BONUS := 3.0
-const TURBO_LIMIT_BONUS := 0.22
-const STAMINA_DRAIN_PER_SECOND := 0.28
-const STAMINA_REFILL_PER_SECOND := 0.12
-const STAMINA_REFILL_DELAY := 1.0
+const TURBO_LIMIT_BONUS := 0.2
+const STAMINA_DRAIN_PER_SECOND := 1.0 / 3.0 # empty in 3 s
+const STAMINA_REFILL_PER_SECOND := 0.1 # full again in 10 s
+const STAMINA_REFILL_DELAY := 0.5
 ## Each landing costs 5% of the speed, so jumps are a choice.
 const LANDING_SPEED_LOSS := 0.05
 

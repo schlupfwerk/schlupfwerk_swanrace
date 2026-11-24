@@ -242,7 +242,7 @@ func _shape_ground() -> void:
 	for i in SAMPLES:
 		var u := TAU * i / SAMPLES
 		# Two rolling hills and a few smaller bumps, back to the start height.
-		_height.append(BASE_HEIGHT + 3.5 * (1.0 - cos(3.0 * u)) + 2.0 * (1.0 - cos(7.0 * u + 1.0)))
+		_height.append(BASE_HEIGHT + 5.0 * (1.0 - cos(3.0 * u)) + 2.6 * (1.0 - cos(7.0 * u + 1.0)))
 		var smooth := 0.0
 		for k in range(-12, 13):
 			smooth += curvature[wrapi(i + k, 0, SAMPLES)]

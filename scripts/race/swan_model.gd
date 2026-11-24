@@ -30,10 +30,13 @@ var wet := false
 var drowning := 0.0
 ## True while the turbo is pushing: speed streaks behind the swan.
 var boosting := false
+## 0..1 how hard the swan is working (steep climbs): drops of sweat fly off.
+var effort := 0.0
 
 var _feather_mat := ShaderMaterial.new()
 var _leg_mat := _toon(Color("2b2b30"))
 var _lens_mat := ShaderMaterial.new()
+var _beak_mat := _toon(BEAK_COLOR)
 var _body_pivot := Node3D.new()
 var _neck := Node3D.new()
 var _head := Node3D.new()
@@ -53,6 +56,7 @@ var _wind: Array[CPUParticles3D] = []
 var _land_dust: CPUParticles3D
 var _splash: CPUParticles3D
 var _boost: CPUParticles3D
+var _sweat: CPUParticles3D
 var _phase := 0.0
 var _wing_open := 0.0
 ## Landing squash and take-off stretch, 1 right after the event, fading to 0.
@@ -93,13 +97,17 @@ func apply_look(look: SwanLook) -> void:
 	_feather_mat.set_shader_parameter(
 			"use_gradient", look.feather_style == SwanLook.FeatherStyle.GRADIENT)
 	_leg_mat.albedo_color = look.leg_color
+	# Lipstick paints the beak (glossy).
+	var lipstick := look.is_wearing("lipstick")
+	_beak_mat.albedo_color = look.accessories["lipstick"] if lipstick else BEAK_COLOR
+	_beak_mat.roughness = 0.2 if lipstick else 0.6
 	for id: String in _item_meshes:
 		if id.begins_with("glasses_"):
 			continue
 		var worn := look.is_wearing(id)
 		for mesh: MeshInstance3D in _item_meshes[id]:
 			mesh.visible = worn
-		if worn:
+		if worn and id != "lashes":
 			(_item_mats[id] as StandardMaterial3D).albedo_color = look.accessories[id]
 	# Glasses: shape, frame color and lens (solid or gradient).
 	for style: String in SwanLook.GLASSES_STYLES:
@@ -209,6 +217,7 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 
 	_splash.emitting = (wet and moving > 0.15) or drowning > 0.1
 	_boost.emitting = boosting
+	_sweat.emitting = effort > 0.35 and on_ground
 	_smoke.emitting = on_ground and not wet and accel > 0.2 and speed_ratio > 0.05
 	for wind in _wind:
 		wind.emitting = braking and _wing_open > 0.3
@@ -269,7 +278,7 @@ func _build_head() -> void:
 	_neck.add_child(_head)
 	_sphere(_head, 0.21, Vector3(0.95, 0.95, 1.1), Vector3.ZERO, _feather_mat)
 	_add(_head, _cylinder(0.085, 0.015, 0.3, 12), Vector3(0, -0.04, -0.3), Vector3.ONE,
-			_toon(BEAK_COLOR), Vector3(-PI / 2, 0, 0))
+			_beak_mat, Vector3(-PI / 2, 0, 0))
 	var white := _toon(Color.WHITE)
 	var black := _toon(DARK)
 	for side in [-1.0, 1.0]:
@@ -414,74 +423,85 @@ func _build_head_items() -> void:
 
 
 func _build_glasses() -> void:
+	# Perched halfway down the beak.
+	var at := Vector3(0, 0.02, -0.33)
 	var frame := _item("glasses")
 	for style: String in SwanLook.GLASSES_STYLES:
 		_item_meshes["glasses_" + style] = []
 	var arms := []
 	for side in [-1.0, 1.0]:
 		# Round.
-		_wear("glasses_round", _add(_head, _torus(0.06, 0.078), Vector3(0.1 * side, 0.06, -0.205),
+		_wear("glasses_round", _add(_head, _torus(0.06, 0.078), at + Vector3(0.1 * side, 0, 0),
 				Vector3.ONE, frame, Vector3(PI / 2, 0, 0)))
 		_wear("glasses_round", _add(_head, _cylinder(0.062, 0.062, 0.006, 16),
-				Vector3(0.1 * side, 0.06, -0.205), Vector3.ONE, _lens_mat, Vector3(PI / 2, 0, 0)))
+				at + Vector3(0.1 * side, 0, 0), Vector3.ONE, _lens_mat, Vector3(PI / 2, 0, 0)))
 		# Square: four thin bars and a flat lens.
 		for bar in [[Vector3(0, 0.06, 0), Vector3(0.16, 0.018, 0.02)],
 				[Vector3(0, -0.06, 0), Vector3(0.16, 0.018, 0.02)],
 				[Vector3(-0.07, 0, 0), Vector3(0.018, 0.13, 0.02)],
 				[Vector3(0.07, 0, 0), Vector3(0.018, 0.13, 0.02)]]:
 			_wear("glasses_square", _add(_head, _box(bar[1]),
-					Vector3(0.1 * side, 0.06, -0.205) + bar[0], Vector3.ONE, frame))
+					at + Vector3(0.1 * side, 0, 0) + bar[0], Vector3.ONE, frame))
 		_wear("glasses_square", _add(_head, _box(Vector3(0.13, 0.11, 0.006)),
-				Vector3(0.1 * side, 0.06, -0.205), Vector3.ONE, _lens_mat))
+				at + Vector3(0.1 * side, 0, 0), Vector3.ONE, _lens_mat))
 		# Aviator: teardrop lenses, tilted in.
-		_wear("glasses_aviator", _add(_head, _torus(0.062, 0.076), Vector3(0.1 * side, 0.045, -0.205),
+		_wear("glasses_aviator", _add(_head, _torus(0.062, 0.076), at + Vector3(0.1 * side, -0.015, 0),
 				Vector3(1.1, 1.0, 1.3), frame, Vector3(PI / 2, 0, 0.25 * side)))
 		_wear("glasses_aviator", _add(_head, _cylinder(0.064, 0.064, 0.006, 16),
-				Vector3(0.1 * side, 0.045, -0.205), Vector3(1.1, 1.0, 1.3), _lens_mat,
+				at + Vector3(0.1 * side, -0.015, 0), Vector3(1.1, 1.0, 1.3), _lens_mat,
 				Vector3(PI / 2, 0, 0.25 * side)))
 		arms.append(side)
 	# Visor: one wide lens across both eyes.
-	_wear("glasses_visor", _add(_head, _box(Vector3(0.44, 0.11, 0.012)), Vector3(0, 0.06, -0.215),
+	_wear("glasses_visor", _add(_head, _box(Vector3(0.44, 0.11, 0.012)), at + Vector3(0, 0, -0.01),
 			Vector3.ONE, _lens_mat))
-	_wear("glasses_visor", _add(_head, _box(Vector3(0.46, 0.022, 0.03)), Vector3(0, 0.12, -0.215),
+	_wear("glasses_visor", _add(_head, _box(Vector3(0.46, 0.022, 0.03)), at + Vector3(0, 0.06, -0.01),
 			Vector3.ONE, frame))
 	# Bridge and arms, shared by every shape.
 	for style: String in SwanLook.GLASSES_STYLES:
 		var id := "glasses_" + style
 		if style != "visor":
-			_wear(id, _add(_head, _box(Vector3(0.05, 0.015, 0.015)), Vector3(0, 0.07, -0.215),
+			_wear(id, _add(_head, _box(Vector3(0.05, 0.015, 0.015)), at + Vector3(0, 0.01, -0.01),
 					Vector3.ONE, frame))
 		for side: float in arms:
-			_wear(id, _add(_head, _box(Vector3(0.015, 0.015, 0.2)), Vector3(0.2 * side, 0.07, -0.11),
+			_wear(id, _add(_head, _box(Vector3(0.015, 0.015, 0.3)), Vector3(0.2 * side, 0.04, -0.19),
 					Vector3.ONE, frame))
 
 
 func _build_face_items() -> void:
-	# Makeup: blush and eye shadow.
-	var makeup := _item("makeup")
+	# Lipstick: paints the whole beak (see apply_look). Registered for the list.
+	_item("lipstick")
+	# Lashes: long, curling up high above each eye (over any glasses).
+	var black := _toon(DARK)
 	for side in [-1.0, 1.0]:
-		_wear("makeup", _sphere(_head, 0.055, Vector3(0.35, 0.8, 1.0),
-				Vector3(0.185 * side, -0.05, -0.08), makeup))
-		_wear("makeup", _sphere(_head, 0.07, Vector3(1.0, 0.6, 1.0),
-				Vector3(0.115 * side, 0.1, -0.1), makeup))
-	# Lashes: three long curved lashes over each eye.
-	var lashes := _item("lashes")
-	for side in [-1.0, 1.0]:
-		for i in 3:
-			_wear("lashes", _add(_head, _box(Vector3(0.014, 0.075, 0.014)),
-					Vector3((0.125 + 0.022 * i) * side, 0.14, -0.13 - 0.014 * i), Vector3.ONE,
-					lashes, Vector3(0.3, 0, -0.45 * side * (i + 1) / 3.0)))
-	# Necklace: high on the neck, a chain that drops in a V to a pendant.
-	var necklace := _item("necklace")
-	necklace.metallic = 0.6
+		for i in 4:
+			var spread := (i - 1.5) * 0.028
+			_wear("lashes", _capsule(_head, 0.01, 0.14,
+					Vector3((0.13 + spread * 0.5) * side, 0.17, -0.12 + spread), black,
+					Vector3(-0.25 - 0.1 * i, 0, -0.35 * side)))
+	# Necklaces, high on the neck: a plain ring, a V with a pendant, or pearls.
+	var round := _item("necklace_round")
+	round.metallic = 0.6
+	_wear("necklace_round", _add(_neck, _torus(0.148, 0.17), Vector3(0, 0.36, -0.1), Vector3.ONE,
+			round, Vector3(-0.5, 0, 0)))
+	var vee := _item("necklace")
+	vee.metallic = 0.6
 	_wear("necklace", _add(_neck, _torus(0.148, 0.168), Vector3(0, 0.36, -0.1), Vector3.ONE,
-			necklace, Vector3(-0.5, 0, 0)))
+			vee, Vector3(-0.5, 0, 0)))
 	for side in [-1.0, 1.0]:
-		_wear("necklace", _capsule(_neck, 0.012, 0.2, Vector3(0.06 * side, 0.27, -0.29), necklace,
+		_wear("necklace", _capsule(_neck, 0.012, 0.2, Vector3(0.06 * side, 0.27, -0.29), vee,
 				Vector3(0.35, 0, 0.75 * side)))
 	_wear("necklace", _sphere(_neck, 0.045, Vector3(1, 1.2, 0.5), Vector3(0, 0.19, -0.33),
-			necklace, Vector3(-0.3, 0, 0)))
-
+			vee, Vector3(-0.3, 0, 0)))
+	var pearls := _item("necklace_pearls")
+	pearls.roughness = 0.15
+	pearls.rim = 0.6
+	var ring := Basis(Vector3.RIGHT, -0.5)
+	for k in 16:
+		var a := TAU * k / 16.0
+		# A little lower at the front, like a real string of pearls.
+		var droop := 0.04 * maxf(-cos(a - PI / 2.0), 0.0)
+		var p := ring * Vector3(cos(a) * 0.165, 0.0, sin(a) * 0.165) + Vector3(0, 0.36 - droop, -0.1)
+		_wear("necklace_pearls", _sphere(_neck, 0.026, Vector3.ONE, p, pearls, Vector3.ZERO, 8, 5))
 
 func _build_outfits() -> void:
 	# Leather jacket: roomy shell with lapels, collar and zipper. Sleeves on the wings.
@@ -489,34 +509,36 @@ func _build_outfits() -> void:
 	leather.roughness = 0.35
 	_wear("jacket", _sphere(_body_pivot, 0.5, Vector3(1.24, 1.06, 1.34), Vector3(0, -0.02, -0.06),
 			leather))
-	_wear("jacket", _add(_body_pivot, _torus(0.5, 0.62), Vector3(0, -0.34, -0.05),
-			Vector3(1.05, 0.6, 1.25), leather))
 	for side in [-1.0, 1.0]:
 		_wear("jacket", _add(_body_pivot, _box(Vector3(0.16, 0.32, 0.03)),
-				Vector3(0.12 * side, 0.22, -0.7), Vector3.ONE, leather,
+				Vector3(0.21 * side, 0.2, -0.7), Vector3.ONE, leather,
 				Vector3(-0.5, 0.35 * side, 0.35 * side)))
 	_wear("jacket", _add(_body_pivot, _torus(0.12, 0.22), Vector3(0, 0.42, -0.47), Vector3.ONE,
 			leather, Vector3(-0.35, 0, 0)))
-	_wear("jacket", _add(_body_pivot, _box(Vector3(0.03, 0.5, 0.03)), Vector3(0, -0.02, -0.77),
-			Vector3.ONE, _toon(Color("b8b8c0")), Vector3(-0.45, 0, 0)))
+	_open_front("jacket")
 
-	# Winter jacket: puffy quilted rings and a thick collar.
+	# Winter jacket: puffy quilted pads on the sides and back, open at the front,
+	# and a thick collar.
 	var winter := _item("winter_jacket")
 	_wear("winter_jacket", _sphere(_body_pivot, 0.5, Vector3(1.22, 1.06, 1.32), Vector3(0, -0.01, -0.05),
 			winter))
-	var rings := [[-0.3, 0.6, 0.74], [-0.1, 0.64, 0.78], [0.1, 0.6, 0.74], [0.28, 0.5, 0.62]]
-	for ring: Array in rings:
-		_wear("winter_jacket", _add(_body_pivot, _torus(ring[1] * 0.62, ring[2]),
-				Vector3(0, ring[0], -0.06), Vector3(1.0, 0.7, 1.22), winter))
+	for row in 3:
+		var y := -0.22 + 0.2 * row
+		var ring := 0.6 - 0.07 * absf(row - 1.0)
+		for k in 9:
+			# All around except the front opening.
+			var a := deg_to_rad(-140.0 + 35.0 * k)
+			var p := Vector3(sin(a) * ring, y, cos(a) * ring * 1.15 - 0.05)
+			_wear("winter_jacket", _sphere(_body_pivot, 0.2, Vector3(1.0, 0.75, 1.0), p, winter,
+					Vector3(0, a, 0), 10, 6))
 	_wear("winter_jacket", _add(_body_pivot, _torus(0.13, 0.29), Vector3(0, 0.42, -0.45),
 			Vector3(1, 1.4, 1), winter, Vector3(-0.35, 0, 0)))
+	_open_front("winter_jacket")
 
 	# Tank top: a roomy vest with straps; the wings stay feathers.
 	var tank := _item("tank_top")
 	_wear("tank_top", _sphere(_body_pivot, 0.5, Vector3(1.18, 0.94, 1.28), Vector3(0, -0.07, -0.06),
 			tank))
-	_wear("tank_top", _add(_body_pivot, _torus(0.5, 0.6), Vector3(0, -0.36, -0.05),
-			Vector3(1.05, 0.5, 1.22), tank))
 	for side in [-1.0, 1.0]:
 		_wear("tank_top", _add(_body_pivot, _box(Vector3(0.08, 0.04, 0.6)),
 				Vector3(0.26 * side, 0.42, -0.12), Vector3.ONE, tank, Vector3(0.2, 0, 0.25 * side)))
@@ -525,8 +547,6 @@ func _build_outfits() -> void:
 	var hoodie := _item("hoodie")
 	_wear("hoodie", _sphere(_body_pivot, 0.5, Vector3(1.25, 1.08, 1.36), Vector3(0, -0.02, -0.06),
 			hoodie))
-	_wear("hoodie", _add(_body_pivot, _torus(0.52, 0.64), Vector3(0, -0.36, -0.05),
-			Vector3(1.05, 0.6, 1.25), hoodie))
 	_wear("hoodie", _sphere(_body_pivot, 0.28, Vector3(1.1, 0.8, 0.9), Vector3(0, 0.45, -0.18),
 			hoodie, Vector3(0.6, 0, 0)))
 	_wear("hoodie", _add(_body_pivot, _box(Vector3(0.44, 0.2, 0.05)), Vector3(0, -0.14, -0.76),
@@ -730,6 +750,34 @@ func _build_effects() -> void:
 	_splash.initial_velocity_max = 3.5
 	_splash.gravity = Vector3(0, -9.8, 0)
 
+	# Sweat drops flying off the head on hard climbs.
+	_sweat = CPUParticles3D.new()
+	_sweat.emitting = false
+	_sweat.local_coords = false
+	_sweat.amount = 10
+	_sweat.lifetime = 0.7
+	var drop := SphereMesh.new()
+	drop.radius = 0.05
+	drop.height = 0.14
+	drop.radial_segments = 8
+	drop.rings = 4
+	var drop_mat := StandardMaterial3D.new()
+	drop_mat.albedo_color = Color(0.7, 0.9, 1.0, 0.9)
+	drop_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	drop_mat.rim_enabled = true
+	drop_mat.rim = 1.0
+	drop.material = drop_mat
+	_sweat.mesh = drop
+	_sweat.particle_flag_align_y = true
+	_sweat.direction = Vector3(0, 1, 0.3)
+	_sweat.spread = 70.0
+	_sweat.initial_velocity_min = 1.5
+	_sweat.initial_velocity_max = 2.8
+	_sweat.gravity = Vector3(0, -9.8, 0)
+	_sweat.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	_sweat.emission_sphere_radius = 0.18
+	_head.add_child(_sweat)
+
 	# Speed streaks flying back while the turbo pushes.
 	var boost_streak := BoxMesh.new()
 	boost_streak.size = Vector3(0.03, 0.9, 0.03)
@@ -919,3 +967,31 @@ static func _add_outline(mat: Material) -> void:
 ## Called when the swan honks: a quick toss of the head.
 func honk() -> void:
 	_honk = 1.0
+
+
+## Open jacket: the feathered chest shows down the front, with a zipper edge
+## on each side of the opening.
+func _open_front(id: String) -> void:
+	_wear(id, _sphere(_body_pivot, 0.5, Vector3(0.38, 0.86, 0.3), Vector3(0, -0.02, -0.72),
+			_feather_mat, Vector3(-0.1, 0, 0)))
+	var zipper := _toon(Color("b8b8c0"))
+	for side in [-1.0, 1.0]:
+		_wear(id, _capsule(_body_pivot, 0.018, 0.75, Vector3(0.19 * side, -0.02, -0.76), zipper,
+				Vector3(-0.15, 0, 0.05 * side)))
+
+
+## World position of a body part, for the wardrobe camera:
+## "head", "neck", "body", "back", "feet" (anything else: the whole swan).
+func anchor(zone: String) -> Vector3:
+	match zone:
+		"head":
+			return _head.global_position
+		"neck":
+			return _neck.to_global(Vector3(0, 0.3, -0.15))
+		"body":
+			return _body_pivot.global_position
+		"back":
+			return _back.global_position
+		"feet":
+			return global_position + Vector3(0, 0.3, 0)
+	return global_position + Vector3(0, 1.3, 0)
