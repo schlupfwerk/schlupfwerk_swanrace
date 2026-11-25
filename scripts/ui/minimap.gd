@@ -60,7 +60,7 @@ func _draw() -> void:
 		var heading := _to_dir(Vector2(swan.motor.forward().x, swan.motor.forward().z))
 		var player := n == 0
 		var pulse := 1.0 + 0.25 * sin(Time.get_ticks_msec() * 0.008) if player else 1.0
-		var color := Color("ffd23f") if player else Color("ff8fb8")
+		var color := Color("ffd23f") if player else Color("9a9aa2")
 		var dot := (6.0 if player else 4.5) * pulse
 		draw_circle(p, dot + 2.0, Color(0, 0, 0, 0.7))
 		draw_circle(p, dot, color)

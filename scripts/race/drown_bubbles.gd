@@ -9,12 +9,16 @@ const SPACING := 0.28
 
 var _bubbles: Array[Dictionary] = []
 var _pop_player := AudioStreamPlayer3D.new()
+## No pops (the demo race).
+var quiet := false
 
 
 func _ready() -> void:
 	top_level = true
 	_pop_player.stream = Sfx.pop()
 	_pop_player.bus = &"SFX"
+	if quiet:
+		_pop_player.volume_db = -80.0
 	_pop_player.max_polyphony = COUNT
 	add_child(_pop_player)
 	var mat := StandardMaterial3D.new()

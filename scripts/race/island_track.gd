@@ -390,3 +390,12 @@ func obstacle_ahead(distance: float, lateral: float, from := 6.0, to := 22.0) ->
 		if gap > from * 0.5 and gap < to:
 			return true
 	return false
+
+
+## The log right ahead in this lane (within `to` meters), or an empty dict.
+func log_ahead(distance: float, lateral: float, to: float) -> Dictionary:
+	for log in logs:
+		var gap := fposmod(log.distance - distance, LAP_LENGTH)
+		if gap < to and absf(lateral - log.lateral) < LOG_LENGTH * 0.5 + 0.8:
+			return log
+	return {}

@@ -12,6 +12,10 @@ var lap := 1
 var lap_time := 0.0
 
 var _passed_half := false
+## True once the swan crossed the start line for the first time (it starts behind it).
+var _started := false
+## Laps completed (finish line crossings that count).
+var laps_done := 0
 
 
 func _init(p_track: IslandTrack) -> void:
@@ -32,8 +36,19 @@ func update(position: Vector3, tick: float, timing: bool) -> void:
 		_passed_half = true
 	if previous < length * 0.2 and distance > length * 0.8:
 		_passed_half = false
+	if previous > length * 0.8 and distance < length * 0.2:
+		_started = true
 	if previous > length * 0.8 and distance < length * 0.2 and _passed_half and timing:
+		laps_done += 1
 		lap_completed.emit(lap_time)
 		lap += 1
 		lap_time = 0.0
 		_passed_half = false
+
+
+## Meters covered in the race (for positions): laps done plus the distance
+## into the current lap; negative while still behind the start line.
+func progress() -> float:
+	if not _started:
+		return distance - IslandTrack.LAP_LENGTH
+	return laps_done * IslandTrack.LAP_LENGTH + distance

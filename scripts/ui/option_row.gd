@@ -134,3 +134,10 @@ func compact() -> OptionRow:
 		arrow.custom_minimum_size.x = 30
 		arrow.add_theme_font_size_override("font_size", 20)
 	return self
+
+
+## New list of values (after setup), e.g. when the player's characters change.
+func set_options(p_options: PackedStringArray, p_index: int) -> void:
+	options = p_options
+	index = clampi(p_index, 0, options.size() - 1)
+	_refresh()

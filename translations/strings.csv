@@ -183,3 +183,18 @@ PRESS_START_XBOX,Press Start to race,Pressione Start para correr
 PRESS_START_PLAYSTATION,Press Options to race,Pressione Options para correr
 OBSTACLE_ALERT,Obstacle alert,Alerta de obstáculo
 JUMP_ALERT,Jump!!,Pule!!
+TAB_CHARACTERS,My characters,Meus personagens
+TAB_RACE,Race,Correr
+TAB_SETTINGS,Settings,Configurações
+CHARACTER,Character,Personagem
+NEW_CHARACTER,+ New,+ Novo
+DELETE_CHARACTER,Delete,Apagar
+NICKNAME,Nickname,Apelido
+RACE_BUTTON,RACE,CORRER
+CHOOSE_CHARACTER,Choose your character,Escolha seu personagem
+RACE_AS_IS,Race like this,Correr assim
+CUSTOMIZE,Customize,Personalizar
+HOME_HINT_KEYBOARD,Tab / PgUp: tabs   Enter: choose   Esc: back,Tab / PgUp: abas   Enter: escolher   Esc: voltar
+HOME_HINT_XBOX,LT / RT: tabs   A: choose   B: back,LT / RT: abas   A: escolher   B: voltar
+HOME_HINT_PLAYSTATION,L2 / R2: tabs   Cross: choose   Circle: back,L2 / R2: abas   Cruz: escolher   Círculo: voltar
+PODIUM_BEST_LAP,Best lap: %s (%s),Melhor volta: %s (%s)

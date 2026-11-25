@@ -13,6 +13,8 @@ extends RefCounted
 const SWAN_RADIUS := 0.45
 ## Below this speed a touch only nudges the swan away, without a bump.
 const BUMP_SPEED := 2.0
+## Two swans closer than this push each other apart.
+const SWAN_GAP := 1.15
 
 
 static func apply(swan: Swan, laps: LapTracker, track: IslandTrack) -> void:
@@ -68,7 +70,10 @@ static func _collide(swan: Swan, track: IslandTrack, i: int, race_heading: float
 		if swan.motor.speed > BUMP_SPEED and not swan.is_stunned():
 			swan.bump(race_heading)
 		else:
-			swan.motor.speed *= 0.5
+			# Slow contact: lose only the part of the speed going into it, so the
+			# swan can slide along and walk around.
+			var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)
+			swan.motor.speed *= clampf(1.0 + forward.dot(normal), 0.0, 1.0)
 
 
 ## Slope under the swan: it changes speed (SwanMotor) and tilts the swan.
@@ -83,3 +88,24 @@ static func _follow_ground(swan: Swan, track: IslandTrack, i: int, ground: float
 	swan.motor.slope = grade if swan.motor.on_ground else 0.0
 	swan.ground_pitch = atan(clampf(grade, -0.6, 0.6))
 	swan.ground_roll = atan(clampf(cross, -0.6, 0.6))
+
+
+## Swans have a body: when two touch, they push each other apart a little and
+## both lose a bit of speed, like a gentle bump.
+static func push_apart(swans: Array[Swan]) -> void:
+	for a in swans.size():
+		for b in range(a + 1, swans.size()):
+			var sa := swans[a]
+			var sb := swans[b]
+			if sa.is_drowning() or sb.is_drowning():
+				continue
+			var away := Vector2(sb.motor.position.x - sa.motor.position.x,
+					sb.motor.position.z - sa.motor.position.z)
+			var gap := away.length()
+			if gap >= SWAN_GAP or absf(sa.motor.position.y - sb.motor.position.y) > 0.8:
+				continue
+			var push := (away / maxf(gap, 0.01)) * (SWAN_GAP - gap) * 0.5
+			sa.motor.position -= Vector3(push.x, 0.0, push.y)
+			sb.motor.position += Vector3(push.x, 0.0, push.y)
+			sa.motor.speed *= 0.985
+			sb.motor.speed *= 0.985

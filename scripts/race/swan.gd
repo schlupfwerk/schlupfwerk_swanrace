@@ -22,6 +22,8 @@ var intent := SwanIntent.new()
 var model := SwanModel.new()
 ## When false the swan ignores its brain (countdown, results).
 var controls_enabled := true
+## No sounds at all (the demo race behind the home menu).
+var quiet := false
 ## Called after every simulation tick with this swan (terrain, laps, timing).
 var on_tick: Callable
 ## Height of the ground under the swan (sand 0, lower in the sea). Set by the track.
@@ -73,11 +75,15 @@ func _ready() -> void:
 	_bump_player.stream = Sfx.land()
 	_bump_player.pitch_scale = 0.6
 	for player in [_step_player, _jump_player, _land_player, _bump_player, _pet_player, _horn_player]:
+		if quiet:
+			player.volume_db = -80.0
 		add_child(player)
 	model.stepped.connect(_on_stepped)
 	_lose_player.stream = Sfx.lose()
 	_lose_player.bus = &"SFX"
 	add_child(_lose_player)
+	if quiet:
+		_drown_bubbles.quiet = true
 	add_child(_drown_bubbles)
 	set_look(look)
 	_previous_position = motor.position
@@ -201,7 +207,9 @@ func drown(at: Vector3, heading: float) -> void:
 	_respawn_heading = heading
 	motor.speed = 0.0
 	drowned.emit()
-	_lose_player.play()
+	# The losing jingle is for the player only.
+	if brain is PlayerInput:
+		_lose_player.play()
 	_drown_bubbles.release(global_position + Vector3(0, 1.6, 0))
 
 

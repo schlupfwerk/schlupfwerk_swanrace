@@ -4,6 +4,8 @@ extends CanvasLayer
 ## speedometer and control hints.
 
 var swan: Swan
+## The other swans (bots), shown in gray on the minimap.
+var others: Array[Swan] = []
 ## Track for the minimap (optional).
 var track: IslandTrack
 var terrain_name := ""
@@ -19,6 +21,7 @@ var _center_label := Label.new()
 var _message_time := 0.0
 var _lights := StartLights.new()
 var _alert := Label.new()
+var _place := Label.new()
 
 
 func _ready() -> void:
@@ -74,6 +77,18 @@ func _ready() -> void:
 	_alert.visible = false
 	root.add_child(_alert)
 
+	# Race position, big, under the lap counter.
+	_place.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_place.offset_left = -300
+	_place.offset_right = -24
+	_place.offset_top = 300
+	_place.offset_bottom = 370
+	_place.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_place.add_theme_font_size_override("font_size", 52)
+	_place.add_theme_color_override("font_color", UiTheme.FOCUS_COLOR)
+	_place.add_theme_constant_override("outline_size", 10)
+	root.add_child(_place)
+
 	root.add_child(_lights)
 	_lights.set_anchors_preset(Control.PRESET_CENTER)
 	_lights.offset_left = -150
@@ -94,7 +109,8 @@ func _ready() -> void:
 	if track:
 		var minimap := Minimap.new()
 		minimap.track = track
-		minimap.swans = [swan]
+		minimap.swans = [swan] as Array[Swan]
+		minimap.swans.append_array(others)
 		minimap.size = Vector2(250, 250)
 		root.add_child(minimap)
 		minimap.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_KEEP_SIZE, 20)
@@ -179,11 +195,41 @@ func set_start_lights(lit: int, go := false) -> void:
 	_lights.go = go
 
 
-## Race over: big "Finished!" with the total time, best lap and what to do next.
-func show_results(race_time: float, best_lap: float) -> void:
-	show_message(tr("FINISHED"), 999.0)
-	_results.text = "%s\n%s\n\n%s" % [tr("HUD_TOTAL") % format_time(race_time),
-			tr("HUD_BEST") % format_time(best_lap), tr("RESULTS_HINT_" + InputGlyphs._suffix())]
+## Race over: the standings table (the player highlighted) and what to do next.
+func show_results(standings: Array[Dictionary]) -> void:
+	_center_label.text = ""
+	_place.visible = false
+	var lines := PackedStringArray()
+	var fastest := {}
+	for n in standings.size():
+		var entry: Dictionary = standings[n]
+		var marker := "»  " if entry.player else ""
+		var best: float = entry.get("best", 0.0)
+		lines.append("%s%d.  %s   %s   (%s)" % [marker, n + 1, entry.name, format_time(entry.time),
+				format_time(best) if best > 0.0 else "--"])
+		if best > 0.0 and (fastest.is_empty() or best < fastest.best):
+			fastest = entry
+	if not fastest.is_empty():
+		lines.append("")
+		lines.append(tr("PODIUM_BEST_LAP") % [format_time(fastest.best), fastest.name])
+	lines.append("")
+	lines.append(tr("RESULTS_HINT_" + InputGlyphs._suffix()))
+	_results.text = "
+".join(lines)
+	# Only the standings on screen over the podium.
+	for child in _results.get_parent().get_children():
+		if child is CanvasItem:
+			child.visible = child == _results
+			if child != _results:
+				child.process_mode = Node.PROCESS_MODE_DISABLED
+	var board := StyleBoxFlat.new()
+	board.bg_color = Color(0.08, 0.08, 0.1, 0.72)
+	board.set_corner_radius_all(14)
+	board.set_content_margin_all(22)
+	_results.add_theme_stylebox_override("normal", board)
+	_results.add_theme_font_size_override("font_size", 24)
+	_results.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_results.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, 40)
 	_results.visible = true
 
 
@@ -193,3 +239,9 @@ func show_jump_alert(on: bool) -> void:
 	if on:
 		_alert.scale = Vector2.ONE * (1.0 + 0.08 * sin(Time.get_ticks_msec() * 0.02))
 		_alert.pivot_offset = _alert.size / 2.0
+
+
+## "3/8": place in the race (hidden when racing alone).
+func set_place(place: int, count: int) -> void:
+	_place.visible = count > 1
+	_place.text = "%dº / %d" % [place, count]

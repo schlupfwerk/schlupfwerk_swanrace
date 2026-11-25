@@ -7,6 +7,9 @@ Jogo de **corrida 3D leve para Android, iOS e PC (Steam)**, feito pela **Schlupf
 indie brasileiro (mantenedor: Manuel Bravo, GitHub @Bravodin). Público: **toda a família**,
 incluindo crianças. "Swan Race" é um nome provisório.
 
+**Tom do jogo:** o nosso cisne **não sabe voar nem nadar** e **corre todo desengonçado**, quase um
+pato. Isso é a graça: animações, sons e textos devem abraçar esse jeito atrapalhado.
+
 O jogador é um **cisne** numa corrida com **quatro terrenos em sequência**:
 1. **Descida**: desce uma montanha deslizando em velocidade livre, sem precisar correr
 2. **Corrida**: corre por ruas e trilhas
@@ -100,8 +103,10 @@ prioridade.
   - **Extras:** batom (só na ponta do bico, com cor), cílios (sim/não, longos para cima), meias
     (até a metade da perna, com cor).
   - **Óculos** ficam no meio do bico. **Jaquetas abertas na frente**, sem barra embaixo.
-  - **Menu:** todas as opções visíveis sem rolar (duas colunas), voltas e corredores embaixo,
-    **Start/Enter para correr**; Configurações é só para configurações. Música suave no menu.
+  - **Até 10 personagens** salvos no aparelho (`Profile.characters`, `Profile.selected`), cada um
+    personalizado à parte; "+ Novo" cria um com visual sorteado, "Apagar" remove (sempre fica 1).
+    Tudo salva na hora.
+  - Editor (`CharacterEditor`): todas as opções visíveis sem rolar (duas colunas).
   - No vestiário a **câmera vai até a parte editada** (rosto, pescoço, corpo, costas, pés)
     e vira o cisne para mostrá-la.
   - No vestiário o cisne gira sozinho até o jogador girar (Q/E, LB/RB, analógico direito
@@ -138,6 +143,17 @@ prioridade.
 - **HUD com cara de selva, nunca de carro:** o velocímetro é um disco de madeira com
   grafismo na borda, um cipó de folhas que cresce com a velocidade e uma pena como
   ponteiro.
+
+## Menu (home, `scenes/home.tscn`)
+- **Abas no topo:** **Meus personagens | Correr | Configurações** (Tab/PgUp no teclado, LT/RT no
+  controle, ou clique). Abre na aba Correr. Música suave.
+- **Fundo:** uma **corrida simulada** (`DemoRace`) com cisnes sorteados (bots), vista de cima por uma
+  **câmera de drone**, sem sons de passos. A cada **15 s** muda de mapa; enquanto só existe a Ilha
+  Deserta, ela só reinicia (`DemoRace.MAP_TIME`, TODO: trocar de mapa quando houver outros).
+- **Correr:** voltas, corredores (1 a 12) e dificuldade, e o botão **CORRER** (A/Cruz, Enter ou
+  Start). Ele abre o **seletor de personagem**: "Correr assim" começa a corrida; "Personalizar" vai
+  para Meus personagens com aquele personagem.
+- **Configurações:** só configurações (Geral, Vídeo, Áudio); B/Esc volta para Correr.
 
 ## Idiomas
 - **Português** se o aparelho estiver em português; **inglês** em qualquer outro caso.
@@ -217,11 +233,14 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   **inclinada nas curvas** (até ~12°, o lado de dentro mais baixo). Subida: perde velocidade e
   o máximo cai até 75%; descida: ganha velocidade e passa dos 50 km/h (até 130%). O cisne
   inclina com o chão; praias altas descem em barranco até o mar.
-- **Voltas:** número de voltas em Configurações → Geral (1 a 10, padrão 3). HUD mostra
+- **Voltas:** número de voltas na aba Correr do menu (padrão 3). HUD mostra
   "Volta 2/3" e o tempo total. **Última volta:** aviso e a música troca (com fade) para uma
   versão mais rápida e animada (`scripts/audio/final_lap_music.gd`). **Chegada:** apito de 2 s,
-  a câmera se afasta girando, resultado (tempo total, melhor volta) e opção de correr de novo
-  ou voltar ao menu.
+  a câmera se afasta girando e, depois, o **pódio**: 1º, 2º e 3º com medalhas e o **último colocado
+  mordendo a medalha**, todo orgulhoso. Um **drone** vai e volta em 180° em volta do pódio, com o
+  placar (posição, tempo total e melhor volta de cada um, e a melhor volta da corrida) e uma
+  **musiquinha de corrida finalizada** (`scripts/audio/victory_music.gd`), até o jogador sair
+  (correr de novo ou voltar ao menu).
 - **Buzina:** H no teclado, Y/Triângulo no controle. O cisne dá um "honk" e joga a cabeça;
   com cachorro ou gato na bolsa, o bicho late ou mia no lugar.
 - **A cada volta:** "Faltam X voltas!" (e "Última volta!" na penúltima).
@@ -252,7 +271,15 @@ descida:
   coloridas da favela → mar de Copacabana → voo contornando o Pão de Açúcar.
   Retrate o lado vibrante e colorido (casas, pipas, música); **nunca** violência.
 
-## Bots
+## Bots (`BotBrain`, IA local)
+- De 0 a 11 bots (Corredores no menu), largando em grid de 2 em 2, com **nomes sorteados** e
+  **visual sempre bem diferente do jogador** (`BotLooks`: outra cor de penas, outros itens).
+- **Habilidade sorteada** dentro da faixa da dificuldade (fácil 0,3–0,55, médio 0,5–0,8, difícil
+  0,75–0,98): define o quanto acelera, acerta pulos (troncos, buracos das pontes), usa turbo nas
+  subidas, procura aceleradores e pega a ponte no lago. Batendo num tronco, contorna pela ponta.
+- **Fácil:** bot muito à frente do jogador tira o pé (*rubber banding*).
+- **Os cisnes se empurram** de leve quando encostam (`TrackRules.push_apart`).
+- HUD mostra a **posição** ("3º / 8"); no minimapa o jogador é amarelo e os bots, **cinza**.
 - Cada bot tem **apelido, visual e personalidade**. A personalidade muda só o **jeito
   de pilotar** (ex.: arrisca mais na descida, voa com cuidado), nunca os atributos:
   todos os cisnes têm a mesma habilidade.
@@ -327,7 +354,7 @@ iOS fica para quando houver um Mac; o Steam, para depois do protótipo.
 Critério de sucesso: **é divertido nos primeiros 30 segundos?**
 
 **Depois (anotado):** controle de hora do dia e clima; neve escorregadia; o voo (o dono
-do projeto vai explicar antes); obstáculos na praia; bots.
+do projeto vai explicar antes); novos mapas (e trocar o mapa da corrida demo da home).
 
 ## Ambiente de desenvolvimento (Windows)
 1. **Godot 4**, a versão estável padrão (**não** a .NET), de godotengine.org.

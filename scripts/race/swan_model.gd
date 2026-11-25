@@ -95,6 +95,8 @@ var _daze_stars := Node3D.new()
 var _turn_look := 0.0
 ## Head toss when honking: 1 right after, fading to 0.
 var _honk := 0.0
+## Biting a medal on the podium: the head nods up and down.
+var _biting := false
 var _cape := Node3D.new()
 ## Everything on the back hangs from here and swings with the stride.
 var _back := Node3D.new()
@@ -218,6 +220,8 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_honk = move_toward(_honk, 0.0, delta * 2.5)
 	_head.rotation.x = -(_neck.rotation.x + _body_pivot.rotation.x) * 0.75 + 0.5 * drowning
 	_head.rotation.x -= sin(_honk * PI) * 0.5
+	if _biting:
+		_head.rotation.x += 0.25 + sin(Time.get_ticks_msec() * 0.012) * 0.18
 	_daze_stars.visible = _daze > 0.05
 	_daze_stars.rotation.y += delta * 6.0
 	_animate_face(delta)
@@ -1146,3 +1150,27 @@ func anchor(zone: String) -> Vector3:
 		"feet":
 			return global_position + Vector3(0, 0.3, 0)
 	return global_position + Vector3(0, 1.3, 0)
+
+
+## Podium: a medal on a ribbon around the neck.
+func hang_medal(color: Color) -> void:
+	var ribbon := _toon(Color("2f6fe0"))
+	for side in [-1.0, 1.0]:
+		_segment(_neck, Vector3(0.12 * side, 0.32, -0.08), Vector3(0.02 * side, 0.08, -0.3), 0.012,
+				ribbon)
+	_medal(_neck, Vector3(0, 0.03, -0.32), color, Vector3(-0.3, 0, 0))
+
+
+## Last place: holds a medal in the beak and keeps biting it, proudly.
+func bite_medal(color: Color) -> void:
+	_medal(_head, Vector3(0, -0.08, -0.47), color, Vector3(-0.2, 0.0, 0.0))
+	_biting = true
+
+
+func _medal(parent: Node3D, at: Vector3, color: Color, rot: Vector3) -> void:
+	var metal := _toon(color)
+	metal.metallic = 0.8
+	metal.roughness = 0.25
+	_add(parent, _cylinder(0.09, 0.09, 0.025, 20), at, Vector3.ONE, metal, rot + Vector3(PI / 2, 0, 0))
+	_add(parent, _cylinder(0.06, 0.06, 0.03, 20), at + Vector3(0, 0, -0.005), Vector3.ONE,
+			_toon(color.lightened(0.25)), rot + Vector3(PI / 2, 0, 0))
