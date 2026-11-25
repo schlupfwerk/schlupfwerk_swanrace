@@ -489,7 +489,7 @@ static func _build_start_line(parent: Node3D, track: IslandTrack) -> void:
 	var banner_y := maxf(left_ground, right_ground) + 5.8
 	var wood := StandardMaterial3D.new()
 	wood.albedo_color = Color("7a5232")
-	wood.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	wood.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
 	for side: Array in [[left_edge, left_ground], [right_edge, right_ground]]:
 		var height: float = banner_y + 0.7 - side[1]
 		var post := MeshInstance3D.new()
@@ -554,7 +554,7 @@ static func _checker_material(columns: int, rows: int) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = ImageTexture.create_from_image(image)
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
 	return mat
 
 

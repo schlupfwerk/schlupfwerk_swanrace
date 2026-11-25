@@ -32,7 +32,8 @@ static func vertex_color_material() -> StandardMaterial3D:
 	mat.vertex_color_use_as_albedo = true
 	# Colors are written as sRGB hex values.
 	mat.vertex_color_is_srgb = true
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	# Soft, wrapped light (no hard toon bands).
+	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
 	mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	mat.roughness = 1.0
 	return mat

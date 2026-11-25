@@ -39,7 +39,7 @@ func _ready() -> void:
 	_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	_material.vertex_color_use_as_albedo = true
-	_material.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	_material.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
 	_material.roughness = 1.0
 	var instance := MultiMeshInstance3D.new()
 	instance.multimesh = _multimesh

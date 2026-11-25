@@ -29,6 +29,7 @@ var _final_music := AudioStreamPlayer.new()
 var _final_lap := false
 var _beep := AudioStreamPlayer.new()
 var _whistle := AudioStreamPlayer.new()
+var _waves := AudioStreamPlayer.new()
 var _lights_lit := 0
 var _go_time := 0.0
 ## Seconds until the next "use the turbo" tip may show.
@@ -81,6 +82,12 @@ func _ready() -> void:
 		player.bus = &"SFX"
 		add_child(player)
 	_whistle.stream = Sfx.whistle()
+	# Waves on the beach all the time, softly.
+	_waves.stream = Sfx.waves()
+	_waves.bus = &"SFX"
+	_waves.volume_db = -16.0
+	add_child(_waves)
+	_waves.play()
 	for player: AudioStreamPlayer in [_music, _final_music]:
 		player.bus = &"Music"
 		player.volume_db = -6.0

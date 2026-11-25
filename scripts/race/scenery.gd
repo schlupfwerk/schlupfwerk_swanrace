@@ -21,11 +21,18 @@ static func add_environment(parent: Node) -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.75
+	env.ambient_light_energy = 0.9
+	# A soft glow and gentle contrast, so the scene reads smooth, not busy.
+	env.glow_enabled = true
+	env.glow_intensity = 0.35
+	env.glow_bloom = 0.05
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.05
+	env.adjustment_contrast = 0.95
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.fog_enabled = true
 	env.fog_light_color = Color("c9dbec")
-	env.fog_density = 0.0025
+	env.fog_density = 0.0018
 	env.fog_sky_affect = 0.0
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
@@ -38,6 +45,8 @@ static func add_environment(parent: Node) -> void:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	sun.directional_shadow_blend_splits = true
 	sun.light_energy = 1.0
+	sun.shadow_blur = 1.6
+	sun.shadow_opacity = 0.75
 	# Shadows on/off and distance come from the video settings.
 	sun.add_to_group("sun")
 	Settings.configure_sun(sun)
@@ -48,6 +57,6 @@ static func flat(color: Color, roughness: float) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = roughness
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
 	return mat
 

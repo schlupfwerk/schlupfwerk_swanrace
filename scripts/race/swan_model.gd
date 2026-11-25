@@ -8,19 +8,34 @@ extends Node3D
 ## `foot` is -1 (left) or 1 (right).
 signal stepped(strength: float, foot: int)
 
+enum Face { HAPPY, ANGRY, LAUGH, CRY, SURPRISED, DIZZY }
+
 const FEATHER_SHADER := preload("res://shaders/feather.gdshader")
 const LENS_SHADER := preload("res://shaders/lens.gdshader")
+const CLOTH_SHADER := preload("res://shaders/cloth.gdshader")
+const LEG_SHADER := preload("res://shaders/leg.gdshader")
 
 const BODY_HEIGHT := 1.15
+const HEAD_SCALE := 1.15
 const WING_OPEN_ANGLE := 1.35
 const BEAK_COLOR := Color("ff9a1f")
-## Thin black outline around the whole swan (inverted hull, drawn as a second
+## Thin soft outline around the whole swan (inverted hull, drawn as a second
 ## pass of every opaque material).
-const OUTLINE_WIDTH := 0.011
+const OUTLINE_WIDTH := 0.008
 ## Outfits whose sleeves cover the wings.
 const SLEEVED := ["jacket", "winter_jacket", "hoodie"]
 const DARK := Color("151518")
 const WOOD := Color("8a6440")
+## Eye shape per expression: eye height, pupil size, brow height, brow tilt
+## (positive = inner end down, angry).
+const EXPRESSIONS := {
+	Face.HAPPY: [0.85, 1.0, 0.17, -0.15],
+	Face.ANGRY: [0.7, 0.9, 0.145, 0.55],
+	Face.LAUGH: [0.16, 1.0, 0.19, -0.35],
+	Face.CRY: [0.8, 1.05, 0.165, -0.55],
+	Face.SURPRISED: [1.15, 0.65, 0.215, -0.1],
+	Face.DIZZY: [0.95, 1.0, 0.18, 0.0],
+}
 
 static var _outline: StandardMaterial3D
 
@@ -34,11 +49,12 @@ var boosting := false
 var gliding := false
 ## 0..1 how hard the swan is working (steep climbs): drops of sweat fly off.
 var effort := 0.0
+## Face shown with the eyes and brows.
+var expression := Face.HAPPY
 
 var _feather_mat := ShaderMaterial.new()
-var _leg_mat := _toon(Color("2b2b30"))
+var _leg_mat := ShaderMaterial.new()
 var _lens_mat := ShaderMaterial.new()
-var _beak_mat := _toon(BEAK_COLOR)
 var _body_pivot := Node3D.new()
 var _neck := Node3D.new()
 var _head := Node3D.new()
@@ -53,6 +69,14 @@ var _meshes: Array[MeshInstance3D] = []
 var _item_meshes := {}
 ## Item id -> material that takes the chosen color.
 var _item_mats := {}
+## Outfit id -> fabric material (moves with the swan).
+var _cloth_mats := {}
+var _eyes: Array[Node3D] = []
+var _pupils: Array[Node3D] = []
+var _brows: Array[Node3D] = []
+var _tears: CPUParticles3D
+var _blink := 0.0
+var _next_blink := 3.0
 var _smoke: CPUParticles3D
 var _wind: Array[CPUParticles3D] = []
 var _land_dust: CPUParticles3D
@@ -79,6 +103,7 @@ var _back := Node3D.new()
 func _init() -> void:
 	_feather_mat.shader = FEATHER_SHADER
 	_lens_mat.shader = LENS_SHADER
+	_leg_mat.shader = LEG_SHADER
 	_build_body()
 	_build_head()
 	_build_wings()
@@ -98,11 +123,7 @@ func apply_look(look: SwanLook) -> void:
 	_feather_mat.set_shader_parameter("color_top", look.feather_color_2)
 	_feather_mat.set_shader_parameter(
 			"use_gradient", look.feather_style == SwanLook.FeatherStyle.GRADIENT)
-	_leg_mat.albedo_color = look.leg_color
-	# Lipstick paints the beak (glossy).
-	var lipstick := look.is_wearing("lipstick")
-	_beak_mat.albedo_color = look.accessories["lipstick"] if lipstick else BEAK_COLOR
-	_beak_mat.roughness = 0.2 if lipstick else 0.6
+	_leg_mat.set_shader_parameter("color", look.leg_color)
 	for id: String in _item_meshes:
 		if id.begins_with("glasses_"):
 			continue
@@ -111,6 +132,8 @@ func apply_look(look: SwanLook) -> void:
 			mesh.visible = worn
 		if worn and id != "lashes":
 			(_item_mats[id] as StandardMaterial3D).albedo_color = look.accessories[id]
+			if _cloth_mats.has(id):
+				(_cloth_mats[id] as ShaderMaterial).set_shader_parameter("color", look.accessories[id])
 	# Glasses: shape, frame color and lens (solid or gradient).
 	for style: String in SwanLook.GLASSES_STYLES:
 		for mesh: MeshInstance3D in _item_meshes["glasses_" + style]:
@@ -124,10 +147,10 @@ func apply_look(look: SwanLook) -> void:
 	var socks := look.is_wearing("socks")
 	for foot in _bare_feet:
 		foot.visible = (footwear == "" or footwear == "flip_flops") and not socks
-	# Jackets and the hoodie turn the wings into sleeves.
+	# Jackets and the hoodie turn the wings into sleeves; roomy clothes move the
+	# wings out so they come through the fabric.
 	var outfit := look.slot_item("outfit")
-	# Roomy clothes: move the wings out so they sit on top of the fabric.
-	var wing_x := 0.47 if outfit == "" else 0.56
+	var wing_x := 0.47 if outfit == "" or outfit == "tank_top" else 0.58
 	_wing_l.position.x = -wing_x
 	_wing_r.position.x = wing_x
 	for wing in _wing_meshes:
@@ -188,9 +211,8 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	var neck_lean := -0.8 * speed_ratio - 0.1 * accel + sin(_phase * 2.0 + 0.8) * 0.14 * moving
 	neck_lean = lerpf(neck_lean, 0.45, drowning)
 	_neck.rotation.x = lerpf(_neck.rotation.x, neck_lean, smooth)
-	# Shake the head when dazed.
-	_daze = move_toward(_daze, 0.0, delta / Swan.STUN_TIME)
 	# The head looks into the turn (and shakes when dazed).
+	_daze = move_toward(_daze, 0.0, delta / Swan.STUN_TIME)
 	_neck.rotation.y = -_turn_look * 0.45 + sin(Time.get_ticks_msec() * 0.03) * 0.55 * _daze
 	_neck.rotation.z = -_turn_look * 0.2 + sin(Time.get_ticks_msec() * 0.021) * 0.25 * _daze
 	_honk = move_toward(_honk, 0.0, delta * 2.5)
@@ -198,9 +220,10 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_head.rotation.x -= sin(_honk * PI) * 0.5
 	_daze_stars.visible = _daze > 0.05
 	_daze_stars.rotation.y += delta * 6.0
+	_animate_face(delta)
 
 	# Braking opens the wings; running sweeps them back, flapping a little.
-	# Drowning: frantic flapping.
+	# Drowning: frantic flapping. Gliding down from a jump: wide open.
 	_wing_open = move_toward(_wing_open, clampf(brake, 0.0, 1.0), delta * 7.0)
 	var run_open := (0.45 + sin(_phase * 2.0) * 0.12) * speed_ratio
 	var flail := (0.9 + sin(Time.get_ticks_msec() * 0.03) * 0.6) * drowning
@@ -217,6 +240,10 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	# The cape flies out behind as the swan speeds up.
 	var cape_lift := 0.12 + 1.0 * speed_ratio + sin(Time.get_ticks_msec() * 0.012) * 0.08 * speed_ratio
 	_cape.rotation.x = lerpf(_cape.rotation.x, cape_lift, smooth)
+	# Fabric trails behind with speed and bounces with the stride.
+	var sway := clampf(speed_ratio * 0.9 + absf(sin(_phase)) * 0.25 * moving, 0.0, 1.3)
+	for mat: ShaderMaterial in _cloth_mats.values():
+		mat.set_shader_parameter("sway", sway)
 
 	_splash.emitting = (wet and moving > 0.15) or drowning > 0.1
 	_boost.emitting = boosting
@@ -233,6 +260,33 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 			1.0 - 0.24 * squash + 0.12 * stretch, 1.0 + 0.16 * squash - 0.06 * stretch)
 	_body_pivot.position.y -= 0.14 * squash
 	_feather_mat.set_shader_parameter("root_y", global_position.y)
+
+
+## Eyes, pupils and brows follow the expression; the swan blinks now and then.
+func _animate_face(delta: float) -> void:
+	var shape: Array = EXPRESSIONS[expression]
+	var blend := 1.0 - exp(-12.0 * delta)
+	_next_blink -= delta
+	if _next_blink <= 0.0:
+		_blink = 1.0
+		_next_blink = randf_range(2.5, 5.0)
+	_blink = move_toward(_blink, 0.0, delta * 8.0)
+	var eye_height: float = shape[0] * (1.0 - 0.85 * sin(_blink * PI))
+	for side in 2:
+		var side_sign := -1.0 if side == 0 else 1.0
+		var eye := _eyes[side]
+		eye.scale.y = lerpf(eye.scale.y, eye_height, blend)
+		var pupil := _pupils[side]
+		pupil.scale = pupil.scale.lerp(Vector3.ONE * shape[1], blend)
+		if expression == Face.DIZZY:
+			var t := Time.get_ticks_msec() * 0.012 + side * PI
+			pupil.position = Vector3(0.025 * side_sign, 0.01, -0.045) + Vector3(cos(t), sin(t), 0) * 0.018
+		else:
+			pupil.position = pupil.position.lerp(Vector3(0.025 * side_sign, 0.01, -0.045), blend)
+		var brow := _brows[side]
+		brow.position.y = lerpf(brow.position.y, shape[2], blend)
+		brow.rotation.z = lerp_angle(brow.rotation.z, -shape[3] * side_sign, blend)
+	_tears.emitting = expression == Face.CRY
 
 
 ## Called when the swan touches the ground after a jump.
@@ -278,15 +332,54 @@ func _build_body() -> void:
 
 func _build_head() -> void:
 	_head.position = Vector3(0, 0.94, -0.2)
+	_head.scale = Vector3.ONE * HEAD_SCALE
 	_neck.add_child(_head)
 	_sphere(_head, 0.21, Vector3(0.95, 0.95, 1.1), Vector3.ZERO, _feather_mat)
 	_add(_head, _cylinder(0.085, 0.015, 0.3, 12), Vector3(0, -0.04, -0.3), Vector3.ONE,
-			_beak_mat, Vector3(-PI / 2, 0, 0))
+			_toon(BEAK_COLOR), Vector3(-PI / 2, 0, 0))
+	# Big cartoon eyes: each eye squashes for expressions and blinks; brows above.
 	var white := _toon(Color.WHITE)
 	var black := _toon(DARK)
 	for side in [-1.0, 1.0]:
-		_sphere(_head, 0.065, Vector3.ONE, Vector3(0.12 * side, 0.06, -0.12), white)
-		_sphere(_head, 0.035, Vector3.ONE, Vector3(0.145 * side, 0.07, -0.165), black)
+		var eye := Node3D.new()
+		eye.position = Vector3(0.12 * side, 0.065, -0.12)
+		_head.add_child(eye)
+		_eyes.append(eye)
+		_sphere(eye, 0.078, Vector3.ONE, Vector3.ZERO, white)
+		var pupil := Node3D.new()
+		pupil.position = Vector3(0.025 * side, 0.01, -0.045)
+		eye.add_child(pupil)
+		_pupils.append(pupil)
+		_sphere(pupil, 0.042, Vector3.ONE, Vector3.ZERO, black)
+		_sphere(pupil, 0.012, Vector3.ONE, Vector3(-0.012, 0.015, -0.03), white, Vector3.ZERO, 6, 4)
+		var brow := Node3D.new()
+		brow.position = Vector3(0.12 * side, 0.17, -0.15)
+		_head.add_child(brow)
+		_brows.append(brow)
+		_capsule(brow, 0.013, 0.11, Vector3.ZERO, black, Vector3(0, 0, PI / 2))
+	# Tears for the crying face.
+	_tears = CPUParticles3D.new()
+	_tears.emitting = false
+	_tears.amount = 8
+	_tears.lifetime = 0.8
+	var drop := SphereMesh.new()
+	drop.radius = 0.025
+	drop.height = 0.06
+	drop.radial_segments = 6
+	drop.rings = 3
+	var drop_mat := StandardMaterial3D.new()
+	drop_mat.albedo_color = Color(0.6, 0.85, 1.0, 0.9)
+	drop_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	drop.material = drop_mat
+	_tears.mesh = drop
+	_tears.emission_shape = CPUParticles3D.EMISSION_SHAPE_POINTS
+	_tears.emission_points = PackedVector3Array([Vector3(-0.17, 0.02, -0.15), Vector3(0.17, 0.02, -0.15)])
+	_tears.direction = Vector3(0, -1, -0.2)
+	_tears.spread = 15.0
+	_tears.initial_velocity_min = 0.4
+	_tears.initial_velocity_max = 0.8
+	_tears.gravity = Vector3(0, -4.0, 0)
+	_head.add_child(_tears)
 	# Little stars that spin around the head when dazed.
 	_daze_stars.position = Vector3(0, 0.38, 0)
 	_daze_stars.visible = false
@@ -471,92 +564,135 @@ func _build_glasses() -> void:
 
 
 func _build_face_items() -> void:
-	# Lipstick: paints the whole beak (see apply_look). Registered for the list.
-	_item("lipstick")
-	# Lashes: long, curling up high above each eye (over any glasses).
+	# Lipstick: only the tip of the beak.
+	var lipstick := _item("lipstick")
+	lipstick.roughness = 0.2
+	_wear("lipstick", _add(_head, _cylinder(0.05, 0.019, 0.13, 12), Vector3(0, -0.04, -0.39),
+			Vector3.ONE, lipstick, Vector3(-PI / 2, 0, 0)))
+	# Lashes: short and curled, right on the top edge of each eye.
 	var black := _toon(DARK)
 	for side in [-1.0, 1.0]:
-		for i in 4:
-			var spread := (i - 1.5) * 0.028
-			_wear("lashes", _capsule(_head, 0.01, 0.14,
-					Vector3((0.13 + spread * 0.5) * side, 0.17, -0.12 + spread), black,
-					Vector3(-0.25 - 0.1 * i, 0, -0.35 * side)))
-	# Necklaces, high on the neck: a plain ring, a V with a pendant, or pearls.
+		for i in 3:
+			var spread := (i - 1.0) * 0.03
+			_wear("lashes", _capsule(_head, 0.008, 0.055,
+					Vector3((0.12 + spread) * side, 0.15, -0.165 - absf(spread) * 0.3), black,
+					Vector3(-0.35, 0, (-0.35 - spread * 6.0) * side)))
+	# Necklaces hang loose, low on the neck and tipping forward.
+	var center := Vector3(0, 0.2, -0.12)
+	var radius := 0.205
+	var tilt := Basis(Vector3.RIGHT, -0.85)
+	var front := center + tilt * Vector3(0, 0, -radius)
 	var round := _item("necklace_round")
 	round.metallic = 0.6
-	_wear("necklace_round", _add(_neck, _torus(0.148, 0.17), Vector3(0, 0.36, -0.1), Vector3.ONE,
-			round, Vector3(-0.5, 0, 0)))
+	_wear("necklace_round", _add(_neck, _torus(radius - 0.013, radius + 0.013), center, Vector3.ONE,
+			round, Vector3(-0.85, 0, 0)))
 	var vee := _item("necklace")
 	vee.metallic = 0.6
-	_wear("necklace", _add(_neck, _torus(0.148, 0.168), Vector3(0, 0.36, -0.1), Vector3.ONE,
-			vee, Vector3(-0.5, 0, 0)))
+	_wear("necklace", _add(_neck, _torus(radius - 0.01, radius + 0.01), center, Vector3.ONE,
+			vee, Vector3(-0.85, 0, 0)))
+	var pendant := front + Vector3(0, -0.12, -0.03)
 	for side in [-1.0, 1.0]:
-		_wear("necklace", _capsule(_neck, 0.012, 0.2, Vector3(0.06 * side, 0.27, -0.29), vee,
-				Vector3(0.35, 0, 0.75 * side)))
-	_wear("necklace", _sphere(_neck, 0.045, Vector3(1, 1.2, 0.5), Vector3(0, 0.19, -0.33),
-			vee, Vector3(-0.3, 0, 0)))
+		var start := center + tilt * Vector3(side * radius * sin(0.8), 0, -radius * cos(0.8))
+		_wear("necklace", _segment(_neck, start, pendant, 0.011, vee))
+	_wear("necklace", _sphere(_neck, 0.05, Vector3(1, 1.25, 0.5), pendant, vee, Vector3(-0.4, 0, 0)))
 	var pearls := _item("necklace_pearls")
 	pearls.roughness = 0.15
 	pearls.rim = 0.6
-	var ring := Basis(Vector3.RIGHT, -0.5)
-	for k in 16:
-		var a := TAU * k / 16.0
+	for k in 18:
+		var a := TAU * k / 18.0
+		var on_ring := tilt * Vector3(sin(a) * radius, 0, -cos(a) * radius)
 		# A little lower at the front, like a real string of pearls.
-		var droop := 0.04 * maxf(-cos(a - PI / 2.0), 0.0)
-		var p := ring * Vector3(cos(a) * 0.165, 0.0, sin(a) * 0.165) + Vector3(0, 0.36 - droop, -0.1)
-		_wear("necklace_pearls", _sphere(_neck, 0.026, Vector3.ONE, p, pearls, Vector3.ZERO, 8, 5))
+		var droop := 0.05 * maxf(cos(a), 0.0)
+		_wear("necklace_pearls", _sphere(_neck, 0.028, Vector3.ONE,
+				center + on_ring + Vector3(0, -droop, 0), pearls, Vector3.ZERO, 8, 5))
 
+
+## Clothes are separate layers of fabric around the body, not painted on it.
+## Loose ones (jackets, hoodie) trail and flutter with speed; the tank top is tight.
 func _build_outfits() -> void:
-	# Leather jacket: roomy shell with lapels, collar and zipper. Sleeves on the wings.
-	var leather := _item("jacket")
-	leather.roughness = 0.35
-	_wear("jacket", _sphere(_body_pivot, 0.5, Vector3(1.24, 1.06, 1.34), Vector3(0, -0.02, -0.06),
-			leather))
+	# Leather jacket: open front, lapels and collar; the wings come out as sleeves.
+	var leather := _cloth("jacket", 0.32, -0.38, 70.0, 0.085, 0.07, 1.0)
+	leather.set_shader_parameter("roughness_value", 0.4)
+	var sleeve := _item("jacket")
+	sleeve.roughness = 0.4
 	for side in [-1.0, 1.0]:
-		_wear("jacket", _add(_body_pivot, _box(Vector3(0.16, 0.32, 0.03)),
-				Vector3(0.21 * side, 0.2, -0.7), Vector3.ONE, leather,
-				Vector3(-0.5, 0.35 * side, 0.35 * side)))
-	_wear("jacket", _add(_body_pivot, _torus(0.12, 0.22), Vector3(0, 0.42, -0.47), Vector3.ONE,
-			leather, Vector3(-0.35, 0, 0)))
-	_open_front("jacket")
+		_wear("jacket", _add(_body_pivot, _box(Vector3(0.14, 0.3, 0.025)),
+				Vector3(0.25 * side, 0.18, -0.72), Vector3.ONE, sleeve,
+				Vector3(-0.5, 0.5 * side, 0.3 * side)))
+	_wear("jacket", _add(_body_pivot, _torus(0.13, 0.23), Vector3(0, 0.42, -0.47), Vector3.ONE,
+			sleeve, Vector3(-0.35, 0, 0)))
 
-	# Winter jacket: puffy quilted pads on the sides and back, open at the front,
-	# and a thick collar.
-	var winter := _item("winter_jacket")
-	_wear("winter_jacket", _sphere(_body_pivot, 0.5, Vector3(1.22, 1.06, 1.32), Vector3(0, -0.01, -0.05),
-			winter))
-	for row in 3:
-		var y := -0.22 + 0.2 * row
-		var ring := 0.6 - 0.07 * absf(row - 1.0)
-		for k in 9:
-			# All around except the front opening.
-			var a := deg_to_rad(-140.0 + 35.0 * k)
-			var p := Vector3(sin(a) * ring, y, cos(a) * ring * 1.15 - 0.05)
-			_wear("winter_jacket", _sphere(_body_pivot, 0.2, Vector3(1.0, 0.75, 1.0), p, winter,
-					Vector3(0, a, 0), 10, 6))
-	_wear("winter_jacket", _add(_body_pivot, _torus(0.13, 0.29), Vector3(0, 0.42, -0.45),
-			Vector3(1, 1.4, 1), winter, Vector3(-0.35, 0, 0)))
-	_open_front("winter_jacket")
+	# Winter jacket: thick, quilted, open at the front, with a big collar.
+	var winter := _cloth("winter_jacket", 0.34, -0.4, 60.0, 0.15, 0.05, 0.55)
+	winter.set_shader_parameter("quilt", 1.0)
+	winter.set_shader_parameter("roughness_value", 0.9)
+	_wear("winter_jacket", _add(_body_pivot, _torus(0.14, 0.3), Vector3(0, 0.43, -0.45),
+			Vector3(1, 1.4, 1), _item("winter_jacket"), Vector3(-0.35, 0, 0)))
 
-	# Tank top: a roomy vest with straps; the wings stay feathers.
+	# Tank top: tight, closed, with straps; the wings stay feathers.
+	_cloth("tank_top", 0.3, -0.3, 0.0, 0.035, 0.0, 0.12)
 	var tank := _item("tank_top")
-	_wear("tank_top", _sphere(_body_pivot, 0.5, Vector3(1.18, 0.94, 1.28), Vector3(0, -0.07, -0.06),
-			tank))
 	for side in [-1.0, 1.0]:
-		_wear("tank_top", _add(_body_pivot, _box(Vector3(0.08, 0.04, 0.6)),
-				Vector3(0.26 * side, 0.42, -0.12), Vector3.ONE, tank, Vector3(0.2, 0, 0.25 * side)))
+		_wear("tank_top", _add(_body_pivot, _box(Vector3(0.08, 0.03, 0.62)),
+				Vector3(0.26 * side, 0.43, -0.1), Vector3.ONE, tank, Vector3(0.2, 0, 0.25 * side)))
 
-	# Hoodie: roomy shell, a hood behind the neck, front pocket and strings.
+	# Hoodie: closed and roomy, a hood behind the neck, front pocket and strings.
+	_cloth("hoodie", 0.34, -0.4, 0.0, 0.1, 0.06, 0.8)
 	var hoodie := _item("hoodie")
-	_wear("hoodie", _sphere(_body_pivot, 0.5, Vector3(1.25, 1.08, 1.36), Vector3(0, -0.02, -0.06),
-			hoodie))
-	_wear("hoodie", _sphere(_body_pivot, 0.28, Vector3(1.1, 0.8, 0.9), Vector3(0, 0.45, -0.18),
+	_wear("hoodie", _sphere(_body_pivot, 0.28, Vector3(1.1, 0.8, 0.9), Vector3(0, 0.47, -0.16),
 			hoodie, Vector3(0.6, 0, 0)))
-	_wear("hoodie", _add(_body_pivot, _box(Vector3(0.44, 0.2, 0.05)), Vector3(0, -0.14, -0.76),
-			Vector3.ONE, hoodie, Vector3(-0.35, 0, 0)))
+	_wear("hoodie", _add(_body_pivot, _box(Vector3(0.44, 0.2, 0.05)), Vector3(0, -0.12, -0.8),
+			Vector3.ONE, hoodie, Vector3(-0.3, 0, 0)))
 	for side in [-1.0, 1.0]:
-		_wear("hoodie", _capsule(_body_pivot, 0.012, 0.22, Vector3(0.06 * side, 0.18, -0.66),
+		_wear("hoodie", _capsule(_body_pivot, 0.012, 0.22, Vector3(0.06 * side, 0.2, -0.72),
 				_toon(Color("f4f4f4")), Vector3(-0.3, 0, 0)))
+
+
+## A fabric tube around the body, from `top` down to `bottom` (body space),
+## leaving `gap` degrees open at the front. `margin` is how far it stands off
+## the feathers, `flare` how much wider the hem gets.
+func _cloth(id: String, top: float, bottom: float, gap: float, margin: float, flare: float,
+		looseness: float) -> ShaderMaterial:
+	_item(id)
+	var mat := ShaderMaterial.new()
+	mat.shader = CLOTH_SHADER
+	mat.set_shader_parameter("looseness", looseness)
+	_cloth_mats[id] = mat
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rings := 10
+	var columns := 32
+	var from := deg_to_rad(gap * 0.5)
+	var to := TAU - deg_to_rad(gap * 0.5)
+	var grid := []
+	for j in rings + 1:
+		var t := float(j) / rings
+		var y := lerpf(top, bottom, t)
+		# Follow the body's egg shape, standing off it.
+		var shape := sqrt(maxf(0.2, 1.0 - pow(y / 0.44, 2.0)))
+		var rx := 0.5 * shape + margin + flare * t
+		var rz := 0.65 * shape + margin + flare * t
+		var row := []
+		for k in columns + 1:
+			var a := lerpf(from, to, float(k) / columns)
+			row.append([Vector3(sin(a) * rx, y, -cos(a) * rz - 0.03), Vector2(float(k) / columns, t)])
+		grid.append(row)
+	for j in rings:
+		for k in columns:
+			for corner: Array in [[j, k], [j, k + 1], [j + 1, k + 1], [j, k], [j + 1, k + 1], [j + 1, k]]:
+				var point: Array = grid[corner[0]][corner[1]]
+				st.set_uv(point[1])
+				st.add_vertex(point[0])
+	st.index()
+	st.generate_normals()
+	var instance := MeshInstance3D.new()
+	instance.mesh = st.commit()
+	instance.material_override = mat
+	_body_pivot.add_child(instance)
+	_meshes.append(instance)
+	_wear(id, instance)
+	return mat
+
 
 
 ## Footwear: one pair at a time. Relative to the knee, the ground is y = -0.43.
@@ -580,11 +716,12 @@ func _build_footwear() -> void:
 				Vector3.ONE, white))
 		_wear("sneakers", _add(knee, _box(Vector3(0.1, 0.02, 0.12)), Vector3(0, -0.295, -0.15),
 				Vector3.ONE, white))
-		# Boots: rounded foot plus a tall shaft around the shin.
+		# Boots: rounded foot plus a short shaft around the ankle.
 		var boots := _item("boots")
 		_wear("boots", _add(knee, _shoe(0.1, 0.36), Vector3(0, -0.37, -0.07),
 				Vector3(1.05, 1.0, 0.75), boots, Vector3(PI / 2, 0, 0)))
-		_wear("boots", _add(knee, _cylinder(0.08, 0.085, 0.36, 12), Vector3(0, -0.18, 0.0),
+		# A short shaft, so socks show above it.
+		_wear("boots", _add(knee, _cylinder(0.08, 0.085, 0.16, 12), Vector3(0, -0.29, 0.0),
 				Vector3.ONE, boots))
 		_wear("boots", _add(knee, _box(Vector3(0.22, 0.04, 0.36)), Vector3(0, -0.43, -0.07),
 				Vector3.ONE, dark_sole))
@@ -609,28 +746,31 @@ func _build_footwear() -> void:
 					Vector3(0, 0.55 * side, 0)))
 
 
-## Things on the back: one at a time.
+
+
+## Things on the back: one at a time, always on the back and standing off the
+## feathers, so nothing sinks into the body.
 func _build_back_items() -> void:
 	var strap_dark := _toon(Color("3a2a22"))
+	var on_back := Vector3(-0.55, 0, 0)
 	# Backpack: rounded pack, flap, pocket and shoulder straps.
 	var pack := _item("backpack")
-	_wear("backpack", _sphere(_body_pivot, 0.5, Vector3(0.62, 0.62, 0.36), Vector3(0, 0.36, 0.34),
-			pack, Vector3(-0.35, 0, 0)))
-	_wear("backpack", _sphere(_body_pivot, 0.5, Vector3(0.58, 0.2, 0.3), Vector3(0, 0.56, 0.24),
-			pack, Vector3(-0.35, 0, 0)))
-	_wear("backpack", _add(_body_pivot, _box(Vector3(0.3, 0.16, 0.08)), Vector3(0, 0.26, 0.52),
-			Vector3.ONE, strap_dark, Vector3(-0.35, 0, 0)))
+	_wear("backpack", _sphere(_body_pivot, 0.5, Vector3(0.6, 0.58, 0.32), Vector3(0, 0.52, 0.44),
+			pack, on_back))
+	_wear("backpack", _sphere(_body_pivot, 0.5, Vector3(0.56, 0.18, 0.3), Vector3(0, 0.72, 0.36),
+			pack, on_back))
+	_wear("backpack", _add(_body_pivot, _box(Vector3(0.3, 0.16, 0.08)), Vector3(0, 0.42, 0.62),
+			Vector3.ONE, strap_dark, on_back))
 	for side in [-1.0, 1.0]:
-		_wear("backpack", _add(_body_pivot, _torus(0.2, 0.24), Vector3(0.24 * side, 0.28, 0.0),
+		_wear("backpack", _add(_body_pivot, _torus(0.22, 0.26), Vector3(0.24 * side, 0.3, 0.0),
 				Vector3(0.5, 1.3, 1.6), strap_dark, Vector3(0, 0, PI / 2)))
-	# Shoulder bag: a strap across the body and a bag on the side.
+	# Shoulder bag: carried on the back, strap across the chest.
 	var bag := _item("bag")
-	_wear("bag", _add(_body_pivot, _torus(0.5, 0.54), Vector3(0, 0.05, -0.05),
-			Vector3(1.0, 1.0, 1.18), strap_dark, Vector3(0, 0, 0.9)))
-	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.18, 0.36, 0.46), Vector3(0.55, -0.18, 0.05),
-			bag))
-	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.2, 0.12, 0.46), Vector3(0.56, -0.04, 0.05),
-			bag))
+	_back_strap("bag", strap_dark)
+	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.56, 0.34, 0.22), Vector3(0, 0.5, 0.46),
+			bag, on_back))
+	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.58, 0.13, 0.24), Vector3(0, 0.63, 0.41),
+			bag, on_back))
 	# Superhero cape: hangs from the shoulders and flies back with speed.
 	var cape := _item("cape")
 	cape.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -640,53 +780,18 @@ func _build_back_items() -> void:
 			Vector3.ONE, cape, Vector3(-0.15, 0, 0)))
 	_wear("cape", _add(_body_pivot, _torus(0.14, 0.2), Vector3(0, 0.4, -0.45), Vector3.ONE, cape,
 			Vector3(-0.35, 0, 0)))
-	# Bag with a little dog peeking out.
-	var dog_bag := _item("dog_bag")
-	_wear("dog_bag", _add(_body_pivot, _torus(0.5, 0.54), Vector3(0, 0.05, -0.05),
-			Vector3(1.0, 1.0, 1.18), strap_dark, Vector3(0, 0, -0.9)))
-	_wear("dog_bag", _sphere(_body_pivot, 0.5, Vector3(0.36, 0.34, 0.5), Vector3(-0.6, -0.12, 0.05),
-			dog_bag))
-	var fur := _toon(Color("c58a4a"))
-	var fur_dark := _toon(Color("6b4524"))
-	var dog := Vector3(-0.62, 0.16, -0.02)
-	_wear("dog_bag", _sphere(_body_pivot, 0.15, Vector3(1.0, 0.95, 1.0), dog, fur))
-	_wear("dog_bag", _sphere(_body_pivot, 0.07, Vector3(1.0, 0.8, 1.2), dog + Vector3(0, -0.04, -0.14),
-			_toon(Color("e9c79b"))))
-	_wear("dog_bag", _sphere(_body_pivot, 0.03, Vector3.ONE, dog + Vector3(0, -0.01, -0.22),
-			_toon(DARK)))
-	for side in [-1.0, 1.0]:
-		_wear("dog_bag", _sphere(_body_pivot, 0.07, Vector3(0.5, 1.2, 0.8),
-				dog + Vector3(0.12 * side, 0.08, 0.02), fur_dark, Vector3(0, 0, 0.5 * side)))
-		_wear("dog_bag", _sphere(_body_pivot, 0.025, Vector3.ONE, dog + Vector3(0.06 * side, 0.04, -0.12),
-				_toon(DARK)))
-	# Bag with a cat peeking out: pointy ears and whiskers.
-	var cat_bag := _item("cat_bag")
-	_wear("cat_bag", _add(_body_pivot, _torus(0.5, 0.54), Vector3(0, 0.05, -0.05),
-			Vector3(1.0, 1.0, 1.18), strap_dark, Vector3(0, 0, -0.9)))
-	_wear("cat_bag", _sphere(_body_pivot, 0.5, Vector3(0.36, 0.34, 0.5), Vector3(-0.6, -0.12, 0.05),
-			cat_bag))
-	var cat_fur := _toon(Color("9a9aa2"))
-	var cat := Vector3(-0.62, 0.15, -0.02)
-	_wear("cat_bag", _sphere(_body_pivot, 0.14, Vector3(1.05, 0.9, 0.95), cat, cat_fur))
-	_wear("cat_bag", _sphere(_body_pivot, 0.025, Vector3.ONE, cat + Vector3(0, -0.03, -0.13),
-			_toon(Color("f08aa0"))))
-	for side in [-1.0, 1.0]:
-		_wear("cat_bag", _add(_body_pivot, _cylinder(0.05, 0.0, 0.11, 4),
-				cat + Vector3(0.08 * side, 0.13, 0.0), Vector3.ONE, cat_fur, Vector3(0, 0, -0.3 * side)))
-		_wear("cat_bag", _sphere(_body_pivot, 0.028, Vector3(1.0, 1.2, 1.0),
-				cat + Vector3(0.055 * side, 0.03, -0.11), _toon(Color("7bc043"))))
-		for k in 2:
-			_wear("cat_bag", _add(_body_pivot, _box(Vector3(0.14, 0.006, 0.006)),
-					cat + Vector3(0.1 * side, -0.04 + 0.02 * k, -0.1), Vector3.ONE, _toon(Color.WHITE),
-					Vector3(0, 0.3 * side, (0.15 - 0.3 * k) * side)))
+	# Bags with a pet: the bag on the back, the head popping out of the top and
+	# looking back (at the camera and the swans behind).
+	_pet_bag("dog_bag", strap_dark, Color("c58a4a"), false)
+	_pet_bag("cat_bag", strap_dark, Color("9a9aa2"), true)
 	# Ostrich egg carried on the back in a sling.
 	var sling := _item("ostrich_egg")
-	_wear("ostrich_egg", _sphere(_body_pivot, 0.5, Vector3(0.42, 0.52, 0.42), Vector3(0, 0.52, 0.32),
+	_wear("ostrich_egg", _sphere(_body_pivot, 0.5, Vector3(0.42, 0.52, 0.42), Vector3(0, 0.6, 0.36),
 			_toon(Color("f3ead8")), Vector3(-0.4, 0, 0)))
-	_wear("ostrich_egg", _add(_body_pivot, _torus(0.2, 0.25), Vector3(0, 0.42, 0.3),
+	_wear("ostrich_egg", _add(_body_pivot, _torus(0.2, 0.25), Vector3(0, 0.48, 0.34),
 			Vector3(1.0, 0.6, 1.0), sling, Vector3(-0.4, 0, 0)))
 	for side in [-1.0, 1.0]:
-		_wear("ostrich_egg", _add(_body_pivot, _torus(0.22, 0.26), Vector3(0.22 * side, 0.28, 0.0),
+		_wear("ostrich_egg", _add(_body_pivot, _torus(0.22, 0.26), Vector3(0.22 * side, 0.3, 0.0),
 				Vector3(0.5, 1.3, 1.6), sling, Vector3(0, 0, PI / 2)))
 	# Hang it all from the swinging back pivot, keeping where each piece is.
 	_back.position = Vector3(0, 0.45, 0.05)
@@ -705,7 +810,57 @@ func _build_back_items() -> void:
 	_cape.transform = to_back * cape_xform
 
 
-# --- Effects ----------------------------------------------------------------
+## A strap from one shoulder across the chest to the other hip.
+func _back_strap(id: String, mat: Material) -> void:
+	_wear(id, _add(_body_pivot, _torus(0.52, 0.56), Vector3(0, 0.08, -0.02),
+			Vector3(1.0, 1.0, 1.2), mat, Vector3(0.3, 0, 0.9)))
+
+
+func _pet_bag(id: String, strap: Material, fur_color: Color, cat: bool) -> void:
+	var bag := _item(id)
+	_back_strap(id, strap)
+	_wear(id, _sphere(_body_pivot, 0.5, Vector3(0.5, 0.42, 0.32), Vector3(0, 0.52, 0.46), bag,
+			Vector3(-0.55, 0, 0)))
+	var fur := _toon(fur_color)
+	var head := Vector3(0, 0.82, 0.48)
+	_wear(id, _sphere(_body_pivot, 0.15, Vector3(1.05, 0.95, 1.0), head, fur))
+	var dark := _toon(DARK)
+	for side in [-1.0, 1.0]:
+		# Eyes on the back side of the head: the pet looks behind.
+		_wear(id, _sphere(_body_pivot, 0.03, Vector3.ONE, head + Vector3(0.06 * side, 0.04, 0.13), dark))
+		if cat:
+			_wear(id, _add(_body_pivot, _cylinder(0.05, 0.0, 0.11, 4),
+					head + Vector3(0.08 * side, 0.14, 0.0), Vector3.ONE, fur, Vector3(0, 0, -0.3 * side)))
+			for k in 2:
+				_wear(id, _add(_body_pivot, _box(Vector3(0.14, 0.006, 0.006)),
+						head + Vector3(0.1 * side, -0.03 + 0.02 * k, 0.11), Vector3.ONE,
+						_toon(Color.WHITE), Vector3(0, -0.3 * side, (0.15 - 0.3 * k) * side)))
+		else:
+			_wear(id, _sphere(_body_pivot, 0.07, Vector3(0.5, 1.2, 0.8),
+					head + Vector3(0.13 * side, 0.06, 0.0), _toon(fur_color.darkened(0.45)),
+					Vector3(0, 0, 0.5 * side)))
+	if cat:
+		_wear(id, _sphere(_body_pivot, 0.025, Vector3.ONE, head + Vector3(0, -0.02, 0.15),
+				_toon(Color("f08aa0"))))
+	else:
+		_wear(id, _sphere(_body_pivot, 0.07, Vector3(1.0, 0.8, 1.2), head + Vector3(0, -0.04, 0.14),
+				_toon(Color("e9c79b"))))
+		_wear(id, _sphere(_body_pivot, 0.03, Vector3.ONE, head + Vector3(0, -0.01, 0.22), dark))
+
+
+## A thin capsule from `a` to `b` (chains, straps).
+func _segment(parent: Node3D, a: Vector3, b: Vector3, radius: float, mat: Material) -> MeshInstance3D:
+	var mesh := CapsuleMesh.new()
+	mesh.radius = radius
+	mesh.height = a.distance_to(b) + radius * 2.0
+	mesh.radial_segments = 8
+	mesh.rings = 2
+	var instance := _add(parent, mesh, (a + b) / 2.0, Vector3.ONE, mat)
+	var up := (b - a).normalized()
+	var side := up.cross(Vector3.FORWARD if absf(up.z) < 0.9 else Vector3.RIGHT).normalized()
+	instance.basis = Basis(side, up, side.cross(up))
+	return instance
+
 
 func _build_effects() -> void:
 	# Dust/smoke trail while accelerating.
@@ -909,12 +1064,14 @@ static func _box(box_size: Vector3) -> BoxMesh:
 static func _toon(color: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
-	mat.specular_mode = BaseMaterial3D.SPECULAR_TOON
-	mat.roughness = 0.6
+	# Soft shading: wrapped light and a gentle highlight (no hard toon bands).
+	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
+	mat.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+	mat.roughness = 0.65
+	mat.metallic_specular = 0.3
 	mat.rim_enabled = true
-	mat.rim = 0.25
-	mat.rim_tint = 0.5
+	mat.rim = 0.15
+	mat.rim_tint = 0.6
 	return mat
 
 
@@ -952,14 +1109,16 @@ static func _fade(color: Color) -> Gradient:
 
 
 static func _add_outline(mat: Material) -> void:
-	if mat == null or mat.next_pass != null or mat is ShaderMaterial and mat.shader == LENS_SHADER:
+	if mat == null or mat.next_pass != null:
+		return
+	if mat is ShaderMaterial and (mat.shader == LENS_SHADER or mat.shader == CLOTH_SHADER):
 		return
 	if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
 		return
 	if _outline == null:
 		_outline = StandardMaterial3D.new()
 		_outline.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_outline.albedo_color = Color("141418")
+		_outline.albedo_color = Color("2a2a30")
 		_outline.cull_mode = BaseMaterial3D.CULL_FRONT
 		_outline.grow = true
 		_outline.grow_amount = OUTLINE_WIDTH
@@ -970,17 +1129,6 @@ static func _add_outline(mat: Material) -> void:
 ## Called when the swan honks: a quick toss of the head.
 func honk() -> void:
 	_honk = 1.0
-
-
-## Open jacket: the feathered chest shows down the front, with a zipper edge
-## on each side of the opening.
-func _open_front(id: String) -> void:
-	_wear(id, _sphere(_body_pivot, 0.5, Vector3(0.38, 0.86, 0.3), Vector3(0, -0.02, -0.72),
-			_feather_mat, Vector3(-0.1, 0, 0)))
-	var zipper := _toon(Color("b8b8c0"))
-	for side in [-1.0, 1.0]:
-		_wear(id, _capsule(_body_pivot, 0.018, 0.75, Vector3(0.19 * side, -0.02, -0.76), zipper,
-				Vector3(-0.15, 0, 0.05 * side)))
 
 
 ## World position of a body part, for the wardrobe camera:

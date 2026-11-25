@@ -122,3 +122,15 @@ func _notification(what: int) -> void:
 func set_enabled(enabled: bool) -> void:
 	disabled = not enabled
 	_refresh()
+
+
+## Smaller text and height, for dense menus.
+func compact() -> OptionRow:
+	custom_minimum_size.y = 34
+	_name.custom_minimum_size.x = 150
+	_name.add_theme_font_size_override("font_size", 17)
+	_value.add_theme_font_size_override("font_size", 17)
+	for arrow: Button in [_prev, _next]:
+		arrow.custom_minimum_size.x = 30
+		arrow.add_theme_font_size_override("font_size", 20)
+	return self

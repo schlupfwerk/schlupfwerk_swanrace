@@ -195,3 +195,18 @@ static func honk() -> AudioStreamWAV:
 			var envelope := minf(local / 0.012, 1.0) * clampf((0.2 - local) / 0.04, 0.0, 1.0)
 			return tone * 0.22 * envelope)
 	return _cache["honk"]
+
+
+## Gentle waves on the beach: a slow swell of soft noise, looped.
+static func waves() -> AudioStreamWAV:
+	if not _cache.has("waves"):
+		var stream := _render(8.0, func(t: float, state: Dictionary) -> float:
+			# Two overlapping swells, so the loop never sounds like one wave.
+			var swell := 0.55 + 0.45 * sin(TAU * t / 8.0) * sin(TAU * t / 4.0 + 1.0)
+			state.low = lerpf(state.get("low", 0.0), randf_range(-1.0, 1.0), 0.06)
+			state.lower = lerpf(state.get("lower", 0.0), state.low, 0.2)
+			return state.lower * 2.2 * swell)
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		stream.loop_end = int(8.0 * RATE)
+		_cache["waves"] = stream
+	return _cache["waves"]

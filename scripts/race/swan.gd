@@ -28,6 +28,9 @@ var on_tick: Callable
 var ground_y := 0.0
 ## True while wading in the sea (set by the track): slow, wet, splashing.
 var in_water := false
+## Place at the finish (1 = winner, 0 = still racing) and how many raced.
+var finish_place := 0
+var field_size := 1
 ## Tilt of the ground under the swan (radians), set by the track.
 var ground_pitch := 0.0
 var ground_roll := 0.0
@@ -148,6 +151,7 @@ func _process(delta: float) -> void:
 		_land_player.play()
 	_update_pet(delta)
 	_update_horn(delta)
+	model.expression = _face()
 	model.wet = in_water
 	model.boosting = motor.boosting
 	model.gliding = not motor.on_ground and motor.vertical_velocity < 0.0
@@ -246,3 +250,18 @@ func _update_horn(delta: float) -> void:
 		model.honk()
 	_horn_player.pitch_scale = randf_range(0.96, 1.04)
 	_horn_player.play()
+
+
+## The face fits the moment: dizzy, crying, surprised, determined, laughing.
+func _face() -> SwanModel.Face:
+	if is_stunned():
+		return SwanModel.Face.DIZZY
+	if _drown > 0.0 or (finish_place > 1 and finish_place == field_size):
+		return SwanModel.Face.CRY
+	if finish_place == 1:
+		return SwanModel.Face.LAUGH
+	if not motor.on_ground:
+		return SwanModel.Face.SURPRISED
+	if motor.boosting or model.effort > 0.5:
+		return SwanModel.Face.ANGRY
+	return SwanModel.Face.HAPPY

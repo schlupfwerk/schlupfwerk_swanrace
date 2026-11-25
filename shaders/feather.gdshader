@@ -1,7 +1,7 @@
 shader_type spatial;
 // Cartoon feathers: one color or a vertical gradient over the whole swan,
 // with rows of scalloped feather edges so the plumage reads as feathers.
-render_mode diffuse_toon, specular_toon;
+render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 
 uniform vec3 color_bottom : source_color = vec3(1.0);
 uniform vec3 color_top : source_color = vec3(1.0);
@@ -12,7 +12,7 @@ uniform float bottom_y = 0.75;
 uniform float top_y = 2.55;
 // Feather rows around (x) and along (y) each part.
 uniform vec2 feather_rows = vec2(26.0, 13.0);
-uniform float feather_contrast = 0.14;
+uniform float feather_contrast = 0.1;
 
 varying float height_t;
 
@@ -35,7 +35,8 @@ void fragment() {
 	rim *= away_from_poles;
 	float shade = mix(1.0, mix(1.0, 0.9, clamp(cell.y, 0.0, 1.0)), away_from_poles);
 	ALBEDO = color * shade * (1.0 - feather_contrast * rim);
-	ROUGHNESS = 0.65;
-	RIM = 0.3;
+	ROUGHNESS = 0.7;
+	SPECULAR = 0.25;
+	RIM = 0.2;
 	RIM_TINT = 0.5;
 }

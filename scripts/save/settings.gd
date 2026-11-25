@@ -41,6 +41,8 @@ var language := ""
 var difficulty := 1
 ## Laps per race.
 var laps := 3
+## Swans in a race: the player plus bots (1 = racing alone).
+var racers := 6
 ## Direction arrow on screen: 0 automatic (on in easy and medium), 1 on, 2 off.
 var direction_indicator := 0
 # Video
@@ -362,6 +364,7 @@ func save_settings() -> void:
 	cfg.set_value("general", "language", language)
 	cfg.set_value("general", "difficulty", difficulty)
 	cfg.set_value("general", "laps", laps)
+	cfg.set_value("general", "racers", racers)
 	cfg.set_value("general", "direction_indicator", direction_indicator)
 	for key in ["window_mode", "resolution", "monitor", "quality", "render_scale", "msaa",
 			"shadows", "detail", "vsync", "fps_limit", "show_fps", "fov", "gpu_index"]:
@@ -382,6 +385,7 @@ func load_settings() -> void:
 	language = _pick(cfg.get_value("general", "language", language), LANGUAGES, "")
 	difficulty = clampi(cfg.get_value("general", "difficulty", difficulty), 0, 2)
 	laps = _pick(int(cfg.get_value("general", "laps", laps)), LAP_OPTIONS, 3)
+	racers = clampi(int(cfg.get_value("general", "racers", racers)), 1, 12)
 	direction_indicator = clampi(cfg.get_value("general", "direction_indicator", direction_indicator), 0, 2)
 	window_mode = clampi(cfg.get_value("video", "window_mode", window_mode), 0, 2) as WindowMode
 	var saved_resolution = cfg.get_value("video", "resolution", resolution)

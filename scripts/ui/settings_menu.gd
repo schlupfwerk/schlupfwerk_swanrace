@@ -141,11 +141,6 @@ func _build_general_page(list: VBoxContainer) -> void:
 				Settings.apply_language()
 				Settings.save_settings()
 				_rebuild())
-	var lap_names := PackedStringArray()
-	for value in Settings.LAP_OPTIONS:
-		lap_names.append(str(value))
-	_add_row(list, "LAPS", lap_names, maxi(Settings.LAP_OPTIONS.find(Settings.laps), 0),
-			func(i: int) -> void: Settings.laps = Settings.LAP_OPTIONS[i])
 	_add_row(list, "DIFFICULTY", ["DIFFICULTY_EASY", "DIFFICULTY_MEDIUM", "DIFFICULTY_HARD"],
 			Settings.difficulty, func(i: int) -> void:
 				Settings.difficulty = i

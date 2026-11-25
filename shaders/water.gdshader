@@ -1,7 +1,7 @@
 shader_type spatial;
 // Cartoon sea: rolling waves, turquoise near the island fading to deep blue,
 // drifting color patches, crest highlights and sun glints.
-render_mode diffuse_toon, specular_toon;
+render_mode diffuse_lambert_wrap, specular_schlick_ggx;
 
 uniform vec3 shallow_color : source_color = vec3(0.12, 0.48, 0.55);
 uniform vec3 mid_color : source_color = vec3(0.08, 0.44, 0.62);

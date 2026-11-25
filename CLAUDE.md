@@ -97,9 +97,11 @@ prioridade.
   - **Óculos:** formato (redondo, quadrado, aviador, viseira), cor da armação e lente
     sólida ou em gradiente.
   - **Colar** (slot): círculo, em V ou pérolas, com cor.
-  - **Extras:** batom (pinta o bico, com cor), cílios (sim/não, longos para cima), meias
+  - **Extras:** batom (só na ponta do bico, com cor), cílios (sim/não, longos para cima), meias
     (até a metade da perna, com cor).
   - **Óculos** ficam no meio do bico. **Jaquetas abertas na frente**, sem barra embaixo.
+  - **Menu:** todas as opções visíveis sem rolar (duas colunas), voltas e corredores embaixo,
+    **Start/Enter para correr**; Configurações é só para configurações. Música suave no menu.
   - No vestiário a **câmera vai até a parte editada** (rosto, pescoço, corpo, costas, pés)
     e vira o cisne para mostrá-la.
   - No vestiário o cisne gira sozinho até o jogador girar (Q/E, LB/RB, analógico direito
@@ -115,7 +117,13 @@ prioridade.
   **4,5 s**. Passadas longas, pernas afastadas.
 - **Jeito desengonçado:** pernas com joelho que dobra; o corpo balança e torce a cada passada; quanto
   mais rápido, **mais baixa a cabeça** e **mais as asas apontam para trás**.
-- **Contorno preto fino** em todo o cisne (casca invertida, segunda passada dos
+- **Roupas são camadas de tecido** separadas do corpo (`shaders/cloth.gdshader`): jaquetas e
+  moletom são soltos, a barra balança e vai para trás com a velocidade; a regata é justa.
+- **Rosto:** cabeça e olhos maiores, sobrancelhas e **expressões** automáticas (feliz, bravo no
+  turbo/subida, surpreso no ar, tonto ao bater, chorando ao se afogar ou em último, rindo ao
+  vencer); pisca de vez em quando. Pernas com **escamas** (tracinhos de pata de galinha).
+- **Pulo:** sobe rápido e **desce planando de asas abertas**.
+- **Contorno fino e suave** em todo o cisne (casca invertida, segunda passada dos
   materiais) e **penas visíveis** (escamas de penas no shader, penas longas nas asas e
   leque na cauda).
 - **Rastro de pegadas** de até 3 s, que muda com o calçado: patinha de cisne descalço,
