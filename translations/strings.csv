@@ -202,10 +202,9 @@ HOME_HINT_XBOX,↑ then ←→: tabs   A: choose   B: back,↑ e depois ←→: 
 HOME_HINT_PLAYSTATION,↑ then ←→: tabs   Cross: choose   Circle: back,↑ e depois ←→: abas   Cruz: escolher   Círculo: voltar
 PODIUM_BEST_LAP,Best lap: %s (%s),Melhor volta: %s (%s)
 APPLY,Apply,Aplicar
-CONFIRM,Confirm,Confirmar
 HINT_SETTINGS_KEYBOARD,↑↓ choose   ←→ change   Q/E: tabs   Esc: cancel,↑↓ escolher   ←→ mudar   Q/E: abas   Esc: cancelar
-HINT_SETTINGS_XBOX,↑↓ choose   ←→ change   LB/RB: tabs   Start: confirm   B: cancel,↑↓ escolher   ←→ mudar   LB/RB: abas   Start: confirmar   B: cancelar
-HINT_SETTINGS_PLAYSTATION,↑↓ choose   ←→ change   L1/R1: tabs   Options: confirm   Circle: cancel,↑↓ escolher   ←→ mudar   L1/R1: abas   Options: confirmar   Círculo: cancelar
+HINT_SETTINGS_XBOX,↑↓ choose   ←→ change   LB/RB: tabs   Start: apply   B: cancel,↑↓ escolher   ←→ mudar   LB/RB: abas   Start: aplicar   B: cancelar
+HINT_SETTINGS_PLAYSTATION,↑↓ choose   ←→ change   L1/R1: tabs   Options: apply   Circle: cancel,↑↓ escolher   ←→ mudar   L1/R1: abas   Options: aplicar   Círculo: cancelar
 SOUND,Sound,Som
 SOUND_ON_TOAST,Sound on,Som ligado
 SOUND_OFF_TOAST,Sound off,Som desligado
