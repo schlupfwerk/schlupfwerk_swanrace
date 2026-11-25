@@ -266,3 +266,10 @@ func _face() -> SwanModel.Face:
 	if motor.boosting or model.effort > 0.5:
 		return SwanModel.Face.ANGRY
 	return SwanModel.Face.HAPPY
+
+
+## Ran over a speed pad: a push forward and a whoosh.
+func hit_pad() -> void:
+	motor.pad_time = SwanMotor.PAD_TIME
+	_jump_player.pitch_scale = 1.6
+	_jump_player.play()

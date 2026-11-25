@@ -35,6 +35,10 @@ const TURBO_LIMIT_BONUS := 0.2
 const STAMINA_DRAIN_PER_SECOND := 1.0 / 3.0 # empty in 3 s
 const STAMINA_REFILL_PER_SECOND := 0.1 # full again in 10 s
 const STAMINA_REFILL_DELAY := 0.5
+## Speed pads: a strong push and a higher top speed for a moment.
+const PAD_TIME := 1.4
+const PAD_ACCEL := 9.0
+const PAD_LIMIT_BONUS := 0.3
 ## Each landing costs 5% of the speed, so jumps are a choice.
 const LANDING_SPEED_LOSS := 0.05
 
@@ -54,6 +58,8 @@ var stamina := 1.0
 ## True on the ticks the turbo is actually pushing.
 var boosting := false
 var _refill_wait := 0.0
+## Seconds left of a speed pad push.
+var pad_time := 0.0
 var on_ground := true
 var accelerating := false
 var braking := false
@@ -95,11 +101,16 @@ func step(intent: SwanIntent, tick: float) -> void:
 	_update_turbo(intent, tick)
 	if boosting:
 		speed += TURBO_ACCEL_BONUS * tick
+	if pad_time > 0.0:
+		pad_time -= tick
+		speed += PAD_ACCEL * tick
 	var slope_limit := clampf(1.0 - slope * SLOPE_LIMIT_PER_GRADE, SLOPE_LIMIT_MIN, SLOPE_LIMIT_MAX)
-	speed = clampf(speed, 0.0, MAX_SPEED * SLOPE_LIMIT_MAX * (1.0 + TURBO_LIMIT_BONUS))
+	speed = clampf(speed, 0.0, MAX_SPEED * SLOPE_LIMIT_MAX * (1.0 + TURBO_LIMIT_BONUS + PAD_LIMIT_BONUS))
 	var limit := MAX_SPEED * max_speed_scale * turn_cap * slope_limit
 	if boosting:
 		limit *= 1.0 + TURBO_LIMIT_BONUS
+	if pad_time > 0.0:
+		limit *= 1.0 + PAD_LIMIT_BONUS
 	if speed > limit:
 		speed = move_toward(speed, limit, BRAKE_DECELERATION * tick)
 

@@ -39,6 +39,8 @@ const PRESETS := {
 var language := ""
 ## 0 easy, 1 medium, 2 hard. Bots will use it; today it sets the defaults below.
 var difficulty := 1
+## Warns "Jump!" before logs and bridge holes.
+var obstacle_alert := true
 ## Laps per race.
 var laps := 3
 ## Swans in a race: the player plus bots (1 = racing alone).
@@ -364,6 +366,7 @@ func save_settings() -> void:
 	cfg.set_value("general", "language", language)
 	cfg.set_value("general", "difficulty", difficulty)
 	cfg.set_value("general", "laps", laps)
+	cfg.set_value("general", "obstacle_alert", obstacle_alert)
 	cfg.set_value("general", "racers", racers)
 	cfg.set_value("general", "direction_indicator", direction_indicator)
 	for key in ["window_mode", "resolution", "monitor", "quality", "render_scale", "msaa",
@@ -385,6 +388,7 @@ func load_settings() -> void:
 	language = _pick(cfg.get_value("general", "language", language), LANGUAGES, "")
 	difficulty = clampi(cfg.get_value("general", "difficulty", difficulty), 0, 2)
 	laps = _pick(int(cfg.get_value("general", "laps", laps)), LAP_OPTIONS, 3)
+	obstacle_alert = bool(cfg.get_value("general", "obstacle_alert", obstacle_alert))
 	racers = clampi(int(cfg.get_value("general", "racers", racers)), 1, 12)
 	direction_indicator = clampi(cfg.get_value("general", "direction_indicator", direction_indicator), 0, 2)
 	window_mode = clampi(cfg.get_value("video", "window_mode", window_mode), 0, 2) as WindowMode

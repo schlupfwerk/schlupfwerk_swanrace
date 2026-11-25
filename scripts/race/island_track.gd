@@ -34,6 +34,25 @@ const MAX_BANK := 0.21
 ## Only the middle of the sand is banked; the edges level out.
 const BANK_HALF_WIDTH := 10.0
 
+## Shallow lake across the sand, with two bridges (lanes: water, bridge, water,
+## bridge, water). Each bridge has a hole, at 30% and 70% of its length, so
+## you jump it or drop into the water.
+const LAKE_START := 0.46 # fraction of the lap
+const LAKE_LENGTH := 42.0
+const LAKE_DEPTH := 0.45
+const LAKE_WATER := 0.3 # water above the lake floor
+const BRIDGE_HEIGHT := 0.35
+const BRIDGE_HOLES := [0.3, 0.7]
+const HOLE_LENGTH := 3.2
+const LAKE_SLOPE := 1.5
+## Big logs lying across the sand: jump them (or go around near the edges).
+const LOG_SPOTS := [0.12, 0.3, 0.64, 0.86]
+const LOG_LENGTH := 9.0
+const LOG_RADIUS := 0.38
+## Speed pads on the sand.
+const BOOST_SPOTS := [0.07, 0.24, 0.57, 0.79]
+const BOOST_SIZE := Vector2(3.2, 4.5)
+
 ## Racing line in travel order, as (x, z).
 var points := PackedVector2Array()
 ## Distance from the start line at each point.
@@ -43,6 +62,9 @@ var _water := PackedFloat32Array()
 ## Solid things on or near the sand (rocks, logs): {"p": Vector2, "r": radius,
 ## "h": height}. A swan in the air above "h" passes over it.
 var obstacles: Array[Dictionary] = []
+## Logs across the track: {"distance", "lateral"}. Speed pads: same keys.
+var logs: Array[Dictionary] = []
+var boosters: Array[Dictionary] = []
 ## How far you can go to each side at point i before the ground folds over
 ## itself in a tight curve (positive = sea side).
 var _room_right := PackedFloat32Array()
@@ -80,6 +102,8 @@ func _init() -> void:
 		# Narrower sand inside the tightest curves.
 		_forest.append(maxf(forest, -0.6 * _room_left[i]))
 		_water.append(minf(water, 0.6 * _room_right[i]))
+	# Logs and pads need the finished track (lengths, edges) to be placed.
+	_place_features()
 
 
 func tangent(i: int) -> Vector2:
@@ -116,8 +140,13 @@ func surface_height(i: int, lateral: float) -> float:
 	return maxf(tilted, BASE_HEIGHT * 0.5)
 
 
-## Height of the ground (sand, forest edge or sea floor) at a lateral offset.
+## Height of the ground (sand, forest edge, lake floor or sea floor) at a
+## lateral offset. Bridges are not included (see ground_height_at).
 func ground_height(i: int, lateral: float) -> float:
+	return _base_height(i, lateral) + _lake_depth(lengths[wrapi(i, 0, SAMPLES)], lateral)
+
+
+func _base_height(i: int, lateral: float) -> float:
 	var water := water_line(i)
 	var forest := forest_edge(i)
 	if lateral <= forest:
@@ -261,4 +290,103 @@ func ground_height_at(distance: float, lateral: float) -> float:
 	var next := (i + 1) % SAMPLES
 	var span := lengths[next] - lengths[i] if next > 0 else LAP_LENGTH - lengths[i]
 	var t := clampf((fposmod(distance, LAP_LENGTH) - lengths[i]) / maxf(span, 0.001), 0.0, 1.0)
-	return lerpf(ground_height(i, lateral), ground_height(next, lateral), t)
+	var ground := lerpf(_base_height(i, lateral), _base_height(next, lateral), t)
+	return ground + _lake_offset(distance, lateral)
+
+
+## True when the point is in the lake water (not on a bridge): wet and slow.
+func in_lake_water(distance: float, lateral: float) -> bool:
+	return _lake_offset(distance, lateral) < -LAKE_WATER
+
+
+## Height of the lake water surface at a point (only meaningful in the lake).
+func lake_water_height(distance: float, lateral: float) -> float:
+	var i := index_at(distance)
+	return _base_height(i, lateral) - LAKE_DEPTH + LAKE_WATER
+
+
+## Which lake lane a point is in (0..4: water, bridge, water, bridge, water),
+## or -1 outside the lake. `along` gets the distance into the lake.
+func lake_lane(distance: float, lateral: float) -> int:
+	var along := fposmod(distance - LAKE_START * LAP_LENGTH, LAP_LENGTH)
+	if along > LAKE_LENGTH + LAKE_SLOPE and along < LAP_LENGTH - LAKE_SLOPE:
+		return -1
+	var i := index_at(distance)
+	var left := forest_edge(i) + 1.0
+	var right := water_line(i) - 1.0
+	if lateral < left or lateral > right:
+		return -1
+	return clampi(int((lateral - left) / (right - left) * 5.0), 0, 4)
+
+
+## Distance into the lake (negative before it).
+func lake_along(distance: float) -> float:
+	var along := fposmod(distance - LAKE_START * LAP_LENGTH, LAP_LENGTH)
+	return along - LAP_LENGTH if along > LAP_LENGTH * 0.5 else along
+
+
+## The lake floor below the sand (0 outside the lake, sloping in at both ends).
+func _lake_depth(distance: float, lateral: float) -> float:
+	if lake_lane(distance, lateral) < 0:
+		return 0.0
+	var along := lake_along(distance)
+	var edge := minf(along + LAKE_SLOPE, LAKE_LENGTH + LAKE_SLOPE - along) / LAKE_SLOPE
+	return -LAKE_DEPTH * clampf(edge, 0.0, 1.0)
+
+
+## Lake floor, or the bridge deck (with its hole) in the bridge lanes.
+func _lake_offset(distance: float, lateral: float) -> float:
+	var lane := lake_lane(distance, lateral)
+	var depth := _lake_depth(distance, lateral)
+	if lane != 1 and lane != 3:
+		return depth
+	var along := lake_along(distance)
+	var hole: float = BRIDGE_HOLES[0 if lane == 1 else 1] * LAKE_LENGTH
+	if absf(along - hole) < HOLE_LENGTH * 0.5:
+		return depth
+	# The deck ramps up from the sand at both ends.
+	var ramp := clampf(minf(along + LAKE_SLOPE, LAKE_LENGTH + LAKE_SLOPE - along) / (LAKE_SLOPE * 2.0),
+			0.0, 1.0)
+	return BRIDGE_HEIGHT * ramp
+
+
+func _place_features() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 4242
+	for spot: float in LOG_SPOTS:
+		var distance := spot * LAP_LENGTH
+		var i := index_at(distance)
+		var lateral := rng.randf_range(-3.0, 3.0)
+		logs.append({"distance": distance, "lateral": lateral})
+		# Solid, but low: a jump clears it.
+		var across := right(i)
+		for k in range(-7, 8):
+			var p := edge(i, lateral) + across * (k * LOG_LENGTH / 14.0)
+			add_obstacle(p, LOG_RADIUS + 0.05, LOG_RADIUS * 2.0 - 0.2)
+	for spot: float in BOOST_SPOTS:
+		boosters.append({"distance": spot * LAP_LENGTH, "lateral": rng.randf_range(-5.0, 5.0)})
+
+
+## The speed pad under a point, if any (true when on it).
+func on_booster(distance: float, lateral: float) -> bool:
+	for pad in boosters:
+		var along := fposmod(distance - pad.distance + LAP_LENGTH * 0.5, LAP_LENGTH) - LAP_LENGTH * 0.5
+		if absf(along) < BOOST_SIZE.y * 0.5 and absf(lateral - pad.lateral) < BOOST_SIZE.x * 0.5:
+			return true
+	return false
+
+
+## True when a log or a bridge hole is right ahead, in this lane, between
+## `from` and `to` meters ahead (for the obstacle alert and the bots).
+func obstacle_ahead(distance: float, lateral: float, from := 6.0, to := 22.0) -> bool:
+	for log in logs:
+		var gap := fposmod(log.distance - distance, LAP_LENGTH)
+		if gap > from and gap < to and absf(lateral - log.lateral) < LOG_LENGTH * 0.5 + 0.8:
+			return true
+	var lane := lake_lane(distance, lateral)
+	if lane == 1 or lane == 3:
+		var hole: float = BRIDGE_HOLES[0 if lane == 1 else 1] * LAKE_LENGTH
+		var gap := hole - HOLE_LENGTH * 0.5 - lake_along(distance)
+		if gap > from * 0.5 and gap < to:
+			return true
+	return false

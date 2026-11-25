@@ -24,12 +24,16 @@ static func apply(swan: Swan, laps: LapTracker, track: IslandTrack) -> void:
 
 	var ground := track.ground_height_at(laps.distance, lateral)
 	swan.ground_y = ground
-	# Wet only where there is actually water (a high beach drops in a bank).
-	var in_water := ground < IslandTrack.SEA_LEVEL + 0.15
+	# Wet where there is water: the sea, or the shallow lake (not its bridges).
+	var in_lake := track.in_lake_water(laps.distance, lateral)
+	var in_water := ground < IslandTrack.SEA_LEVEL + 0.15 or in_lake
+	# Speed pads push only when the swan runs over them.
+	if swan.motor.on_ground and track.on_booster(laps.distance, lateral) and swan.motor.pad_time <= 0.0:
+		swan.hit_pad()
 	swan.motor.max_speed_scale = IslandTrack.WATER_SPEED_SCALE if in_water else 1.0
 	swan.in_water = in_water
 	_follow_ground(swan, track, i, ground)
-	if IslandTrack.SEA_LEVEL - ground > IslandTrack.DROWN_DEPTH:
+	if not in_lake and IslandTrack.SEA_LEVEL - ground > IslandTrack.DROWN_DEPTH:
 		var center := track.points[i]
 		swan.drown(Vector3(center.x, 0.0, center.y), race_heading)
 		return

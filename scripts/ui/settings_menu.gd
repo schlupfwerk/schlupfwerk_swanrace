@@ -145,6 +145,8 @@ func _build_general_page(list: VBoxContainer) -> void:
 			Settings.difficulty, func(i: int) -> void:
 				Settings.difficulty = i
 				Settings.changed.emit())
+	_add_row(list, "OBSTACLE_ALERT", ["OFF", "ON"], int(Settings.obstacle_alert),
+			func(i: int) -> void: Settings.obstacle_alert = i == 1)
 	_add_row(list, "DIRECTION_INDICATOR", ["AUTO_BY_DIFFICULTY", "ON", "OFF"],
 			Settings.direction_indicator, func(i: int) -> void:
 				Settings.direction_indicator = i

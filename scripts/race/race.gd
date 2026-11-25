@@ -44,6 +44,7 @@ func _ready() -> void:
 	_total_laps = Settings.laps
 	Scenery.add_environment(self)
 	IslandScenery.build(self, _track, 1234)
+	IslandScenery.build_features(self, _track)
 
 	var start := _track.index_at(IslandTrack.LAP_LENGTH - GRID_OFFSET)
 	var grid := _track.points[start]
@@ -126,6 +127,8 @@ func _process(delta: float) -> void:
 		if _go_time <= 0.0:
 			_hud.set_start_lights(-1)
 	_update_tips(delta)
+	_hud.show_jump_alert(Settings.obstacle_alert and _racing and not _finished
+			and _track.obstacle_ahead(_laps.distance, _laps.lateral))
 	if not _finished:
 		_hud.set_lap(mini(_laps.lap, _total_laps), _total_laps, _laps.lap_time, _last_lap,
 				_race_time)

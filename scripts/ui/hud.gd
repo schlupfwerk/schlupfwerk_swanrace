@@ -18,6 +18,7 @@ var _results := Label.new()
 var _center_label := Label.new()
 var _message_time := 0.0
 var _lights := StartLights.new()
+var _alert := Label.new()
 
 
 func _ready() -> void:
@@ -59,6 +60,19 @@ func _ready() -> void:
 	_results.add_theme_constant_override("outline_size", 10)
 	_results.visible = false
 	root.add_child(_results)
+
+	_alert.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_alert.offset_left = -300
+	_alert.offset_right = 300
+	_alert.offset_top = 150
+	_alert.offset_bottom = 210
+	_alert.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_alert.add_theme_font_size_override("font_size", 44)
+	_alert.add_theme_color_override("font_color", Color("ff8a2a"))
+	_alert.add_theme_constant_override("outline_size", 10)
+	_alert.text = tr("JUMP_ALERT")
+	_alert.visible = false
+	root.add_child(_alert)
 
 	root.add_child(_lights)
 	_lights.set_anchors_preset(Control.PRESET_CENTER)
@@ -171,3 +185,11 @@ func show_results(race_time: float, best_lap: float) -> void:
 	_results.text = "%s\n%s\n\n%s" % [tr("HUD_TOTAL") % format_time(race_time),
 			tr("HUD_BEST") % format_time(best_lap), tr("RESULTS_HINT_" + InputGlyphs._suffix())]
 	_results.visible = true
+
+
+## "Jump!" warning, pulsing while an obstacle is ahead.
+func show_jump_alert(on: bool) -> void:
+	_alert.visible = on
+	if on:
+		_alert.scale = Vector2.ONE * (1.0 + 0.08 * sin(Time.get_ticks_msec() * 0.02))
+		_alert.pivot_offset = _alert.size / 2.0

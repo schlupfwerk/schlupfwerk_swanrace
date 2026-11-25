@@ -595,3 +595,136 @@ static func _add_rock_obstacle(track: IslandTrack, xform: Transform3D) -> void:
 			+ Vector2(xform.basis.x.x, xform.basis.x.z) * 0.3
 	# Height above the ground it stands on (jumps are measured from the ground).
 	track.add_obstacle(center, 1.2 * maxf(size.x, size.z), 1.0 * size.y)
+
+
+# --- Track features: lake and bridges, logs, speed pads -----------------------------
+
+static func build_features(parent: Node3D, track: IslandTrack) -> void:
+	_build_lake(parent, track)
+	_build_bridges(parent, track)
+	_build_logs(parent, track)
+	_build_boosters(parent, track)
+
+
+static func _lake_samples(track: IslandTrack) -> Array[int]:
+	var list: Array[int] = []
+	for i in IslandTrack.SAMPLES:
+		var along := track.lake_along(track.lengths[i])
+		if along >= -IslandTrack.LAKE_SLOPE and along <= IslandTrack.LAKE_LENGTH + IslandTrack.LAKE_SLOPE:
+			list.append(i)
+	return list
+
+
+static func _build_lake(parent: Node3D, track: IslandTrack) -> void:
+	var st := MeshKit.begin()
+	var samples := _lake_samples(track)
+	for n in samples.size() - 1:
+		var i := samples[n]
+		var j := samples[n + 1]
+		var corners := []
+		for pair: Array in [[i, track.forest_edge(i) + 1.0], [j, track.forest_edge(j) + 1.0],
+				[j, track.water_line(j) - 1.0], [i, track.water_line(i) - 1.0]]:
+			var d: float = track.lengths[pair[0]]
+			corners.append(_v3(track.edge(pair[0], pair[1]), track.lake_water_height(d, pair[1])))
+		var blue := Color(0.32, 0.66, 0.78)
+		_quad(st, corners[0], corners[1], corners[2], corners[3], blue, blue, blue, blue)
+	st.generate_normals()
+	var mat := MeshKit.vertex_color_material()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1, 1, 1, 0.75)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+	mat.roughness = 0.15
+	_add_mesh(parent, st.commit(), mat, false)
+
+
+static func _build_bridges(parent: Node3D, track: IslandTrack) -> void:
+	var wood := MeshKit.vertex_color_material()
+	var samples := _lake_samples(track)
+	var warning_red := Color("d6423a")
+	for lane: int in [1, 3]:
+		var hole: float = IslandTrack.BRIDGE_HOLES[0 if lane == 1 else 1] * IslandTrack.LAKE_LENGTH
+		var st := MeshKit.begin()
+		var posts := MeshKit.begin()
+		for n in samples.size() - 1:
+			var i := samples[n]
+			var d: float = track.lengths[i]
+			var along := track.lake_along(d)
+			if absf(along - hole) < IslandTrack.HOLE_LENGTH * 0.5:
+				continue
+			var left := track.forest_edge(i) + 1.0
+			var width := (track.water_line(i) - 1.0 - left) / 5.0
+			var center := left + width * (lane + 0.5)
+			var top := track.ground_height_at(d, center)
+			var t2 := track.tangent(i)
+			var r2 := track.right(i)
+			var basis := Basis(Vector3(r2.x, 0, r2.y), Vector3.UP, -Vector3(t2.x, 0, t2.y))
+			var plank := Color("9c7650") if n % 2 == 0 else Color("8a6644")
+			var spacing := track.lengths[samples[n + 1]] - d
+			MeshKit.add(st, MeshKit.cylinder(0.5, 0.5, 1.0, 4),
+					Transform3D(basis * Basis(Vector3.UP, PI / 4.0).scaled(
+							Vector3(width * 0.71, 0.12, maxf(spacing, 0.5) * 0.66)),
+							_v3(track.edge(i, center), top - 0.06)), plank)
+			# Red and white posts at the bridge ends and around the hole.
+			var near_hole := absf(along - hole) < IslandTrack.HOLE_LENGTH * 0.5 + 1.2
+			if near_hole or n == 0 or n == samples.size() - 2:
+				for side: float in [-0.5, 0.5]:
+					var post_at := _v3(track.edge(i, center + width * side), top)
+					MeshKit.add(posts, MeshKit.cylinder(0.07, 0.07, 0.9, 6),
+							_at(post_at + Vector3.UP * 0.45), warning_red if near_hole else Color.WHITE)
+					MeshKit.add(posts, MeshKit.cylinder(0.075, 0.075, 0.15, 6),
+							_at(post_at + Vector3.UP * 0.75), Color.WHITE if near_hole else warning_red)
+		_add_mesh(parent, st.commit(), wood, true)
+		_add_mesh(parent, posts.commit(), wood, true)
+
+
+static func _build_logs(parent: Node3D, track: IslandTrack) -> void:
+	var bark := MeshKit.vertex_color_material()
+	for log: Dictionary in track.logs:
+		var i := track.index_at(log.distance)
+		var r2 := track.right(i)
+		var t2 := track.tangent(i)
+		var across := Vector3(r2.x, 0, r2.y)
+		var forward := Vector3(t2.x, 0, t2.y)
+		var ground := track.ground_height_at(log.distance, log.lateral)
+		var center := _v3(track.edge(i, log.lateral), ground + IslandTrack.LOG_RADIUS)
+		var st := MeshKit.begin()
+		var basis := Basis(forward, across, forward.cross(across))
+		MeshKit.add(st, MeshKit.cylinder(IslandTrack.LOG_RADIUS, IslandTrack.LOG_RADIUS * 0.92,
+				IslandTrack.LOG_LENGTH, 12), Transform3D(basis, center), Color("5e3d22"))
+		# Pale cut ends and a couple of stubby branches.
+		for end: float in [-0.5, 0.5]:
+			MeshKit.add(st, MeshKit.cylinder(IslandTrack.LOG_RADIUS * 0.85, IslandTrack.LOG_RADIUS * 0.85,
+					0.04, 12), Transform3D(basis, center + across * IslandTrack.LOG_LENGTH * end * 1.002),
+					Color("d9b07a"))
+			# A red flag at each end, easy to see from far away.
+			var pole: Vector3 = center + across * IslandTrack.LOG_LENGTH * end * 0.95
+			MeshKit.add(st, MeshKit.cylinder(0.04, 0.04, 1.6, 6), _at(pole + Vector3.UP * 0.8),
+					Color("e8e2d6"))
+			MeshKit.add(st, MeshKit.cylinder(0.25, 0.0, 0.5, 3),
+					Transform3D(Basis(Vector3.FORWARD, PI / 2.0).scaled(Vector3(1.0, 1.0, 0.15)),
+							pole + Vector3.UP * 1.45 + across * 0.25 * signf(end)), Color("e8412c"))
+		MeshKit.add(st, MeshKit.cylinder(0.09, 0.05, 0.7, 6),
+				Transform3D(Basis(across, 0.8) * basis, center + across * 1.6 + Vector3.UP * 0.3),
+				Color("6b4a2e"))
+		_add_mesh(parent, st.commit(), bark, true)
+
+
+static func _build_boosters(parent: Node3D, track: IslandTrack) -> void:
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/boost.gdshader")
+	for pad: Dictionary in track.boosters:
+		var i := track.index_at(pad.distance)
+		var r2 := track.right(i)
+		var t2 := track.tangent(i)
+		var mesh := PlaneMesh.new()
+		mesh.size = IslandTrack.BOOST_SIZE
+		var instance := MeshInstance3D.new()
+		instance.mesh = mesh
+		instance.material_override = mat
+		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# Plane X across the track, -Z forward (the chevrons point that way).
+		instance.transform = Transform3D(
+				Basis(Vector3(r2.x, 0, r2.y), Vector3.UP, -Vector3(t2.x, 0, t2.y)),
+				_v3(track.edge(i, pad.lateral), track.ground_height_at(pad.distance, pad.lateral) + 0.06))
+		parent.add_child(instance)

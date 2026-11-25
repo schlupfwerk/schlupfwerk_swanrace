@@ -186,6 +186,17 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - Largada com faixa e pórtico quadriculados, contagem regressiva, voltas cronometradas
   e melhor volta salva.
 
+**Obstáculos e atrações da pista** (`IslandTrack`, posições fixas na volta):
+- **Troncos grandes** atravessados (4 por volta, 9 m de largura, bandeiras vermelhas nas
+  pontas): dá para pular ou contornar pelas bordas; batendo, fica tonto.
+- **Lago raso** no meio da volta (42 m), que só desacelera, com **2 pontes** (faixas: água,
+  ponte, água, ponte, água). Cada ponte tem um **buraco**, a 30% e a 70% do comprimento:
+  pule ou caia na água. Postes vermelhos e brancos marcam pontas e buracos.
+- **Aceleradores** no chão (4 por volta): empurrão forte e +30% de velocidade por ~1,4 s.
+- **Alerta de obstáculo** (Configurações → Geral, liga/desliga): "Pule!!" antes de troncos e
+  buracos.
+- A altura do chão é **interpolada** entre as amostras da pista (sem degraus nas subidas).
+
 **Regras do terreno** (`TrackRules`, iguais para todos os cisnes):
 - **Água:** molhado e **55% mais lento**; o fundo desce rápido e o cisne vai afundando.
   Passou da metade do corpo (~9 m além da linha da água): **se afoga**, volta ao centro
