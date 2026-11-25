@@ -7,7 +7,8 @@ extends Control
 signal closed
 
 const WINDOW_MODES: PackedStringArray = ["WINDOWED", "FULLSCREEN", "EXCLUSIVE_FULLSCREEN"]
-const QUALITY_NAMES: PackedStringArray = ["QUALITY_LOW", "QUALITY_MEDIUM", "QUALITY_HIGH", "QUALITY_CUSTOM"]
+const QUALITY_NAMES: PackedStringArray = ["QUALITY_LOW", "QUALITY_MEDIUM", "QUALITY_HIGH",
+		"QUALITY_ULTRA", "QUALITY_CUSTOM"]
 const OFF_ON: PackedStringArray = ["OFF", "ON"]
 const VSYNC_NAMES: PackedStringArray = ["OFF", "ON", "ADAPTIVE"]
 const SHADOW_NAMES: PackedStringArray = ["SHADOWS_OFF", "SHADOWS_LOW", "SHADOWS_MEDIUM", "SHADOWS_HIGH"]
@@ -245,6 +246,19 @@ func _build_video_page(list: VBoxContainer) -> void:
 			Settings.MSAA_LEVELS.find(Settings.msaa), func(i: int) -> void:
 				Settings.msaa = Settings.MSAA_LEVELS[i]
 				_custom())
+	# TAA and ambient occlusion exist only with the Forward+ renderer (PC).
+	var smoothing_names := PackedStringArray([tr("OFF"), "FXAA"])
+	if Settings.is_forward_plus():
+		smoothing_names.append("TAA")
+	_advanced_rows.smoothing = _add_row(box, "SCREEN_SMOOTHING", smoothing_names,
+			_smoothing_index(), func(i: int) -> void:
+				Settings.smoothing = i as Settings.Smoothing
+				_custom())
+	if Settings.is_forward_plus():
+		_advanced_rows.ambient_occlusion = _add_row(box, "AMBIENT_OCCLUSION", OFF_ON,
+				int(Settings.ambient_occlusion), func(i: int) -> void:
+					Settings.ambient_occlusion = i == 1
+					_custom())
 	_advanced_rows.shadows = _add_row(box, "SHADOWS", SHADOW_NAMES, Settings.shadows,
 			func(i: int) -> void:
 				Settings.shadows = i
@@ -271,6 +285,13 @@ func _build_video_page(list: VBoxContainer) -> void:
 	_refresh_rows()
 
 
+## Without Forward+ the row has no TAA: TAA shows as FXAA (its fallback).
+func _smoothing_index() -> int:
+	if not Settings.is_forward_plus():
+		return mini(Settings.smoothing, Settings.Smoothing.FXAA)
+	return Settings.smoothing
+
+
 func _custom() -> void:
 	Settings.quality = Settings.Quality.CUSTOM
 	Settings.apply_graphics()
@@ -285,6 +306,9 @@ func _refresh_rows() -> void:
 	if _advanced_rows.has("render_scale"):
 		_advanced_rows.render_scale.set_index(Settings.RENDER_SCALES.find(Settings.render_scale))
 		_advanced_rows.msaa.set_index(Settings.MSAA_LEVELS.find(Settings.msaa))
+		_advanced_rows.smoothing.set_index(_smoothing_index())
+		if _advanced_rows.has("ambient_occlusion"):
+			_advanced_rows.ambient_occlusion.set_index(int(Settings.ambient_occlusion))
 		_advanced_rows.shadows.set_index(Settings.shadows)
 		_advanced_rows.detail.set_index(Settings.detail)
 	_advanced_button.text = tr("ADVANCED") + "  %s" % ("▲" if _advanced_box.visible else "▼")

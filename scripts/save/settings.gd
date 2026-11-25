@@ -4,18 +4,23 @@ extends Node
 
 signal changed
 
-enum Quality { LOW, MEDIUM, HIGH, CUSTOM }
+## ULTRA was added in save version 2, before CUSTOM (saved 3 = CUSTOM is migrated).
+enum Quality { LOW, MEDIUM, HIGH, ULTRA, CUSTOM }
+## Screen-space smoothing on top of MSAA. TAA needs the Forward+ renderer (PC);
+## elsewhere it falls back to FXAA.
+enum Smoothing { OFF, FXAA, TAA }
 enum WindowMode { WINDOWED, FULLSCREEN, EXCLUSIVE }
 enum VSync { OFF, ON, ADAPTIVE }
 
 const SAVE_PATH := "user://settings.cfg"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 const RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1280, 720), Vector2i(1366, 768), Vector2i(1600, 900), Vector2i(1920, 1080),
 	Vector2i(2560, 1440), Vector2i(3840, 2160),
 ]
-const RENDER_SCALES := [0.5, 0.67, 0.75, 0.85, 1.0]
+## Above 100% the 3D scene is rendered larger and scaled down (supersampling).
+const RENDER_SCALES := [0.5, 0.67, 0.75, 0.85, 1.0, 1.25, 1.5]
 const MSAA_LEVELS := [0, 2, 4, 8]
 const FPS_LIMITS := [0, 30, 60, 90, 120, 144, 165, 240]
 const FOV_VALUES := [60, 65, 70, 75, 80, 85, 90]
@@ -30,9 +35,14 @@ const LANGUAGES := ["", "pt", "en"]
 const LAP_OPTIONS := [1, 2, 3, 4, 5, 7, 10]
 
 const PRESETS := {
-	Quality.LOW: {"render_scale": 0.75, "msaa": 0, "shadows": 0, "detail": 0},
-	Quality.MEDIUM: {"render_scale": 1.0, "msaa": 2, "shadows": 1, "detail": 1},
-	Quality.HIGH: {"render_scale": 1.0, "msaa": 4, "shadows": 3, "detail": 2},
+	Quality.LOW: {"render_scale": 0.75, "msaa": 0, "smoothing": Smoothing.OFF, "shadows": 0,
+			"detail": 0, "ambient_occlusion": false},
+	Quality.MEDIUM: {"render_scale": 1.0, "msaa": 2, "smoothing": Smoothing.FXAA, "shadows": 1,
+			"detail": 1, "ambient_occlusion": false},
+	Quality.HIGH: {"render_scale": 1.0, "msaa": 4, "smoothing": Smoothing.FXAA, "shadows": 3,
+			"detail": 2, "ambient_occlusion": true},
+	Quality.ULTRA: {"render_scale": 1.5, "msaa": 4, "smoothing": Smoothing.TAA, "shadows": 3,
+			"detail": 2, "ambient_occlusion": true},
 }
 
 # General
@@ -54,8 +64,11 @@ var monitor := 0
 var quality := Quality.HIGH
 var render_scale := 1.0
 var msaa := 4
+var smoothing := Smoothing.FXAA
 var shadows := 3
 var detail := 2
+## Contact shadows in corners and under objects (SSAO). Forward+ only (PC).
+var ambient_occlusion := true
 var vsync := VSync.ON
 var fps_limit := 0
 var show_fps := false
@@ -126,6 +139,8 @@ func _load_preset(value: Quality) -> void:
 		var preset: Dictionary = PRESETS[value]
 		render_scale = preset.render_scale
 		msaa = preset.msaa
+		smoothing = preset.smoothing
+		ambient_occlusion = preset.ambient_occlusion
 		shadows = preset.shadows
 		detail = preset.detail
 
@@ -186,14 +201,22 @@ func apply_graphics() -> void:
 	var msaa_modes := {0: Viewport.MSAA_DISABLED, 2: Viewport.MSAA_2X, 4: Viewport.MSAA_4X,
 			8: Viewport.MSAA_8X}
 	viewport.msaa_3d = msaa_modes.get(msaa, Viewport.MSAA_DISABLED)
+	var taa := smoothing == Smoothing.TAA and is_forward_plus()
+	viewport.use_taa = taa
+	var fxaa := smoothing != Smoothing.OFF and not taa
+	viewport.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA if fxaa else Viewport.SCREEN_SPACE_AA_DISABLED
+	# No color bands in the sky gradient and the fog.
+	viewport.use_debanding = true
 	RenderingServer.directional_shadow_atlas_set_size(4096 if shadows >= 2 else 2048, true)
 	RenderingServer.directional_soft_shadow_filter_set_quality(
-			RenderingServer.SHADOW_QUALITY_SOFT_MEDIUM if shadows >= 3
+			RenderingServer.SHADOW_QUALITY_SOFT_HIGH if shadows >= 3
 			else RenderingServer.SHADOW_QUALITY_SOFT_LOW)
 	for light in get_tree().get_nodes_in_group("sun"):
 		configure_sun(light)
 	for instance in get_tree().get_nodes_in_group("scenery_detail"):
 		configure_detail(instance)
+	for world in get_tree().get_nodes_in_group("world_environment"):
+		configure_environment((world as WorldEnvironment).environment)
 	changed.emit()
 
 
@@ -201,6 +224,23 @@ func apply_graphics() -> void:
 func configure_sun(sun: DirectionalLight3D) -> void:
 	sun.shadow_enabled = shadows > 0
 	sun.directional_shadow_max_distance = maxf(SHADOW_DISTANCES[shadows], 1.0)
+	# Forward+ blurs shadows by the sun's size and the blur (the Mobile renderer
+	# ignores the size): smaller values keep shadows as defined as on phones.
+	sun.light_angular_distance = 0.5 if is_forward_plus() else 1.5
+	sun.shadow_blur = 0.5 if is_forward_plus() else 1.6
+
+
+## Called by the scenery for its environment, and again when settings change.
+func configure_environment(env: Environment) -> void:
+	env.ssao_enabled = ambient_occlusion and is_forward_plus()
+	# Forward+ lights the shade more from the sky: less ambient keeps the same
+	# contrast as the Mobile renderer, instead of a washed-out, hazy look.
+	env.ambient_light_energy = 0.6 if is_forward_plus() else 0.9
+
+
+## Forward+ runs on PC (TAA, ambient occlusion); phones use the Mobile renderer.
+func is_forward_plus() -> bool:
+	return RenderingServer.get_current_rendering_method() == "forward_plus"
 
 
 ## Called by the scenery for decorative MultiMeshes, and again on changes.
@@ -422,7 +462,8 @@ func save_settings() -> void:
 	cfg.set_value("general", "racers", racers)
 	cfg.set_value("general", "direction_indicator", direction_indicator)
 	for key in ["window_mode", "resolution", "monitor", "quality", "render_scale", "msaa",
-			"shadows", "detail", "vsync", "fps_limit", "show_fps", "fov", "gpu_index"]:
+			"smoothing", "shadows", "detail", "ambient_occlusion", "vsync", "fps_limit", "show_fps",
+			"fov", "gpu_index"]:
 		cfg.set_value("video", key, get(key))
 	cfg.set_value("video", "known_gpus", _known_gpus)
 	cfg.set_value("video", "gpu_boot_ok", _gpu_boot_ok)
@@ -448,11 +489,19 @@ func load_settings() -> void:
 	if saved_resolution is Vector2i and saved_resolution.x >= 640 and saved_resolution.y >= 360:
 		resolution = saved_resolution
 	monitor = maxi(int(cfg.get_value("video", "monitor", monitor)), 0)
-	quality = clampi(cfg.get_value("video", "quality", quality), 0, 3) as Quality
+	var saved_quality: int = cfg.get_value("video", "quality", quality)
+	if int(cfg.get_value("meta", "version", 1)) < 2 and saved_quality == 3:
+		saved_quality = Quality.CUSTOM
+	quality = clampi(saved_quality, 0, Quality.CUSTOM) as Quality
 	render_scale = _pick(cfg.get_value("video", "render_scale", render_scale), RENDER_SCALES, 1.0)
 	msaa = _pick(cfg.get_value("video", "msaa", msaa), MSAA_LEVELS, 0)
+	smoothing = clampi(cfg.get_value("video", "smoothing", smoothing), 0, 2) as Smoothing
+	ambient_occlusion = bool(cfg.get_value("video", "ambient_occlusion", ambient_occlusion))
 	shadows = clampi(cfg.get_value("video", "shadows", shadows), 0, 3)
 	detail = clampi(cfg.get_value("video", "detail", detail), 0, 2)
+	# A preset's values always win: they may have changed since the save.
+	if quality != Quality.CUSTOM:
+		_load_preset(quality)
 	vsync = clampi(cfg.get_value("video", "vsync", vsync), 0, 2) as VSync
 	fps_limit = _pick(cfg.get_value("video", "fps_limit", fps_limit), FPS_LIMITS, 0)
 	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))

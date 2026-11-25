@@ -76,7 +76,10 @@ GRAPHICS_QUALITY,Graphics quality,Qualidade gráfica
 QUALITY_LOW,Low,Baixa
 QUALITY_MEDIUM,Medium,Média
 QUALITY_HIGH,High,Alta
+QUALITY_ULTRA,Ultra,Ultra
 QUALITY_CUSTOM,Custom,Personalizada
+SCREEN_SMOOTHING,Image smoothing,Suavização da imagem
+AMBIENT_OCCLUSION,Contact shadows (AO),Sombras de contato (AO)
 FIELD_OF_VIEW,Field of view,Campo de visão
 ADVANCED,Advanced,Avançado
 SHOW_FPS,Show FPS and refresh rate,Mostrar FPS e frequência da tela

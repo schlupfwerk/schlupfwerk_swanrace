@@ -12,7 +12,7 @@ and what it costs. One file per decision, numbered in order.
 |---|---|---|
 | [0001](0001-record-architecture-decisions.md) | Record architecture decisions | Accepted |
 | [0002](0002-godot-4-gdscript-single-project.md) | Godot 4 and GDScript in a single project | Accepted |
-| [0003](0003-mobile-renderer.md) | Mobile renderer | Accepted |
+| [0003](0003-mobile-renderer.md) | Mobile renderer | Superseded by 0016 |
 | [0004](0004-platforms-android-ios-steam.md) | Platforms: Android, iOS and PC (Steam) | Superseded by 0011 |
 | [0005](0005-unified-input-and-brains.md) | Unified input through brains and intents | Accepted |
 | [0006](0006-handwritten-arcade-physics.md) | Handwritten, deterministic arcade physics | Accepted |
@@ -25,3 +25,4 @@ and what it costs. One file per decision, numbered in order.
 | [0013](0013-cloud-save-through-platform-accounts.md) | Cloud save through each platform's own account | Proposed |
 | [0014](0014-unified-account-deferred.md) | Unified account across platforms | Deferred |
 | [0015](0015-swan-customization-and-equal-abilities.md) | Swan customization by colors and accessories; equal abilities | Accepted |
+| [0016](0016-forward-plus-on-desktop.md) | Forward+ renderer on desktop, Mobile on phones | Accepted |
