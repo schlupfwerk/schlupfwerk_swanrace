@@ -58,6 +58,20 @@ func _input(event: InputEvent) -> void:
 	var typing := get_viewport().gui_get_focus_owner() is LineEdit
 	if typing:
 		return
+	# On the tab bar: left/right switch tabs (once per press), down enters the tab.
+	var on_bar := get_viewport().gui_get_focus_owner() in _tab_buttons
+	if on_bar and event.is_action_pressed("ui_left"):
+		get_viewport().set_input_as_handled()
+		_select_tab(wrapi(_tab - 1, 0, Tab.size()), true)
+		return
+	if on_bar and event.is_action_pressed("ui_right"):
+		get_viewport().set_input_as_handled()
+		_select_tab(wrapi(_tab + 1, 0, Tab.size()), true)
+		return
+	if on_bar and event.is_action_pressed("ui_down"):
+		get_viewport().set_input_as_handled()
+		_focus_content()
+		return
 	if event.is_action_pressed("home_prev_tab"):
 		get_viewport().set_input_as_handled()
 		_select_tab(wrapi(_tab - 1, 0, Tab.size()))
@@ -110,7 +124,7 @@ func _build_ui() -> void:
 		button.button_group = group
 		button.custom_minimum_size = Vector2(230, 46)
 		button.add_theme_font_size_override("font_size", 22)
-		button.focus_mode = Control.FOCUS_NONE
+		button.focus_mode = Control.FOCUS_ALL
 		# The open tab stands out in yellow.
 		var open := StyleBoxFlat.new()
 		open.bg_color = UiTheme.FOCUS_COLOR
@@ -138,6 +152,9 @@ func _build_ui() -> void:
 
 	_build_race_panel()
 	_build_selector()
+	# Up from the top of a tab goes back to the tab bar.
+	_editor.set_tab_button(_tab_buttons[Tab.CHARACTERS])
+	_first_race_row.focus_neighbor_top = _first_race_row.get_path_to(_tab_buttons[Tab.RACE])
 
 
 ## Race tab: the options for the next race and the big RACE button.
@@ -240,14 +257,16 @@ func _build_selector() -> void:
 	customize.focus_neighbor_top = customize.get_path_to(_selector_row)
 
 
-func _select_tab(tab: int) -> void:
+## Opens a tab. `stay_on_bar` keeps the focus on the tab bar (arrows).
+func _select_tab(tab: int, stay_on_bar := false) -> void:
 	if _selector.visible:
 		_close_selector(false)
 	if _settings and tab != Tab.SETTINGS:
 		_settings.queue_free()
 		_settings = null
 	_tab = tab as Tab
-	_tab_buttons[tab].set_pressed_no_signal(true)
+	for n in _tab_buttons.size():
+		_tab_buttons[n].set_pressed_no_signal(n == tab)
 	_race_panel.visible = tab == Tab.RACE
 	_editor.set_editing(tab == Tab.CHARACTERS)
 	_hint.visible = tab != Tab.CHARACTERS
@@ -256,11 +275,14 @@ func _select_tab(tab: int) -> void:
 			_editor.make_current()
 		Tab.RACE:
 			_demo.make_current()
-			_race_button.grab_focus()
 		Tab.SETTINGS:
 			_demo.make_current()
 			if _settings == null:
 				_open_settings()
+	if stay_on_bar:
+		_tab_buttons[tab].grab_focus.call_deferred()
+	else:
+		_focus_content.call_deferred()
 
 
 func _open_settings() -> void:
@@ -304,3 +326,15 @@ static func _chain(rows: Array[Control]) -> void:
 	for n in rows.size() - 1:
 		rows[n].focus_neighbor_bottom = rows[n].get_path_to(rows[n + 1])
 		rows[n + 1].focus_neighbor_top = rows[n + 1].get_path_to(rows[n])
+
+
+## Focus the first thing inside the open tab.
+func _focus_content() -> void:
+	match _tab:
+		Tab.CHARACTERS:
+			_editor.focus_first()
+		Tab.RACE:
+			_race_button.grab_focus()
+		Tab.SETTINGS:
+			if _settings:
+				_settings.focus_first()

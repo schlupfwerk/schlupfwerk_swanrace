@@ -117,3 +117,6 @@ func update_intent(intent: SwanIntent, tick: float) -> void:
 	if motor.slope > 0.06 and motor.stamina > 0.4 and _rng.randf() < skill * 0.03:
 		_turbo_hold = _rng.randf_range(1.0, 2.5)
 	intent.turbo = _turbo_hold > 0.0
+	# Same rule as the player: turbo means full throttle.
+	if intent.turbo:
+		intent.accel = 1.0

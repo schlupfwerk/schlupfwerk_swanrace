@@ -65,7 +65,7 @@ func _restart() -> void:
 		var i := _track.index_at(at)
 		var spot := _track.edge(i, (-1.0 if slot % 2 == 0 else 1.0) * 3.0)
 		var swan := Swan.new()
-		swan.motor.position = Vector3(spot.x, _track.ground_height_at(at, 0.0), spot.y)
+		swan.motor.position = Vector3(spot.x, 0.0, spot.y)
 		swan.motor.heading = _track.heading_at(i)
 		swan.motor.speed = 9.0
 		swan.look = BotLooks.make(_rng, nobody, used)

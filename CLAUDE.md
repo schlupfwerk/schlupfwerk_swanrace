@@ -145,15 +145,19 @@ prioridade.
   ponteiro.
 
 ## Menu (home, `scenes/home.tscn`)
-- **Abas no topo:** **Meus personagens | Correr | Configurações** (Tab/PgUp no teclado, LT/RT no
-  controle, ou clique). Abre na aba Correr. Música suave.
+- **Abas no topo:** **Meus personagens | Correr | Configurações**. Troca pelas **setas**: ↑ no topo
+  do conteúdo leva às abas, ←/→ troca (uma vez por toque), ↓ entra. Também Tab/PgUp ou clique.
+  **Gatilhos não trocam de aba** (disparavam várias vezes). Abre na aba Correr. Música suave.
 - **Fundo:** uma **corrida simulada** (`DemoRace`) com cisnes sorteados (bots), vista de cima por uma
   **câmera de drone**, sem sons de passos. A cada **15 s** muda de mapa; enquanto só existe a Ilha
   Deserta, ela só reinicia (`DemoRace.MAP_TIME`, TODO: trocar de mapa quando houver outros).
 - **Correr:** voltas, corredores (1 a 12) e dificuldade, e o botão **CORRER** (A/Cruz, Enter ou
   Start). Ele abre o **seletor de personagem**: "Correr assim" começa a corrida; "Personalizar" vai
   para Meus personagens com aquele personagem.
-- **Configurações:** só configurações (Geral, Vídeo, Áudio); B/Esc volta para Correr.
+- **Configurações:** só configurações (Geral, Vídeo, Áudio). As mudanças aparecem na hora, mas só
+  são gravadas com **Aplicar** ou **Confirmar**. Botões: **Restaurar padrão** e **Aplicar**; embaixo,
+  **Confirmar** (ou Start) salva e volta para Correr; **B/Esc cancela**: volta ao que estava salvo e
+  volta para Correr.
 
 ## Idiomas
 - **Português** se o aparelho estiver em português; **inglês** em qualquer outro caso.
@@ -204,10 +208,12 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 
 **Obstáculos e atrações da pista** (`IslandTrack`, posições fixas na volta):
 - **Troncos grandes** atravessados (4 por volta, 9 m de largura, bandeiras vermelhas nas
-  pontas): dá para pular ou contornar pelas bordas; batendo, fica tonto.
+  pontas): dá para pular ou contornar pelas bordas. **Batendo de frente** num tronco ou numa pedra,
+  o cisne para e **reaparece logo depois do obstáculo**, a 0 km/h e piscando por 2 s (nunca fica
+  preso). Raspando de lado, só desliza.
 - **Lago raso** no meio da volta (42 m), que só desacelera, com **2 pontes** (faixas: água,
   ponte, água, ponte, água). Cada ponte tem um **buraco**, a 30% e a 70% do comprimento:
-  pule ou caia na água. Postes vermelhos e brancos marcam pontas e buracos.
+  pule ou caia na água. A ponte não tem divisórias: só **postes vermelhos e brancos em volta do buraco**.
 - **Aceleradores** no chão (4 por volta): empurrão forte e +30% de velocidade por ~1,4 s.
 - **Alerta de obstáculo** (Configurações → Geral, liga/desliga): "Pule!!" antes de troncos e
   buracos.
@@ -219,7 +225,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   da pista a 0 km/h piscando por 5 s (de transparente a visível) e aparece
   **"Cuidado com a água!!!!"**.
 - **Pedras e troncos têm colisão** (círculos registrados pelo cenário em
-  `IslandTrack.add_obstacle`); troncos são baixos e dá para pular por cima.
+  `IslandTrack.add_obstacle`); troncos são baixos e dá para pular por cima. **Atenção:** a altura do
+  cisne no `SwanMotor` é **acima do chão** (0 = pisando); nunca grave nela a altura do mundo.
 - **Mato:** **bate**, a velocidade vai a **0**, balança a cabeça com estrelinhas e se
   vira de volta para a direção da corrida. Leva **2,5 s** para se recuperar.
 - **Nunca na contramão:** o cisne não consegue virar mais de 80° da direção da pista.
@@ -236,9 +243,9 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - **Voltas:** número de voltas na aba Correr do menu (padrão 3). HUD mostra
   "Volta 2/3" e o tempo total. **Última volta:** aviso e a música troca (com fade) para uma
   versão mais rápida e animada (`scripts/audio/final_lap_music.gd`). **Chegada:** apito de 2 s,
-  a câmera se afasta girando e, depois, o **pódio**: **um lugar por corredor** (12 corredores, 12 lugares), 1º, 2º e 3º com
-  medalhas e o **último colocado comemorando como se tivesse vencido** (medalha de "1", garrafa
-  espirrando espuma, piscando e rindo de bico aberto; referência do dono do projeto: pato do meme). Todos **dançam de leve**; um **drone** vai e volta em 60° na frente do pódio, com o
+  a câmera se afasta girando e, depois, o **pódio**: **um lugar por corredor** (12 corredores, 12 lugares, na ordem 12 10 8 6 4 2 1 3 5 7 9 11), 1º, 2º e 3º com
+  medalhas e o **último colocado comemorando como se tivesse vencido** (medalha de "1", asa erguida
+  acenando, piscando e rindo de bico aberto; referência do dono do projeto: pato do meme). Todos **dançam de leve**; um **drone** vai e volta em 60° na frente do pódio, com o
   placar (posição, tempo total e melhor volta de cada um, e a melhor volta da corrida) e uma
   **troféu dourado flutuando** sobre a cabeça do 1º, **musiquinha de corrida finalizada** O pódio fica num **trecho reto e plano da própria pista** (`IslandTrack.podium_spot`), de
   costas para a floresta, com os blocos apoiados na areia. (`scripts/audio/victory_music.gd`), até o jogador sair
@@ -250,6 +257,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   apertado: WASD ou setas (troca sozinho), Xbox (A B X Y, LT/RT) ou PlayStation (✕ ○ □ △, L2/R2).
 - **Largada com semáforo:** 3 luzes vermelhas com "tu", verde com "tuuuu" e "Corra!".
 - **Afogamento:** som de derrota e 5 bolhas subindo em zigue-zague e estourando com som.
+- **Turbo = acelerador a 100%** (acessibilidade): apertar o turbo já acelera tudo, sem precisar de
+  dois botões no teclado ou no celular.
 - **Turbo com stamina:** X/Quadrado (Shift no teclado) dá mais aceleração e **+20%** de
   velocidade máxima; a stamina (barra acima do velocímetro) **acaba em 3 s** e leva **10 s**
   para encher de novo. O jogador precisa escolher onde usar (subidas).
@@ -261,9 +270,14 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   turbo!!" numa subida forte): automático (ligado no fácil e no médio), ligado ou desligado.
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
-plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Alvo atual: **volta perfeita
-~1:10** → 880 m com relevo (1:11,6 saindo parado, 1:09 lançada, ~1:07 com turbo nas subidas). Se mudar velocidade ou aceleração, recalcule (ver
-`IslandTrack`).
+plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Medido na Ilha Deserta
+(880 m pelo meio da areia, com relevo, aceleradores, lago e troncos):
+- **Volta boa pelo meio da areia: ~1:10** (1:11 só acelerando, 1:09,5 com turbo nas subidas,
+  1:08,3 passando também nos aceleradores).
+- **Volta perfeita: ~58 s**, fechando as curvas pela linha de corrida (a mais curta tem ~793 m, 10%
+  menos que o meio), com turbo nas subidas e aceleradores. Recorde do dono do projeto: 57,78 s.
+  Decisão do dono: **manter assim**, a linha de corrida é uma habilidade que vale a pena.
+Se mudar velocidade, aceleração, largura da areia ou o traçado, recalcule (ver `IslandTrack`).
 
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
 descida:

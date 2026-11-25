@@ -135,7 +135,6 @@ func reset_to_defaults() -> void:
 	set_quality(Quality.HIGH if is_desktop() else Quality.MEDIUM)
 	gpu_index = keep_gpu
 	apply_all()
-	save_settings()
 
 
 func available_resolutions() -> Array[Vector2i]:

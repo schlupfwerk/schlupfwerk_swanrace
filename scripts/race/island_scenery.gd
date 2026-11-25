@@ -665,9 +665,9 @@ static func _build_bridges(parent: Node3D, track: IslandTrack) -> void:
 					Transform3D(basis * Basis(Vector3.UP, PI / 4.0).scaled(
 							Vector3(width * 0.71, 0.12, maxf(spacing, 0.5) * 0.66)),
 							_v3(track.edge(i, center), top - 0.06)), plank)
-			# Red and white posts at the bridge ends and around the hole.
+			# Red and white posts only around the hole (the one to jump).
 			var near_hole := absf(along - hole) < IslandTrack.HOLE_LENGTH * 0.5 + 1.2
-			if near_hole or n == 0 or n == samples.size() - 2:
+			if near_hole:
 				for side: float in [-0.5, 0.5]:
 					var post_at := _v3(track.edge(i, center + width * side), top)
 					MeshKit.add(posts, MeshKit.cylinder(0.07, 0.07, 0.9, 6),

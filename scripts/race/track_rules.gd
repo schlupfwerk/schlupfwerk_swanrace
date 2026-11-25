@@ -15,6 +15,8 @@ const SWAN_RADIUS := 0.45
 const BUMP_SPEED := 2.0
 ## Two swans closer than this push each other apart.
 const SWAN_GAP := 1.15
+## How far past an obstacle a swan that ran into it reappears (meters).
+const PAST_OBSTACLE := 1.2
 
 
 static func apply(swan: Swan, laps: LapTracker, track: IslandTrack) -> void:
@@ -46,15 +48,17 @@ static func apply(swan: Swan, laps: LapTracker, track: IslandTrack) -> void:
 		swan.motor.position.z = back.y
 		swan.bump(race_heading)
 
-	_collide(swan, track, i, race_heading)
+	_collide(swan, track, i)
 
 	var off := wrapf(swan.motor.heading - race_heading, -PI, PI)
 	if absf(off) > IslandTrack.MAX_WRONG_ANGLE:
 		swan.motor.heading = race_heading + signf(off) * IslandTrack.MAX_WRONG_ANGLE
 
 
-## Pushes the swan out of rocks and logs; a fast hit is a bump.
-static func _collide(swan: Swan, track: IslandTrack, i: int, race_heading: float) -> void:
+## Rocks and logs. Running into one: the swan stops and pops up right past it
+## (blinking, like after drowning), so it never gets stuck. Brushing one from the
+## side only slides along it.
+static func _collide(swan: Swan, track: IslandTrack, i: int) -> void:
 	var p := Vector2(swan.motor.position.x, swan.motor.position.z)
 	for obstacle in track.obstacles_near(i):
 		var center: Vector2 = obstacle.p
@@ -62,18 +66,24 @@ static func _collide(swan: Swan, track: IslandTrack, i: int, race_heading: float
 		var away := p - center
 		if away.length_squared() >= reach * reach or swan.motor.position.y >= obstacle.h:
 			continue
+		var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)
+		if forward.dot(center - p) > 0.0 and not swan.is_drowning():
+			var here := track.locate(p, i)
+			var past: float = track.locate(center, i)["distance"] + reach + PAST_OBSTACLE
+			var spot := track.index_at(past)
+			var lateral: float = here["lateral"]
+			var edge := track.edge(spot, lateral)
+			# Height 0: on the ground (SwanMotor keeps the height above the ground).
+			swan.teleport(Vector3(edge.x, 0.0, edge.y),
+					track.heading_at(spot))
+			return
 		var normal := away.normalized() if away.length_squared() > 0.0001 \
 				else -Vector2(swan.motor.forward().x, swan.motor.forward().z)
 		p = center + normal * reach
 		swan.motor.position.x = p.x
 		swan.motor.position.z = p.y
-		if swan.motor.speed > BUMP_SPEED and not swan.is_stunned():
-			swan.bump(race_heading)
-		else:
-			# Slow contact: lose only the part of the speed going into it, so the
-			# swan can slide along and walk around.
-			var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)
-			swan.motor.speed *= clampf(1.0 + forward.dot(normal), 0.0, 1.0)
+		# Lose only the part of the speed going into it, and slide along.
+		swan.motor.speed *= clampf(1.0 + forward.dot(normal), 0.0, 1.0)
 
 
 ## Slope under the swan: it changes speed (SwanMotor) and tilts the swan.

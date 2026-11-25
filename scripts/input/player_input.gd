@@ -11,6 +11,10 @@ func update_intent(intent: SwanIntent, _tick: float) -> void:
 	intent.accel = Input.get_action_strength("accel")
 	intent.brake = Input.get_action_strength("brake")
 	intent.turbo = Input.is_action_pressed("turbo")
+	# Accessibility: the turbo button also means full throttle, so one button is
+	# enough (no need to hold two keys or two touch buttons).
+	if intent.turbo:
+		intent.accel = 1.0
 	intent.horn = Input.is_action_just_pressed("horn")
 	# Edge detection per tick, so a press is never lost or repeated when a
 	# frame runs zero or several simulation ticks.
