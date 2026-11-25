@@ -1,7 +1,7 @@
 # Names and logos
 
 "Schlupfwerk", the Schlupfwerk logo and pixel-egg symbol, and the name of this
-game ("Swan Race" is a working title) identify the official game made by
+game, Swan Race, identify the official game made by
 Schlupfwerk. They are not covered by the GNU GPL nor by the asset license.
 
 **You may:**

@@ -1,11 +1,11 @@
-# Swan Race (codinome): contexto do projeto
+# Swan Race: contexto do projeto
 
 Contexto para o Claude Code. Leia antes de qualquer tarefa.
 
 ## Visão geral
 Jogo de **corrida 3D leve para Android, iOS e PC (Steam)**, feito pela **Schlupfwerk**, um estúdio
 indie brasileiro (mantenedor: Manuel Bravo, GitHub @Bravodin). Público: **toda a família**,
-incluindo crianças. "Swan Race" é um nome provisório.
+incluindo crianças. "Swan Race" é o nome oficial do jogo.
 
 **Tom do jogo:** o nosso cisne **não sabe voar nem nadar** e **corre todo desengonçado**, quase um
 pato. Isso é a graça: animações, sons e textos devem abraçar esse jeito atrapalhado.
