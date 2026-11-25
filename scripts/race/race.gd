@@ -303,12 +303,11 @@ func _show_podium() -> void:
 		_podium_music.play()
 	var podium := Podium.new()
 	podium.standings = standings
-	# Its own stage high above the island, in front of the map's painted backdrop.
+	# Its own stage high above the island, with the map's painted backdrop.
 	podium.position = PODIUM_STAGE
 	podium.backdrop = load(PODIUM_BACKGROUND)
 	for node in find_children("*", "WorldEnvironment", true, false):
 		var env: Environment = (node as WorldEnvironment).environment
-		env.background_mode = Environment.BG_CANVAS
 		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 		env.ambient_light_color = Color("dfe8f2")
 		env.ambient_light_energy = 0.8

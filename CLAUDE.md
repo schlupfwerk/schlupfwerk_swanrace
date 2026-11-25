@@ -260,8 +260,10 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   turbo!!" numa subida forte): automático (ligado no fácil e no médio), ligado ou desligado.
 
 **Fundo do pódio por mapa:** cada mapa tem uma **imagem pintada de fundo para o pódio**
-(`assets/tracks/<mapa>/podium_background.png`, fornecida pelo dono do projeto). O pódio fica num
-palco à parte (no alto, longe do mapa 3D), com o fundo desenhado atrás (`BG_CANVAS`) e um chão
+(`assets/tracks/<mapa>/podium_background.png`, fornecida pelo dono do projeto). O pódio fica parado
+num
+palco à parte (no alto, longe do mapa 3D), com o fundo num painel grande atrás dele, na própria cena
+(só a câmera se mexe; o painel acompanha 60% do giro para a borda nunca aparecer) e um chão
 invisível que só mostra as sombras. **Ao criar um mapa novo, peça ao dono do projeto o fundo do
 pódio.**
 
