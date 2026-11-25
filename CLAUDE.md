@@ -240,7 +240,7 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   medalhas e o **último colocado comemorando como se tivesse vencido** (medalha de "1", garrafa
   espirrando espuma, piscando e rindo de bico aberto; referência do dono do projeto: pato do meme). Todos **dançam de leve**; um **drone** vai e volta em 60° na frente do pódio, com o
   placar (posição, tempo total e melhor volta de cada um, e a melhor volta da corrida) e uma
-  **musiquinha de corrida finalizada** (`scripts/audio/victory_music.gd`), até o jogador sair
+  **troféu dourado flutuando** sobre a cabeça do 1º, **musiquinha de corrida finalizada** (`scripts/audio/victory_music.gd`), até o jogador sair
   (correr de novo ou voltar ao menu).
 - **Buzina:** H no teclado, Y/Triângulo no controle. O cisne dá um "honk" e joga a cabeça;
   com cachorro ou gato na bolsa, o bicho late ou mia no lugar.
@@ -258,6 +258,12 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - **Dificuldade** (Fácil, Médio, Difícil) em Configurações → Geral; os bots vão usar.
   **Dicas** (seta no alto da tela apontando para onde a pista vai e avisos como "Use o
   turbo!!" numa subida forte): automático (ligado no fácil e no médio), ligado ou desligado.
+
+**Fundo do pódio por mapa:** cada mapa tem uma **imagem pintada de fundo para o pódio**
+(`assets/tracks/<mapa>/podium_background.png`, fornecida pelo dono do projeto). O pódio fica num
+palco à parte (no alto, longe do mapa 3D), com o fundo desenhado atrás (`BG_CANVAS`) e um chão
+invisível que só mostra as sombras. **Ao criar um mapa novo, peça ao dono do projeto o fundo do
+pódio.**
 
 **Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
 plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Alvo atual: **volta perfeita

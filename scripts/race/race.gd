@@ -7,6 +7,9 @@ extends Node3D
 const MENU_SCENE := "res://scenes/home.tscn"
 const RACE_SCENE := "res://scenes/race.tscn"
 const TRACK_ID := "desert_island"
+## Each map has its own painted podium backdrop.
+const PODIUM_BACKGROUND := "res://assets/tracks/desert_island/podium_background.png"
+const PODIUM_STAGE := Vector3(0, 600, 0)
 const COUNTDOWN := 3.0
 ## Grid: rows of two behind the start line.
 const GRID_FIRST := 6.0
@@ -300,14 +303,16 @@ func _show_podium() -> void:
 		_podium_music.play()
 	var podium := Podium.new()
 	podium.standings = standings
-	var at := 30.0
-	var spot := _track.edge(_track.index_at(at), 0.0)
-	podium.position = Vector3(spot.x, _track.ground_height_at(at, 0.0), spot.y)
-	podium.rotation.y = _track.heading_at(_track.index_at(at)) + PI / 2.0
-	podium.ground_at = func(x: float) -> float:
-		var p: Vector3 = podium.transform * Vector3(x, 0.0, 0.0)
-		var info := _track.locate(Vector2(p.x, p.z), -1)
-		return _track.ground_height_at(info["distance"], info["lateral"]) - podium.position.y
+	# Its own stage high above the island, in front of the map's painted backdrop.
+	podium.position = PODIUM_STAGE
+	podium.backdrop = load(PODIUM_BACKGROUND)
+	for node in find_children("*", "WorldEnvironment", true, false):
+		var env: Environment = (node as WorldEnvironment).environment
+		env.background_mode = Environment.BG_CANVAS
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		env.ambient_light_color = Color("dfe8f2")
+		env.ambient_light_energy = 0.8
+		env.fog_enabled = false
 	add_child(podium)
 	_hud.show_results(standings)
 
