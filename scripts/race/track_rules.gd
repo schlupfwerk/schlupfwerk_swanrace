@@ -22,7 +22,7 @@ static func apply(swan: Swan, laps: LapTracker, track: IslandTrack) -> void:
 	var lateral := laps.lateral
 	var race_heading := track.heading_at(i)
 
-	var ground := track.ground_height(i, lateral)
+	var ground := track.ground_height_at(laps.distance, lateral)
 	swan.ground_y = ground
 	# Wet only where there is actually water (a high beach drops in a bank).
 	var in_water := ground < IslandTrack.SEA_LEVEL + 0.15
@@ -74,8 +74,8 @@ static func _follow_ground(swan: Swan, track: IslandTrack, i: int, ground: float
 	var right := Vector2(-forward.y, forward.x)
 	var ahead := track.locate(p + forward, i)
 	var beside := track.locate(p + right, i)
-	var grade := track.ground_height(ahead["index"], ahead["lateral"]) - ground
-	var cross := track.ground_height(beside["index"], beside["lateral"]) - ground
+	var grade := track.ground_height_at(ahead["distance"], ahead["lateral"]) - ground
+	var cross := track.ground_height_at(beside["distance"], beside["lateral"]) - ground
 	swan.motor.slope = grade if swan.motor.on_ground else 0.0
 	swan.ground_pitch = atan(clampf(grade, -0.6, 0.6))
 	swan.ground_roll = atan(clampf(cross, -0.6, 0.6))

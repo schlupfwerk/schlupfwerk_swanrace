@@ -124,7 +124,8 @@ func _process(delta: float) -> void:
 		_accumulator -= TICK
 	var alpha := _accumulator / TICK
 	position = _previous_position.lerp(motor.position, alpha)
-	_render_ground = lerpf(_render_ground, ground_y, 1.0 - exp(-10.0 * delta))
+	# Follow the ground closely (it is smooth now); only soften real steps.
+	_render_ground = lerpf(_render_ground, ground_y, 1.0 - exp(-40.0 * delta))
 	position.y += _render_ground
 	var sinking := 1.0 - _drown / DROWN_TIME if _drown > 0.0 else 0.0
 	position.y -= sinking * 1.2

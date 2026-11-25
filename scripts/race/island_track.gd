@@ -252,3 +252,13 @@ func _shape_ground() -> void:
 		smooth /= 25.0
 		# Tilt into the curve: the inside is lower.
 		_bank.append(clampf(-smooth * BANK_PER_CURVATURE, -MAX_BANK, MAX_BANK))
+
+
+## Ground height at a point given by its distance along the lap, blending the
+## two nearest samples, so climbs are smooth slopes and not little steps.
+func ground_height_at(distance: float, lateral: float) -> float:
+	var i := index_at(distance)
+	var next := (i + 1) % SAMPLES
+	var span := lengths[next] - lengths[i] if next > 0 else LAP_LENGTH - lengths[i]
+	var t := clampf((fposmod(distance, LAP_LENGTH) - lengths[i]) / maxf(span, 0.001), 0.0, 1.0)
+	return lerpf(ground_height(i, lateral), ground_height(next, lateral), t)
