@@ -207,6 +207,23 @@ func _build_race_panel() -> void:
 	_race_button.pressed.connect(_open_selector)
 	column.add_child(_race_button)
 	rows.append(_race_button)
+	# On PC: quit the game. Asks once ("Press again to quit") so a stray press
+	# does not close it; moving away cancels.
+	if Settings.is_desktop():
+		var quit := Button.new()
+		quit.text = tr("QUIT_GAME")
+		quit.add_theme_font_size_override("font_size", 20)
+		quit.pressed.connect(func() -> void:
+			if quit.text == tr("QUIT_CONFIRM"):
+				get_tree().quit()
+			else:
+				quit.text = tr("QUIT_CONFIRM"))
+		quit.focus_exited.connect(func() -> void: quit.text = tr("QUIT_GAME"))
+		quit.mouse_exited.connect(func() -> void:
+			if not quit.has_focus():
+				quit.text = tr("QUIT_GAME"))
+		column.add_child(quit)
+		rows.append(quit)
 	_chain(rows)
 	_first_race_row = rows[0]
 

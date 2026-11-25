@@ -46,12 +46,23 @@ const BRIDGE_HOLES := [0.3, 0.7]
 const HOLE_LENGTH := 3.2
 const LAKE_SLOPE := 1.5
 ## Big logs lying across the sand: jump them (or go around near the edges).
-const LOG_SPOTS := [0.12, 0.3, 0.64, 0.86]
+## The last one is well past the ramp at 0.8, so swans landing from it have time
+## to line up the jump.
+const LOG_SPOTS := [0.12, 0.3, 0.64, 0.9]
 const LOG_LENGTH := 9.0
 const LOG_RADIUS := 0.38
 ## Speed pads on the sand.
 const BOOST_SPOTS := [0.07, 0.24, 0.57, 0.79]
 const BOOST_SIZE := Vector2(3.2, 4.5)
+## Ramps (fraction of the lap): run up and fly over the beach (SwanMotor.launch).
+## On the straightest, flattest stretches with wide sand. The first one leaps
+## over the log at 0.3; the last one comes right after a speed pad (a combo).
+const RAMP_SPOTS := [0.28, 0.67, 0.8]
+## Ramp size: width across, length along; and its height at the top.
+const RAMP_SIZE := Vector2(4.5, 5.0)
+const RAMP_HEIGHT := 0.7
+## Swans take off on the last part of the ramp.
+const RAMP_LIP := 0.8
 
 ## Racing line in travel order, as (x, z).
 var points := PackedVector2Array()
@@ -66,6 +77,8 @@ var obstacles: Array[Dictionary] = []
 var logs: Array[Dictionary] = []
 var _podium_spot := -1.0
 var boosters: Array[Dictionary] = []
+## {distance, lateral} of each ramp's middle.
+var ramps: Array[Dictionary] = []
 ## How far you can go to each side at point i before the ground folds over
 ## itself in a tight curve (positive = sea side).
 var _room_right := PackedFloat32Array()
@@ -103,6 +116,9 @@ func _init() -> void:
 		# Narrower sand inside the tightest curves.
 		_forest.append(maxf(forest, -0.6 * _room_left[i]))
 		_water.append(minf(water, 0.6 * _room_right[i]))
+	# No sudden bites of sea or forest into the sand: narrow gradually.
+	_water = _ease_edge(_water, -1.0)
+	_forest = _ease_edge(_forest, 1.0)
 	# Logs and pads need the finished track (lengths, edges) to be placed.
 	_place_features()
 
@@ -127,6 +143,27 @@ func edge(i: int, offset: float) -> Vector2:
 ## Lateral offset of the forest edge (negative) at point i.
 func forest_edge(i: int) -> float:
 	return _forest[wrapi(i, 0, SAMPLES)]
+
+
+## Smooths an edge (water line or forest edge) along the lap without ever
+## giving more sand than allowed: first spread every narrow spot over its
+## neighbors (`inward` = -1 for the water, 1 for the forest), then blur, so a
+## tight curve's narrow sand comes and goes over ~30 m instead of a few.
+static func _ease_edge(edge: PackedFloat32Array, inward: float) -> PackedFloat32Array:
+	const REACH := 14
+	var narrow := PackedFloat32Array()
+	for i in SAMPLES:
+		var most := edge[i] * inward
+		for k in range(-REACH, REACH + 1):
+			most = maxf(most, edge[wrapi(i + k, 0, SAMPLES)] * inward)
+		narrow.append(most * inward)
+	var eased := PackedFloat32Array()
+	for i in SAMPLES:
+		var sum := 0.0
+		for k in range(-REACH, REACH + 1):
+			sum += narrow[wrapi(i + k, 0, SAMPLES)]
+		eased.append(sum / (REACH * 2 + 1))
+	return eased
 
 
 ## Lateral offset of the water line (positive) at point i.
@@ -272,12 +309,17 @@ func _shape_ground() -> void:
 		var c := points[(i + 1) % SAMPLES]
 		# Positive when turning right (the inside of the curve is on the right).
 		curvature.append((b - a).angle_to(c - b) / maxf((b - a).length(), 0.01))
+	# Hills follow the distance run, not the sample number: samples bunch up in
+	# tight curves, and a hill measured in samples gets steep there.
+	var run := 0.0
 	for i in SAMPLES:
-		var u := TAU * i / SAMPLES
-		# Two rolling hills and a few smaller bumps, back to the start height.
-		# Hill heights scale with the lap, so the grades stay the same (~16%).
+		var u := TAU * run / LAP_LENGTH
+		run += points[i].distance_to(points[(i + 1) % SAMPLES])
+		# Three long rolling hills and a few gentle bumps, back to the start
+		# height. Hill heights scale with the lap, so the grades stay the same
+		# (at most ~12%: no sudden dips that throw the swan down and up).
 		var hill := LAP_LENGTH / 1280.0
-		_height.append(BASE_HEIGHT + hill * (5.0 * (1.0 - cos(3.0 * u)) + 2.6 * (1.0 - cos(7.0 * u + 1.0))))
+		_height.append(BASE_HEIGHT + hill * (5.0 * (1.0 - cos(3.0 * u)) + 1.3 * (1.0 - cos(7.0 * u + 1.0))))
 		var smooth := 0.0
 		for k in range(-12, 13):
 			smooth += curvature[wrapi(i + k, 0, SAMPLES)]
@@ -368,6 +410,28 @@ func _place_features() -> void:
 			add_obstacle(p, LOG_RADIUS + 0.05, LOG_RADIUS * 2.0 - 0.2)
 	for spot: float in BOOST_SPOTS:
 		boosters.append({"distance": spot * LAP_LENGTH, "lateral": rng.randf_range(-5.0, 5.0)})
+	for spot: float in RAMP_SPOTS:
+		var distance := spot * LAP_LENGTH
+		var i := index_at(distance)
+		# In the middle of the sand, or in line with a speed pad just before it.
+		var lateral := (forest_edge(i) + water_line(i)) * 0.5
+		for pad in boosters:
+			var before: float = distance - pad.distance
+			if before > 0.0 and before < 25.0:
+				lateral = pad.lateral
+		var margin := RAMP_SIZE.x * 0.5 + 3.0
+		ramps.append({"distance": distance,
+				"lateral": clampf(lateral, forest_edge(i) + margin, water_line(i) - margin)})
+
+
+## Height of a ramp's surface under a point (0 when not on a ramp). It rises
+## evenly from the start of the ramp to RAMP_HEIGHT at its top.
+func ramp_height(distance: float, lateral: float) -> float:
+	for ramp in ramps:
+		var along := fposmod(distance - ramp.distance + LAP_LENGTH * 0.5, LAP_LENGTH) - LAP_LENGTH * 0.5
+		if absf(along) < RAMP_SIZE.y * 0.5 and absf(lateral - ramp.lateral) < RAMP_SIZE.x * 0.5:
+			return RAMP_HEIGHT * (along / RAMP_SIZE.y + 0.5)
+	return 0.0
 
 
 ## The speed pad under a point, if any (true when on it).
@@ -416,6 +480,8 @@ func podium_spot() -> float:
 		keep_clear.append(log.distance)
 	for pad in boosters:
 		keep_clear.append(pad.distance)
+	for ramp in ramps:
+		keep_clear.append(ramp.distance)
 	var d := 20.0
 	while d < LAP_LENGTH - 40.0:
 		var score := 0.0

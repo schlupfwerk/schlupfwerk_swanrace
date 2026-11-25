@@ -604,6 +604,79 @@ static func build_features(parent: Node3D, track: IslandTrack) -> void:
 	_build_bridges(parent, track)
 	_build_logs(parent, track)
 	_build_boosters(parent, track)
+	_build_ramps(parent, track)
+
+
+## Wooden ramps: planks rising to the top, a yellow and black edge where swans
+## take off, sides going into the sand.
+static func _build_ramps(parent: Node3D, track: IslandTrack) -> void:
+	var half := IslandTrack.RAMP_SIZE.x * 0.5
+	var length := IslandTrack.RAMP_SIZE.y
+	var height := IslandTrack.RAMP_HEIGHT
+	var sink := 0.3
+	var planks := 8
+	for ramp: Dictionary in track.ramps:
+		var i := track.index_at(ramp.distance)
+		var r2 := track.right(i)
+		var t2 := track.tangent(i)
+		# Local X across the track, -Z forward (up the ramp), like the speed pads.
+		var xform := Transform3D(
+				Basis(Vector3(r2.x, 0, r2.y), Vector3.UP, -Vector3(t2.x, 0, t2.y)),
+				_v3(track.edge(i, ramp.lateral), track.ground_height_at(ramp.distance, ramp.lateral)))
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		# Up the ramp: z from +length/2 (on the sand) to -length/2 (the top).
+		var surface := func(t: float, x: float) -> Vector3:
+			return Vector3(x, height * t, length * (0.5 - t))
+		for k in planks:
+			var t0 := float(k) / planks
+			var t1 := float(k + 1) / planks
+			var color := Color("b8875a") if k % 2 == 0 else Color("a8784d")
+			if k == planks - 1:
+				color = Color("ffd23f")
+			_ramp_quad(st, surface.call(t0, -half), surface.call(t0, half),
+					surface.call(t1, half), surface.call(t1, -half), color)
+		# Black stripes on the yellow edge.
+		for s in 5:
+			var x0 := -half + (s * 2 + 0.5) * half / 5.0
+			var x1 := x0 + half / 5.0
+			var t0 := float(planks - 1) / planks
+			var lift := Vector3(0, 0.01, 0)
+			_ramp_quad(st, surface.call(t0, x0) + lift, surface.call(t0, x1) + lift,
+					surface.call(1.0, x1) + lift, surface.call(1.0, x0) + lift, Color("1d1d24"))
+		# Front (the drop at the top) and the two sides, down into the sand.
+		var dark := Color("6b4a2e")
+		var top_l: Vector3 = surface.call(1.0, -half)
+		var top_r: Vector3 = surface.call(1.0, half)
+		_ramp_quad(st, top_r, top_l, Vector3(-half, -sink, top_l.z), Vector3(half, -sink, top_r.z), dark)
+		for side in [-1.0, 1.0]:
+			var x: float = half * side
+			var low := Vector3(x, -sink, length * 0.5)
+			var high := Vector3(x, height, -length * 0.5)
+			var foot := Vector3(x, -sink, -length * 0.5)
+			if side > 0.0:
+				_ramp_tri(st, low, high, foot, dark)
+			else:
+				_ramp_tri(st, low, foot, high, dark)
+		st.generate_normals()
+		var instance := MeshInstance3D.new()
+		instance.mesh = st.commit()
+		var wood := MeshKit.vertex_color_material()
+		wood.cull_mode = BaseMaterial3D.CULL_DISABLED
+		instance.material_override = wood
+		instance.transform = xform
+		parent.add_child(instance)
+
+
+static func _ramp_quad(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d: Vector3, color: Color) -> void:
+	_ramp_tri(st, a, b, c, color)
+	_ramp_tri(st, a, c, d, color)
+
+
+static func _ramp_tri(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, color: Color) -> void:
+	for v in [a, b, c]:
+		st.set_color(color)
+		st.add_vertex(v)
 
 
 static func _lake_samples(track: IslandTrack) -> Array[int]:

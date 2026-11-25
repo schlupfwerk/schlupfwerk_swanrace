@@ -150,6 +150,17 @@ func _build_stage() -> void:
 
 func _rebuild_menu() -> void:
 	var was_editing := _editing
+	# Remember what had the focus: the rebuild frees it, and a controller
+	# player would be left with nothing focused (and no way to move).
+	var focused := get_viewport().gui_get_focus_owner()
+	var focus_spot := ""
+	var focus_row := -1
+	if focused == _new_button:
+		focus_spot = "new"
+	elif focused == _delete_button:
+		focus_spot = "delete"
+	else:
+		focus_row = _rows.find(focused)
 	if _menu_root:
 		_menu_root.get_parent().queue_free()
 	_rows.clear()
@@ -163,6 +174,15 @@ func _rebuild_menu() -> void:
 	set_editing(was_editing)
 	if _tab_button:
 		set_tab_button(_tab_button)
+	if was_editing and (focus_spot != "" or focus_row >= 0):
+		var target: Control = _character_row
+		if focus_spot == "new" and not _new_button.disabled:
+			target = _new_button
+		elif focus_spot == "delete" and not _delete_button.disabled:
+			target = _delete_button
+		elif focus_row >= 0:
+			target = _rows[mini(focus_row, _rows.size() - 1)]
+		target.grab_focus()
 	character_changed.emit()
 
 

@@ -41,6 +41,16 @@ const PAD_ACCEL := 9.0
 const PAD_LIMIT_BONUS := 0.3
 ## Each landing costs 5% of the speed, so jumps are a choice.
 const LANDING_SPEED_LOSS := 0.05
+## Ramps: a big leap (higher the faster you hit it) with a short push, then a
+## long, gentle glide that costs speed until the swan lands.
+const RAMP_LAUNCH_MIN := 4.0
+const RAMP_LAUNCH_MAX := 9.0
+const RAMP_PUSH_TIME := 0.3
+const RAMP_GLIDE_GRAVITY := 4.0
+const RAMP_MAX_FALL := 1.8
+const RAMP_AIR_DRAG := 0.8
+## How fast the extra speed of the push fades while gliding (m/s per second).
+const RAMP_SETTLE := 3.0
 
 var position := Vector3.ZERO
 ## Yaw in radians. 0 faces -Z.
@@ -67,6 +77,8 @@ var braking := false
 var jumped := false
 ## True on the tick the swan touched the ground again.
 var landed := false
+## Flying off a ramp (until it lands).
+var ramp_flight := false
 
 
 func forward() -> Vector3:
@@ -112,23 +124,42 @@ func step(intent: SwanIntent, tick: float) -> void:
 	if pad_time > 0.0:
 		limit *= 1.0 + PAD_LIMIT_BONUS
 	if speed > limit:
-		speed = move_toward(speed, limit, BRAKE_DECELERATION * tick)
+		# Gliding off a ramp, the extra speed fades slowly (the air drag
+		# below does the rest); on the ground it settles at once.
+		var settle := RAMP_SETTLE if ramp_flight else BRAKE_DECELERATION
+		speed = move_toward(speed, limit, settle * tick)
 
 	var turn_rate := lerpf(TURN_RATE_SLOW, TURN_RATE_FAST, speed_ratio())
 	heading = wrapf(heading - intent.steer * turn_rate * control * tick, -PI, PI)
 	position += forward() * speed * tick
 
 	if not on_ground:
-		# Fast up, slow down: a glide once past the top of the jump.
-		var gravity := GRAVITY if vertical_velocity > 0.0 else GLIDE_GRAVITY
-		vertical_velocity = maxf(vertical_velocity - gravity * tick, -MAX_GLIDE_FALL)
+		# Fast up, slow down: a glide once past the top of the jump. Off a
+		# ramp the glide is longer and the air slows the swan down.
+		var glide := RAMP_GLIDE_GRAVITY if ramp_flight else GLIDE_GRAVITY
+		var gravity := GRAVITY if vertical_velocity > 0.0 else glide
+		var max_fall := RAMP_MAX_FALL if ramp_flight else MAX_GLIDE_FALL
+		vertical_velocity = maxf(vertical_velocity - gravity * tick, -max_fall)
 		position.y += vertical_velocity * tick
+		if ramp_flight and vertical_velocity < 0.0:
+			speed = maxf(speed - RAMP_AIR_DRAG * tick, 0.0)
 		if position.y <= 0.0:
 			position.y = 0.0
 			vertical_velocity = 0.0
 			on_ground = true
 			landed = true
+			ramp_flight = false
 			speed *= 1.0 - LANDING_SPEED_LOSS
+
+
+## Takes off from the top of a ramp, `height` meters above the ground below.
+func launch(height: float) -> void:
+	vertical_velocity = lerpf(RAMP_LAUNCH_MIN, RAMP_LAUNCH_MAX, clampf(speed_ratio(), 0.0, 1.0))
+	position.y = height
+	on_ground = false
+	jumped = true
+	ramp_flight = true
+	pad_time = maxf(pad_time, RAMP_PUSH_TIME)
 
 
 func _update_turbo(intent: SwanIntent, tick: float) -> void:
