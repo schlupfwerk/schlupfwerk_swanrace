@@ -29,6 +29,9 @@ var _hint := Label.new()
 
 
 func _ready() -> void:
+	# Cancel goes back to the saved file: make sure there is one.
+	if not FileAccess.file_exists(Settings.SAVE_PATH):
+		Settings.save_settings()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = UiTheme.make()
 	var dim := ColorRect.new()
@@ -85,12 +88,19 @@ func _ready() -> void:
 	reset.custom_minimum_size.y = 48
 	reset.pressed.connect(_on_reset)
 	buttons.add_child(reset)
-	var back := Button.new()
-	back.text = tr("BACK")
-	back.custom_minimum_size = Vector2(160, 48)
-	back.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	back.pressed.connect(_close)
-	buttons.add_child(back)
+	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var apply := Button.new()
+	apply.text = tr("APPLY")
+	apply.custom_minimum_size = Vector2(160, 48)
+	apply.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	apply.pressed.connect(func() -> void: Settings.save_settings())
+	buttons.add_child(apply)
+	# Below: confirm (save and go back). B/Esc cancels.
+	var confirm := Button.new()
+	confirm.text = tr("CONFIRM")
+	confirm.custom_minimum_size.y = 52
+	confirm.pressed.connect(_confirm)
+	column.add_child(confirm)
 
 	_hint.add_theme_font_size_override("font_size", 18)
 	column.add_child(_hint)
@@ -101,7 +111,9 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		_close()
+		_cancel()
+	elif event.is_action_pressed("start_race"):
+		_confirm()
 	elif event.is_action_pressed("menu_prev_tab"):
 		_show_tab(wrapi(_tab - 1, 0, _pages.size()))
 	elif event.is_action_pressed("menu_next_tab"):
@@ -139,7 +151,6 @@ func _build_general_page(list: VBoxContainer) -> void:
 			func(i: int) -> void:
 				Settings.language = Settings.LANGUAGES[i]
 				Settings.apply_language()
-				Settings.save_settings()
 				_rebuild())
 	_add_row(list, "DIFFICULTY", ["DIFFICULTY_EASY", "DIFFICULTY_MEDIUM", "DIFFICULTY_HARD"],
 			Settings.difficulty, func(i: int) -> void:
@@ -280,7 +291,6 @@ func _refresh_rows() -> void:
 	var hz := DisplayServer.screen_get_refresh_rate(DisplayServer.window_get_current_screen())
 	_gpu_info.text = "%s\n%s" % [tr("GPU_INFO") % Settings.current_gpu_text(),
 			tr("REFRESH_RATE") % ("%d Hz" % roundi(hz) if hz > 0.0 else tr("UNKNOWN"))]
-	Settings.save_settings()
 
 
 # --- Audio --------------------------------------------------------------------
@@ -291,13 +301,11 @@ func _build_audio_page(list: VBoxContainer) -> void:
 		var row := SliderRow.new().setup(tr(entry[0]), Settings.get(entry[1]))
 		row.value_changed.connect(func(value: int) -> void:
 			Settings.set(entry[1], value)
-			Settings.apply_audio()
-			Settings.save_settings())
+			Settings.apply_audio())
 		list.add_child(row)
 	_add_row(list, "SOUND_IN_BACKGROUND", OFF_ON,
 			0 if Settings.mute_in_background else 1, func(i: int) -> void:
-				Settings.mute_in_background = i == 0
-				Settings.save_settings())
+				Settings.mute_in_background = i == 0)
 
 
 # --- Helpers ------------------------------------------------------------------
@@ -309,8 +317,7 @@ func _add_row(parent: Control, label: String, options: PackedStringArray, index:
 		translated.append(tr(option))
 	var row := OptionRow.new().setup(tr(label), translated, index)
 	row.value_changed.connect(func(i: int) -> void:
-		on_change.call(i)
-		Settings.save_settings())
+		on_change.call(i))
 	parent.add_child(row)
 	return row
 
@@ -329,10 +336,23 @@ func _rebuild() -> void:
 	queue_free()
 
 
-func _close() -> void:
+## Confirm: keep and save everything, then close.
+func _confirm() -> void:
 	Settings.save_settings()
 	closed.emit()
 
 
+## Cancel: back to what was last saved (applied again), then close.
+func _cancel() -> void:
+	Settings.load_settings()
+	Settings.apply_language()
+	Settings.apply_all()
+	closed.emit()
+
+
 func _update_hint() -> void:
-	_hint.text = "%s   %s" % [InputGlyphs.menu_hint(), InputGlyphs.tabs_hint()]
+	_hint.text = tr("HINT_SETTINGS_" + InputGlyphs._suffix())
+
+
+func focus_first() -> void:
+	_focus_first(_pages[_tab])

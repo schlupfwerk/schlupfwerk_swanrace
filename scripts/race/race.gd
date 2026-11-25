@@ -301,7 +301,8 @@ func _show_podium() -> void:
 	var podium := Podium.new()
 	podium.standings = standings
 	# On a straight, flat stretch of the beach, backs to the forest.
-	var at := _track.podium_spot()
+	# The row spans about 12 m each side of the winner: center it on the stretch.
+	var at := _track.podium_spot() + 10.0
 	var i := _track.index_at(at)
 	var spot := _track.edge(i, 0.0)
 	podium.position = Vector3(spot.x, _track.ground_height_at(at, 0.0), spot.y)

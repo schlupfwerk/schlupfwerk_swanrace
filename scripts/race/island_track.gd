@@ -205,7 +205,9 @@ func locate(p: Vector2, hint: int) -> Dictionary:
 	return result
 
 
-## Registers something solid. Buckets by track index keep the checks cheap.
+## Registers something solid, `height` meters tall. Swans keep their height
+## above the ground (SwanMotor), so "h" is compared with that directly.
+## Buckets by track index keep the checks cheap.
 func add_obstacle(p: Vector2, radius: float, height: float) -> void:
 	var index: int = locate(p, -1)["index"]
 	obstacles.append({"p": p, "r": radius, "h": height})

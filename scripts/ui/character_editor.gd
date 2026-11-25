@@ -69,6 +69,8 @@ var _manual_turn := false
 var _camera := Camera3D.new()
 var _look_at := CENTER_LOOK
 var _editing := false
+## The home tab button above the editor: up from the top row goes there.
+var _tab_button: Control
 
 
 func _ready() -> void:
@@ -83,9 +85,7 @@ func _ready() -> void:
 func set_editing(on: bool) -> void:
 	_editing = on
 	_menu_root.visible = on
-	if on:
-		_rows[0].grab_focus.call_deferred()
-	else:
+	if not on:
 		_zone = "full"
 		_auto_turn = true
 
@@ -161,6 +161,8 @@ func _rebuild_menu() -> void:
 	_build_menu()
 	_refresh()
 	set_editing(was_editing)
+	if _tab_button:
+		set_tab_button(_tab_button)
 	character_changed.emit()
 
 
@@ -432,3 +434,14 @@ func _move_camera(delta: float) -> void:
 	_camera.position = _camera.position.lerp(target, blend)
 	_look_at = _look_at.lerp(look, blend)
 	_camera.look_at(to_global(_look_at))
+
+
+func focus_first() -> void:
+	_rows[0].grab_focus()
+
+
+## Up from the top row (character, new, delete) goes to this home tab button.
+func set_tab_button(button: Control) -> void:
+	_tab_button = button
+	for control: Control in [_character_row, _new_button, _delete_button]:
+		control.focus_neighbor_top = control.get_path_to(button)

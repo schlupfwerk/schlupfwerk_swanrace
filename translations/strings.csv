@@ -194,7 +194,12 @@ RACE_BUTTON,RACE,CORRER
 CHOOSE_CHARACTER,Choose your character,Escolha seu personagem
 RACE_AS_IS,Race like this,Correr assim
 CUSTOMIZE,Customize,Personalizar
-HOME_HINT_KEYBOARD,Tab / PgUp: tabs   Enter: choose   Esc: back,Tab / PgUp: abas   Enter: escolher   Esc: voltar
-HOME_HINT_XBOX,LT / RT: tabs   A: choose   B: back,LT / RT: abas   A: escolher   B: voltar
-HOME_HINT_PLAYSTATION,L2 / R2: tabs   Cross: choose   Circle: back,L2 / R2: abas   Cruz: escolher   Círculo: voltar
+HOME_HINT_KEYBOARD,↑ then ←→: tabs   Enter: choose   Esc: back,↑ e depois ←→: abas   Enter: escolher   Esc: voltar
+HOME_HINT_XBOX,↑ then ←→: tabs   A: choose   B: back,↑ e depois ←→: abas   A: escolher   B: voltar
+HOME_HINT_PLAYSTATION,↑ then ←→: tabs   Cross: choose   Circle: back,↑ e depois ←→: abas   Cruz: escolher   Círculo: voltar
 PODIUM_BEST_LAP,Best lap: %s (%s),Melhor volta: %s (%s)
+APPLY,Apply,Aplicar
+CONFIRM,Confirm,Confirmar
+HINT_SETTINGS_KEYBOARD,↑↓ choose   ←→ change   Q/E: tabs   Esc: cancel,↑↓ escolher   ←→ mudar   Q/E: abas   Esc: cancelar
+HINT_SETTINGS_XBOX,↑↓ choose   ←→ change   LB/RB: tabs   Start: confirm   B: cancel,↑↓ escolher   ←→ mudar   LB/RB: abas   Start: confirmar   B: cancelar
+HINT_SETTINGS_PLAYSTATION,↑↓ choose   ←→ change   L1/R1: tabs   Options: confirm   Circle: cancel,↑↓ escolher   ←→ mudar   L1/R1: abas   Options: confirmar   Círculo: cancelar

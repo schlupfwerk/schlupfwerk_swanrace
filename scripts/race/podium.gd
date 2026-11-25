@@ -1,9 +1,9 @@
 class_name Podium
 extends Node3D
 ## End of race: one numbered block per racer (12 racers, 12 places). The
-## 2-1-3 podium, then 4th, 5th... stepping down to the right. Gold, silver and bronze medals
+## Winner in the middle, then alternating left and right: 12 10 8 6 4 2 1 3 5 7 9 11. Gold, silver and bronze medals
 ## for the top three; the last one celebrates as if it had won: a "1" medal,
-## a bottle spraying foam, winking and laughing (SwanModel.celebrate).
+## a wing raised high, winking and laughing (SwanModel.celebrate).
 ## Everyone dances lightly. A drone sweeps 60° in front of it, back and forth.
 
 const GOLD := Color("f2c418")
@@ -14,6 +14,8 @@ const TOP_HEIGHTS := [1.1, 0.8, 0.6]
 const LOW_START := 0.45
 const LOW_STEP := 0.035
 const LOW_MIN := 0.12
+## All blocks a bit taller (15%).
+const HEIGHT_SCALE := 1.15
 const SPACING := 1.9
 const BLOCK := Vector3(1.6, 1.0, 1.6)
 
@@ -64,7 +66,9 @@ func _ready() -> void:
 		_add_swan(standings[place], Vector3(x, height, 0), medal, last, place + 1)
 	# Far enough to see every block.
 	_distance = maxf(9.0, 5.0 + count * 1.3)
-	_center_x = (block_x(1) + block_x(maxi(count - 1, 2))) / 2.0
+	var last_left := count - 1 if (count - 1) % 2 == 1 else count - 2
+	var last_right := count - 1 if (count - 1) % 2 == 0 else count - 2
+	_center_x = (block_x(maxi(last_left, 0)) + block_x(maxi(last_right, 0))) / 2.0
 	_camera.fov = 55.0
 	# Only the podium: nothing of the map behind it gets drawn.
 	_camera.far = 150.0
@@ -76,21 +80,19 @@ func _ready() -> void:
 	_place_camera()
 
 
-## Classic 2-1-3 podium, then the rest stepping down to the right, so the
-## last one always ends the row (and is easy to spot).
+## Winner in the middle, the rest alternating outwards and stepping down:
+## 12 10 8 6 4 2 1 3 5 7 9 11 (even places on the left, odd on the right).
 static func block_x(place: int) -> float:
-	match place:
-		0:
-			return 0.0
-		1:
-			return -SPACING
-	return (place - 1) * SPACING
+	if place == 0:
+		return 0.0
+	var step := (place + 1) / 2
+	return step * SPACING * (-1.0 if place % 2 == 1 else 1.0)
 
 
 static func block_height(place: int) -> float:
 	if place < TOP_HEIGHTS.size():
-		return TOP_HEIGHTS[place]
-	return maxf(LOW_START - (place - TOP_HEIGHTS.size()) * LOW_STEP, LOW_MIN)
+		return TOP_HEIGHTS[place] * HEIGHT_SCALE
+	return maxf(LOW_START - (place - TOP_HEIGHTS.size()) * LOW_STEP, LOW_MIN) * HEIGHT_SCALE
 
 
 func _process(delta: float) -> void:

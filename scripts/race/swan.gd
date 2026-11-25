@@ -11,6 +11,8 @@ const STUN_TIME := 2.5
 const DROWN_TIME := 1.8
 ## Seconds of blinking (fading in) after coming back from the water.
 const BLINK_TIME := 5.0
+## Blinking after being put past an obstacle it ran into.
+const OBSTACLE_BLINK_TIME := 2.0
 
 ## Fell too deep into the sea (to show a warning).
 signal drowned
@@ -281,3 +283,13 @@ func hit_pad() -> void:
 	motor.pad_time = SwanMotor.PAD_TIME
 	_jump_player.pitch_scale = 1.6
 	_jump_player.play()
+
+
+## Ran into an obstacle: stops and reappears right past it, blinking for a
+## moment (like after drowning, but at once).
+func teleport(at: Vector3, heading: float) -> void:
+	_respawn_position = at
+	_respawn_heading = heading
+	_respawn()
+	_blink = OBSTACLE_BLINK_TIME
+	_bump_player.play()
