@@ -1,11 +1,11 @@
-# Swan Race (codinome): contexto do projeto
+# Swan Race: contexto do projeto
 
 Contexto para o Claude Code. Leia antes de qualquer tarefa.
 
 ## Visão geral
 Jogo de **corrida 3D leve para Android, iOS e PC (Steam)**, feito pela **Schlupfwerk**, um estúdio
 indie brasileiro (mantenedor: Manuel Bravo, GitHub @Bravodin). Público: **toda a família**,
-incluindo crianças. "Swan Race" é um nome provisório.
+incluindo crianças. "Swan Race" é o nome oficial do jogo.
 
 **Tom do jogo:** o nosso cisne **não sabe voar nem nadar** e **corre todo desengonçado**, quase um
 pato. Isso é a graça: animações, sons e textos devem abraçar esse jeito atrapalhado.
@@ -458,4 +458,19 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
   tipo novo com mais de ~5 MB, adicione a extensão ao LFS. Nenhum arquivo acima de 100 MB.
 - **Builds exportados** (APK, AAB, executáveis) vão para a pasta `builds/` (ignorada)
   e são publicados no GitHub Releases, nunca commitados.
+- **Alpha para Windows** (enquanto o jogo não está na Steam): preset "Windows Desktop" em
+  `export_presets.cfg` (x86_64, pck embutido, nome/empresa no .exe). Templates de exportação do
+  Godot da mesma versão em `%APPDATA%\Godot\export_templates\<versão>.stable`. Exportar com
+  `godot --headless --path . --export-release "Windows Desktop" builds/windows/SwanRace.exe`,
+  testar o .exe e zipar com `LEIA-ME.txt` (PT/EN: como passar pelo SmartScreen) e os arquivos de
+  licença (a GPL pede a licença e o link do código junto do binário). Publicar como
+  **pré-lançamento** `v<versão>-alpha` com a tag no commit de onde saiu o build. O site aponta para
+  `releases/latest`.
+  Automático: `.github/workflows/release-windows.yml` faz tudo isso num runner Windows a cada tag
+  `v*` (alpha/beta viram pré-lançamento) e anexa o zip ao release; o LEIA-ME fica em
+  `dist/windows/LEIA-ME.txt` (`{VERSION}` vem da tag). A assinatura entra como um passo entre o
+  export e o zip.
+- **Assinatura do .exe:** ainda sem assinatura (o Windows mostra o SmartScreen). Plano: SignPath
+  Foundation (grátis para código aberto; pede build automatizado no repositório e um release já
+  publicado). O Azure Artifact Signing não atende empresas do Brasil.
 - Não invente datas, números ou parcerias em textos do jogo ou da loja.

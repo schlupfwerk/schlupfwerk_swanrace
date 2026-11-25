@@ -1,4 +1,4 @@
-# Swan Race *(working title)*
+# Swan Race
 
 A light 3D racing game for Android, iOS and PC (Steam: Windows, Linux/Steam Deck and macOS), made with Godot by **Schlupfwerk**.
 Race as a swan through four kinds of terrain in a single run:
@@ -44,6 +44,18 @@ whatever you use.
 🐣 **Alpha 0.0.5**: playable prototype on Windows. One track (the Desert Island, with ramps),
 AI racers, character customization, an easy mode that runs by itself. Expect rough edges
 and big changes.
+
+## Download
+
+**[Download the alpha for Windows](https://github.com/schlupfwerk/schlupfwerk_swanrace/releases/latest)**:
+free, no installation. Unzip it and open `SwanRace.exe`. Windows may show "Windows protected
+your PC" (SmartScreen): click **More info**, then **Run anyway**. Android, iOS and Steam: coming soon.
+
+### Code signing
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by
+[SignPath Foundation](https://signpath.org). Signing starts once the project is approved;
+until then the Windows builds are not signed.
 
 ## Building
 
