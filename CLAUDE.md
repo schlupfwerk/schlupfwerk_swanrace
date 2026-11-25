@@ -466,6 +466,10 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
   licença (a GPL pede a licença e o link do código junto do binário). Publicar como
   **pré-lançamento** `v<versão>-alpha` com a tag no commit de onde saiu o build. O site aponta para
   `releases/latest`.
+  Automático: `.github/workflows/release-windows.yml` faz tudo isso num runner Windows a cada tag
+  `v*` (alpha/beta viram pré-lançamento) e anexa o zip ao release; o LEIA-ME fica em
+  `dist/windows/LEIA-ME.txt` (`{VERSION}` vem da tag). A assinatura entra como um passo entre o
+  export e o zip.
 - **Assinatura do .exe:** ainda sem assinatura (o Windows mostra o SmartScreen). Plano: SignPath
   Foundation (grátis para código aberto; pede build automatizado no repositório e um release já
   publicado). O Azure Artifact Signing não atende empresas do Brasil.

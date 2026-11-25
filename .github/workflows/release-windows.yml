@@ -1,0 +1,83 @@
+# Builds the Windows version of the game from the tagged source and attaches
+# it to the GitHub release. Runs on every version tag (v0.0.6-alpha, v1.0.0...)
+# or by hand from the Actions tab (then the zip is only kept as an artifact).
+# Code signing (SignPath Foundation) will be a step between export and package.
+name: Release (Windows)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the tagged source
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          # The build number is the commit count, so the whole history is needed.
+          fetch-depth: 0
+
+      - name: Install Godot and the Windows export templates
+        run: |
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          mkdir -p "$RUNNER_TEMP/godot"
+          curl -sSL -o "$RUNNER_TEMP/godot.zip" "$base/Godot_v${GODOT_VERSION}-stable_win64.exe.zip"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot"
+          curl -sSL -o "$RUNNER_TEMP/templates.tpz" "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          templates="$APPDATA/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$templates"
+          unzip -q -j "$RUNNER_TEMP/templates.tpz" "templates/version.txt" \
+            "templates/windows_release_x86_64.exe" "templates/windows_release_x86_64_console.exe" \
+            -d "$templates"
+          echo "GODOT=$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-stable_win64_console.exe" >> "$GITHUB_ENV"
+
+      - name: Import the project
+        # The .godot cache is not in the repository; build it once before exporting.
+        run: '"$GODOT" --headless --path . --import'
+
+      - name: Export the game
+        run: |
+          mkdir -p builds/windows
+          "$GODOT" --headless --path . --export-release "Windows Desktop" builds/windows/SwanRace.exe
+          test -s builds/windows/SwanRace.exe
+
+      - name: Package the zip
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then version="${GITHUB_REF_NAME#v}"; else version="dev-${GITHUB_SHA::7}"; fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          mkdir -p builds/pkg
+          cp builds/windows/SwanRace.exe LICENSE LICENSE-EXCEPTION.md ASSETS_LICENSE.md TRADEMARKS.md builds/pkg/
+          sed "s/{VERSION}/${version}/" dist/windows/LEIA-ME.txt > builds/pkg/LEIA-ME.txt
+          (cd builds/pkg && 7z a -tzip -mx=9 "../SwanRace-${version}-windows.zip" . > /dev/null)
+          echo "ZIP=builds/SwanRace-${version}-windows.zip" >> "$GITHUB_ENV"
+
+      - name: Keep the zip as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwanRace-${{ env.VERSION }}-windows
+          path: ${{ env.ZIP }}
+
+      - name: Attach the zip to the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Alpha and beta tags are published as pre-releases.
+          prerelease=""
+          if [[ "$GITHUB_REF_NAME" == *alpha* || "$GITHUB_REF_NAME" == *beta* ]]; then prerelease="--prerelease"; fi
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" $prerelease --verify-tag \
+                 --title "Swan Race ${VERSION}" --notes "Windows build of Swan Race ${VERSION}. See the README for how to run it."
+          gh release upload "$GITHUB_REF_NAME" "$ZIP" --clobber
