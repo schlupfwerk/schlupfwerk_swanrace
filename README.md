@@ -18,7 +18,8 @@ Janeiro, with more to come.
 - **Offline first**: plays fully offline against AI swans with their own
   personalities.
 - **No ads, no data collection.** Online leaderboards (Game Center, Google
-  Play Games and Steam) and multiplayer will be optional.
+  Play Games and Steam) and multiplayer will be optional. What the game sends
+  and stores is listed in the [privacy audit](docs/privacy-audit.md).
 - **No paid items**: skins are earned by playing. The only purchase is an
   optional tip, which unlocks nothing.
 - **Your progress follows you** through your Google, Apple or Steam account.
@@ -92,7 +93,8 @@ Suíça, na Alemanha e no Rio de Janeiro.
 
 - Funciona **offline**, contra cisnes controlados por IA.
 - **Sem anúncios e sem coleta de dados.** Placares e multiplayer serão
-  opcionais.
+  opcionais. O que o jogo envia e guarda está na
+  [auditoria de privacidade](docs/privacy-audit.md).
 - **Sem itens pagos:** as skins são ganhas jogando. A única compra é uma
   gorjeta opcional, que não libera nada.
 - O progresso acompanha você pela sua conta Google, Apple ou Steam.
