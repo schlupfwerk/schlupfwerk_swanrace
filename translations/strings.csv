@@ -140,8 +140,8 @@ BACK_COLOR,Back item color,Cor (costas)
 BACKPACK,Backpack,Mochila
 BAG,Shoulder bag,Bolsa
 CAPE,Superhero cape,Capa de super-herói
-DOG_BAG,Bag with a puppy,Bolsa com cachorrinho
-CAT_BAG,Bag with a kitten,Bolsa com gatinho
+DOG_BAG,Dog,Cachorro
+CAT_BAG,Cat,Gato
 OSTRICH_EGG,Ostrich egg,Ovo de avestruz
 SOCKS,Socks,Meias
 CAREFUL_WATER,Careful with the water!!!!,Cuidado com a água!!!!
@@ -225,3 +225,8 @@ COLOR_TURQUOISE,Turquoise,Turquesa
 COLOR_NAVY,Navy blue,Azul-marinho
 COLOR_LILAC,Lilac,Lilás
 GLASSES_SMALL_ROUND,Small round,Redondo pequeno
+TAB_ABOUT,Schlupfwerk,Schlupfwerk
+ABOUT_TAGLINE,"Independent games, hatched with care.","Jogos independentes, chocados com carinho."
+ABOUT_STUDIO,"Schlupfwerk is an independent game studio from Brazil. No investors, no publisher, no pressure to squeeze players: just games we would love to play with our own family.","A Schlupfwerk é um estúdio de jogos independente e brasileiro. Sem investidores, sem publisher e sem pressão para espremer os jogadores: só jogos que a gente adoraria jogar com a própria família."
+ABOUT_NAME,"The name is German. Schlupf means both the moment a chick hatches and the slip of a wheel drifting through a curve. That is what we do: we hatch ideas and make them go fast.","O nome é alemão. Schlupf é tanto o momento em que o pintinho sai do ovo quanto a derrapagem de uma roda numa curva. É o que fazemos: chocamos ideias e colocamos elas para correr."
+ABOUT_SITE,Schlupfwerk website,Site da Schlupfwerk

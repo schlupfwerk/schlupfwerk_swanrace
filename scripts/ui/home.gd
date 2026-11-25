@@ -7,8 +7,11 @@ extends Node3D
 ## My characters with that character.
 
 const RACE_SCENE := "res://scenes/race.tscn"
-enum Tab { CHARACTERS, RACE, SETTINGS }
-const TAB_KEYS: PackedStringArray = ["TAB_CHARACTERS", "TAB_RACE", "TAB_SETTINGS"]
+enum Tab { CHARACTERS, RACE, SETTINGS, ABOUT }
+const TAB_KEYS: PackedStringArray = ["TAB_CHARACTERS", "TAB_RACE", "TAB_SETTINGS", "TAB_ABOUT"]
+## The studio site (about tab), opened in the visitor's language: /pt or /en.
+const SITE := "https://schlupfwerk.com"
+const LOGO := preload("res://assets/brand/schlupfwerk_logo.svg")
 ## The character stage floats far above the island, out of the demo's sight.
 const EDITOR_SPOT := Vector3(0, 400, 0)
 
@@ -25,6 +28,8 @@ var _selector_row: OptionRow
 var _go_button := Button.new()
 var _customize_button: Button
 var _settings: SettingsMenu
+var _about_panel: PanelContainer
+var _site_button := Button.new()
 var _hint := Label.new()
 var _music := AudioStreamPlayer.new()
 
@@ -153,6 +158,7 @@ func _build_ui() -> void:
 
 	_build_race_panel()
 	_build_selector()
+	_build_about()
 	# Up from the top of a tab goes back to the tab bar.
 	_editor.set_tab_button(_tab_buttons[Tab.CHARACTERS])
 	_first_race_row.focus_neighbor_top = _first_race_row.get_path_to(_tab_buttons[Tab.RACE])
@@ -285,6 +291,51 @@ func _build_selector() -> void:
 	_selector_row.focus_neighbor_top = _selector_row.get_path_to(_tab_buttons[Tab.RACE])
 
 
+## About tab: who makes the game (texts from the studio site) and a button that
+## opens the studio site in the browser. No payment or donation button in the
+## game: store rules restrict them (the site has its own coffee page).
+func _build_about() -> void:
+	_about_panel = PanelContainer.new()
+	_about_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_about_panel.custom_minimum_size = Vector2(760, 0)
+	_about_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_about_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_about_panel.offset_top = 30
+	_about_panel.visible = false
+	_root.add_child(_about_panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 14)
+	_about_panel.add_child(column)
+	var logo := TextureRect.new()
+	logo.texture = LOGO
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.custom_minimum_size = Vector2(0, 80)
+	column.add_child(logo)
+	for entry in [["ABOUT_TAGLINE", 22, Color("ffb020")], ["ABOUT_STUDIO", 18, Color.WHITE],
+			["ABOUT_NAME", 18, Color.WHITE]]:
+		var label := Label.new()
+		label.text = tr(entry[0])
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.add_theme_font_size_override("font_size", entry[1])
+		label.add_theme_color_override("font_color", entry[2])
+		column.add_child(label)
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons.add_theme_constant_override("separation", 16)
+	column.add_child(buttons)
+	var language := Settings.current_language()
+	_site_button.text = tr("ABOUT_SITE")
+	_site_button.custom_minimum_size = Vector2(300, 56)
+	_site_button.add_theme_font_size_override("font_size", 22)
+	_site_button.pressed.connect(func() -> void: OS.shell_open("%s/%s" % [SITE, language]))
+	buttons.add_child(_site_button)
+	_site_button.focus_neighbor_top = _site_button.get_path_to(_tab_buttons[Tab.ABOUT])
+	for side in ["focus_neighbor_bottom", "focus_neighbor_left", "focus_neighbor_right"]:
+		_site_button.set(side, _site_button.get_path_to(_site_button))
+
+
 ## Opens a tab. `stay_on_bar` keeps the focus on the tab bar (arrows).
 func _select_tab(tab: int, stay_on_bar := false) -> void:
 	if _selector.visible:
@@ -296,6 +347,7 @@ func _select_tab(tab: int, stay_on_bar := false) -> void:
 	for n in _tab_buttons.size():
 		_tab_buttons[n].set_pressed_no_signal(n == tab)
 	_race_panel.visible = tab == Tab.RACE
+	_about_panel.visible = tab == Tab.ABOUT
 	_editor.set_editing(tab == Tab.CHARACTERS)
 	_hint.visible = tab != Tab.CHARACTERS
 	match tab:
@@ -307,6 +359,8 @@ func _select_tab(tab: int, stay_on_bar := false) -> void:
 			_demo.make_current()
 			if _settings == null:
 				_open_settings()
+		Tab.ABOUT:
+			_demo.make_current()
 	if stay_on_bar:
 		_tab_buttons[tab].grab_focus.call_deferred()
 	else:
@@ -370,3 +424,5 @@ func _focus_content() -> void:
 		Tab.SETTINGS:
 			if _settings:
 				_settings.focus_first()
+		Tab.ABOUT:
+			_site_button.grab_focus()

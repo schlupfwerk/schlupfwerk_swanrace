@@ -160,6 +160,9 @@ prioridade.
 
 ## Menu (home, `scenes/home.tscn`)
 - **No PC**, a aba Correr tem **Sair do jogo** (pede confirmação: aperta de novo).
+- **Aba Schlupfwerk** (a 4ª): logo, textos do site sobre o estúdio e o botão **Site da Schlupfwerk**
+  (abre https://schlupfwerk.com/pt ou /en). **Sem botão de café/doação dentro do jogo**: as lojas
+  (principalmente a Apple) rejeitam links de gorjeta; o site tem a página do café.
 - **Abas no topo:** **Meus personagens | Correr | Configurações**. Troca pelas **setas**: ↑ no topo
   do conteúdo leva às abas, ←/→ troca (uma vez por toque), ↓ entra. Também Tab/PgUp ou clique.
   **Gatilhos não trocam de aba** (disparavam várias vezes). Abre na aba Correr. Música suave.
@@ -424,9 +427,14 @@ compilado e enviado ao TestFlight. No futuro, isso pode rodar no GitHub Actions
 valor atual). A Godot exporta para Windows/Linux; o upload é feito com o SteamPipe.
 O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
+## Logs
+- O jogo guarda até **1000** arquivos de log (`debug/file_logging/max_log_files`), em
+  `%APPDATA%Godotpp_userdataSwan Raceogs`, para análise futura (ex.: Firebase).
+  Cópia dos antigos em `logs_archive`.
+
 ## Versionamento
 - **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
-- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.4**;
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.5**;
   só o dono do projeto decide quando ela sobe.
 - **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
   Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada

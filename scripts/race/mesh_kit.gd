@@ -39,7 +39,8 @@ static func vertex_color_material() -> StandardMaterial3D:
 	return mat
 
 
-static func sphere(radius: float, radial := 8, rings := 5) -> SphereMesh:
+## Rounder than a typical low-poly ball: crowns and leaves read smooth, not faceted.
+static func sphere(radius: float, radial := 12, rings := 6) -> SphereMesh:
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
