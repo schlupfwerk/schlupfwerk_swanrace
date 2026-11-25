@@ -41,7 +41,8 @@ whatever you use.
 
 ## Status
 
-🥚 Early development: still inside the egg. Nothing playable yet.
+🐣 **Alpha 0.0.2**: playable prototype on Windows. One track (the Desert Island),
+AI racers, character customization. Expect rough edges and big changes.
 
 ## Building
 

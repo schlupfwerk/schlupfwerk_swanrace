@@ -1,0 +1,200 @@
+keys,en,pt
+DEFAULT_NICKNAME,Swan,Cisne
+WARDROBE_TITLE,Your swan,Seu cisne
+NICKNAME_PLACEHOLDER,Nickname,Apelido
+RANDOM_NICKNAME,Random nickname,Sortear apelido
+FEATHERS,Feathers,Penas
+SOLID,Solid,Sólido
+GRADIENT,Gradient,Gradiente
+FEATHER_COLOR,Feather color,Cor das penas
+TOP_COLOR,Top color,Cor de cima
+LEGS,Legs,Patas
+CAP,Cap,Boné
+WIG,Wig,Peruca
+GLASSES,Glasses,Óculos
+LASHES,Lashes,Cílios
+MAKEUP,Makeup,Maquiagem
+NECKLACE,Necklace,Colar
+JACKET,Jacket,Jaqueta
+NONE,None,Nenhum
+FOOTWEAR,Footwear,Calçado
+FOOTWEAR_COLOR,Footwear color,Cor do calçado
+BAREFOOT,Barefoot,Descalço
+SNEAKERS,Sneakers,Tênis
+BOOTS,Boots,Botas
+SHOES,Shoes,Sapatos
+FLIP_FLOPS,Japanese sandals,Chinelo japonês
+RACE,Race!,Correr!
+SETTINGS,Settings,Configurações
+QUIT,Quit,Sair
+BACK,Back,Voltar
+RESET_DEFAULTS,Restore defaults,Restaurar padrão
+COLOR_WHITE,White,Branco
+COLOR_CREAM,Cream,Creme
+COLOR_BLACK,Black,Preto
+COLOR_GRAY,Gray,Cinza
+COLOR_PINK,Pink,Rosa
+COLOR_RED,Red,Vermelho
+COLOR_ORANGE,Orange,Laranja
+COLOR_YELLOW,Yellow,Amarelo
+COLOR_GOLD,Gold,Dourado
+COLOR_GREEN,Green,Verde
+COLOR_MINT,Mint,Menta
+COLOR_SKY_BLUE,Sky blue,Azul-céu
+COLOR_BLUE,Blue,Azul
+COLOR_PURPLE,Purple,Roxo
+COLOR_BROWN,Brown,Marrom
+MAP_DESERT_ISLAND,Desert Island,Ilha Deserta
+HUD_LAP,Lap %d,Volta %d
+HUD_LAST,Last  %s,Última  %s
+HUD_BEST,Best  %s,Melhor  %s
+GO,Run!,Corra!
+MSG_BEST_LAP,Best lap!  %s,Melhor volta!  %s
+MSG_LAP,Lap  %s,Volta  %s
+HINT_RACE_KEYBOARD,WASD or arrows: move   Space: jump   Shift: turbo   Esc: menu,WASD ou setas: mover   Espaço: pular   Shift: turbo   Esc: menu
+HINT_RACE_XBOX,Stick: steer   RT: accelerate   LT: brake   A: jump   X: turbo   Start: menu,Analógico: virar   RT: acelerar   LT: frear   A: pular   X: turbo   Start: menu
+HINT_RACE_PLAYSTATION,Stick: steer   R2: accelerate   L2: brake   Cross: jump   Square: turbo   Options: menu,Analógico: virar   R2: acelerar   L2: frear   Cruz: pular   Quadrado: turbo   Options: menu
+HINT_MENU_KEYBOARD,↑↓ choose   ←→ change   Enter: confirm,↑↓ escolher   ←→ mudar   Enter: confirmar
+HINT_MENU_XBOX,↑↓ choose   ←→ change   A: confirm,↑↓ escolher   ←→ mudar   A: confirmar
+HINT_MENU_PLAYSTATION,↑↓ choose   ←→ change   Cross: confirm,↑↓ escolher   ←→ mudar   Cruz: confirmar
+HINT_TABS_KEYBOARD,Q/E: tabs   Esc: back,Q/E: abas   Esc: voltar
+HINT_TABS_XBOX,LB/RB: tabs   B: back,LB/RB: abas   B: voltar
+HINT_TABS_PLAYSTATION,L1/R1: tabs   Circle: back,L1/R1: abas   Círculo: voltar
+TAB_GENERAL,General,Geral
+TAB_VIDEO,Video,Vídeo
+TAB_AUDIO,Audio,Áudio
+LANGUAGE,Language,Idioma
+LANGUAGE_AUTO,Automatic (device),Automático (do aparelho)
+WINDOW_MODE,Display mode,Modo de tela
+WINDOWED,Windowed,Janela
+FULLSCREEN,Fullscreen,Tela cheia
+EXCLUSIVE_FULLSCREEN,Exclusive fullscreen,Tela cheia exclusiva
+RESOLUTION,Resolution,Resolução
+MONITOR,Monitor,Monitor
+MONITOR_N,Monitor %d,Monitor %d
+GRAPHICS_QUALITY,Graphics quality,Qualidade gráfica
+QUALITY_LOW,Low,Baixa
+QUALITY_MEDIUM,Medium,Média
+QUALITY_HIGH,High,Alta
+QUALITY_CUSTOM,Custom,Personalizada
+FIELD_OF_VIEW,Field of view,Campo de visão
+ADVANCED,Advanced,Avançado
+SHOW_FPS,Show FPS and refresh rate,Mostrar FPS e frequência da tela
+OFF,Off,Desligado
+ON,On,Ligado
+ADAPTIVE,Adaptive,Adaptativo
+VSYNC,VSync,VSync
+FPS_LIMIT,FPS limit,Limite de FPS
+NO_LIMIT,No limit,Sem limite
+RENDER_SCALE,Render scale,Escala de renderização
+ANTIALIASING,Anti-aliasing,Antisserrilhamento
+SHADOWS,Shadows,Sombras
+SHADOWS_OFF,Off,Desligadas
+SHADOWS_LOW,Low,Baixas
+SHADOWS_MEDIUM,Medium,Médias
+SHADOWS_HIGH,High,Altas
+SCENERY_DETAIL,Scenery detail,Detalhes do cenário
+DETAIL_LOW,Low,Baixos
+DETAIL_MEDIUM,Medium,Médios
+DETAIL_HIGH,High,Altos
+GPU,Graphics card,Placa de vídeo
+GPU_AUTO,Automatic (dedicated),Automática (dedicada)
+GPU_N,Card %d,Placa %d
+GPU_RESTART,Restart with the chosen card,Reiniciar com a placa escolhida
+GPU_RESTART_HINT,Restart to apply. In use: %s,Reinicie para aplicar. Em uso: %s
+GPU_INFO,Graphics card in use: %s,Placa de vídeo em uso: %s
+REFRESH_RATE,Screen refresh rate: %s,Frequência da tela: %s
+UNKNOWN,unknown,desconhecida
+GPU_DISCRETE,dedicated,dedicada
+GPU_INTEGRATED,integrated,integrada
+GPU_VIRTUAL,virtual,virtual
+GPU_CPU,processor,processador
+MASTER_VOLUME,Master volume,Volume geral
+MUSIC_VOLUME,Music,Música
+SFX_VOLUME,Sound effects,Efeitos sonoros
+SOUND_IN_BACKGROUND,Sound when the game is in the background,Som com o jogo em segundo plano
+HEAD,Head,Cabeça
+HEAD_COLOR,Head color,Cor (cabeça)
+STRAW_HAT,Straw hat,Chapéu de palha
+TOP_HAT,Top hat,Cartola
+COWBOY_HAT,Cowboy hat,Chapéu de cowboy
+BEANIE,Beanie,Gorro
+WIG_CURLY,Curly wig,Peruca cacheada
+WIG_LONG,Long wig,Peruca lisa
+GLASSES_ROUND,Round,Redondo
+GLASSES_SQUARE,Square,Quadrado
+GLASSES_AVIATOR,Aviator,Aviador
+GLASSES_VISOR,Visor,Viseira
+FRAME_COLOR,Frame color,Cor da armação
+LENS,Lens,Lente
+LENS_COLOR,Lens color,Cor da lente
+LENS_COLOR_2,Lens bottom color,Cor da lente (baixo)
+OUTFIT,Outfit,Roupa
+OUTFIT_COLOR,Outfit color,Cor da roupa
+LEATHER_JACKET,Leather jacket,Jaqueta de couro
+WINTER_JACKET,Winter jacket,Jaqueta de inverno
+TANK_TOP,Tank top,Regata
+HOODIE,Hoodie,Moletom
+BACK_ITEM,On the back,Costas
+BACK_COLOR,Back item color,Cor (costas)
+BACKPACK,Backpack,Mochila
+BAG,Shoulder bag,Bolsa
+CAPE,Superhero cape,Capa de super-herói
+DOG_BAG,Bag with a puppy,Bolsa com cachorrinho
+CAT_BAG,Bag with a kitten,Bolsa com gatinho
+OSTRICH_EGG,Ostrich egg,Ovo de avestruz
+SOCKS,Socks,Meias
+CAREFUL_WATER,Careful with the water!!!!,Cuidado com a água!!!!
+HINT_WARDROBE_KEYBOARD,↑↓ choose   ←→ change   Backspace: back   Q/E or mouse: turn the swan,↑↓ escolher   ←→ mudar   Backspace: voltar   Q/E ou mouse: girar o cisne
+HINT_WARDROBE_XBOX,↑↓ choose   A/X or ←→: change   LB/RB or right stick: turn the swan,↑↓ escolher   A/X ou ←→: mudar   LB/RB ou analógico direito: girar o cisne
+HINT_WARDROBE_PLAYSTATION,↑↓ choose   Cross/Square or ←→: change   L1/R1 or right stick: turn the swan,↑↓ escolher   Cruz/Quadrado ou ←→: mudar   L1/R1 ou analógico direito: girar o cisne
+DIFFICULTY,Difficulty,Dificuldade
+DIFFICULTY_EASY,Easy,Fácil
+DIFFICULTY_MEDIUM,Medium,Médio
+DIFFICULTY_HARD,Hard,Difícil
+DIRECTION_INDICATOR,Tips (arrow and hints),Dicas (seta e avisos)
+AUTO_BY_DIFFICULTY,Automatic (easy and medium),Automático (fácil e médio)
+LAPS,Laps,Voltas
+HUD_LAP_OF,Lap %d/%d,Volta %d/%d
+HUD_TOTAL,Total  %s,Total  %s
+FINAL_LAP,Final lap!,Última volta!
+FINISHED,Finished!,Chegada!
+RESULTS_HINT_KEYBOARD,Enter: race again   Esc: menu,Enter: correr de novo   Esc: menu
+RESULTS_HINT_XBOX,A: race again   B: menu,A: correr de novo   B: menu
+RESULTS_HINT_PLAYSTATION,Cross: race again   Circle: menu,Cruz: correr de novo   Círculo: menu
+TURBO,Turbo,Turbo
+JUMP,Jump,Pular
+BRAKE_SHORT,Brake,Frear
+ACCEL_SHORT,Accelerate,Acelerar
+STEER_SHORT,Steer,Virar
+HORN,Horn,Buzina
+LAPS_LEFT,%d laps to go!,Faltam %d voltas!
+USE_TURBO,Use the turbo!!,Use o turbo!!
+NECKLACE_ROUND,Round,Círculo
+NECKLACE_V,V-shape,Em V
+NECKLACE_PEARLS,Pearls,Pérolas
+NECKLACE_COLOR,Necklace color,Cor do colar
+LIPSTICK,Lipstick (beak),Batom (bico)
+NO,No,Não
+YES,Yes,Sim
+RACERS,Racers,Corredores
+PRESS_START_KEYBOARD,Press Enter to race,Pressione Enter para correr
+PRESS_START_XBOX,Press Start to race,Pressione Start para correr
+PRESS_START_PLAYSTATION,Press Options to race,Pressione Options para correr
+OBSTACLE_ALERT,Obstacle alert,Alerta de obstáculo
+JUMP_ALERT,Jump!!,Pule!!
+TAB_CHARACTERS,My characters,Meus personagens
+TAB_RACE,Race,Correr
+TAB_SETTINGS,Settings,Configurações
+CHARACTER,Character,Personagem
+NEW_CHARACTER,+ New,+ Novo
+DELETE_CHARACTER,Delete,Apagar
+NICKNAME,Nickname,Apelido
+RACE_BUTTON,RACE,CORRER
+CHOOSE_CHARACTER,Choose your character,Escolha seu personagem
+RACE_AS_IS,Race like this,Correr assim
+CUSTOMIZE,Customize,Personalizar
+HOME_HINT_KEYBOARD,Tab / PgUp: tabs   Enter: choose   Esc: back,Tab / PgUp: abas   Enter: escolher   Esc: voltar
+HOME_HINT_XBOX,LT / RT: tabs   A: choose   B: back,LT / RT: abas   A: escolher   B: voltar
+HOME_HINT_PLAYSTATION,L2 / R2: tabs   Cross: choose   Circle: back,L2 / R2: abas   Cruz: escolher   Círculo: voltar
+PODIUM_BEST_LAP,Best lap: %s (%s),Melhor volta: %s (%s)

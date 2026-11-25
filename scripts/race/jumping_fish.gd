@@ -59,6 +59,11 @@ func _start_jump(fish: Dictionary) -> void:
 		base = track.locate(Vector2(follow.position.x, follow.position.z), -1)["index"]
 	var i := base + _rng.randi_range(12, 70)
 	var p := track.edge(i, _rng.randf_range(30.0, 70.0))
+	for attempt in 6:
+		if track.is_open_sea(p, 8.0):
+			break
+		i += 5
+		p = track.edge(i, _rng.randf_range(30.0, 70.0))
 	var yaw := _rng.randf() * TAU
 	fish.from = Vector3(p.x, IslandScenery.SEA_LEVEL - 0.2, p.y)
 	fish.dir = Vector3(cos(yaw), 0.0, sin(yaw))

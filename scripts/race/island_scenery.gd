@@ -46,14 +46,15 @@ static func build(parent: Node3D, track: IslandTrack, seed_value: int) -> void:
 	_build_start_line(parent, track)
 
 
-## Ground height inside the island. `f` is 0 at the center, 1 at the forest edge.
-static func ground_height(p: Vector2, f: float, radius: float) -> float:
+## Ground height inside the island. `f` is 0 at the center, 1 at the forest edge,
+## where it meets the sand at `edge_height`.
+static func ground_height(p: Vector2, f: float, radius: float, edge_height := 0.0) -> float:
 	var height := 0.0
 	for hill: Array in HILLS:
 		var center: Vector2 = hill[0] * radius
 		var width: float = hill[2] * radius
 		height += hill[1] * exp(-p.distance_squared_to(center) / (width * width))
-	return height * (1.0 - smoothstep(0.55, 0.95, f)) + 0.04
+	return height * (1.0 - smoothstep(0.55, 0.95, f)) + edge_height * smoothstep(0.3, 1.0, f) + 0.04
 
 
 # --- Ground and water -----------------------------------------------------------
@@ -77,13 +78,20 @@ static func _build_sea(parent: Node3D, radius: float) -> void:
 static func _beach_profile(track: IslandTrack, i: int) -> Array:
 	var forest := track.forest_edge(i)
 	var water := track.water_line(i)
-	return [
-		[forest - 6.0, 0.04, SAND_EDGE],
-		[forest, 0.0, SAND],
-		[water - 2.0, 0.0, SAND],
-		[water + 6.0, -0.35, WET_SAND],
-		[water + 18.0, -1.4, SEA_FLOOR],
-	]
+	# Same number of points at every sample: forest edge, the sand (banked), the
+	# bank down to the sea, the sea floor.
+	var laterals := [forest - 6.0, forest]
+	for n in range(1, 7):
+		laterals.append(lerpf(forest, water, n / 7.0))
+	laterals.append_array([water, water + 5.0, water + 10.0, water + 18.0])
+	var colors := [SAND_EDGE, SAND, SAND, SAND, SAND, SAND, SAND, SAND, SAND, WET_SAND,
+			SEA_FLOOR, SEA_FLOOR.darkened(0.2)]
+	var profile := []
+	for n in laterals.size():
+		var lateral: float = laterals[n]
+		var height := track.ground_height(i, lateral) + (0.04 if n == 0 else 0.0)
+		profile.append([lateral, height, colors[n]])
+	return profile
 
 
 static func _build_beach(parent: Node3D, track: IslandTrack, rng: RandomNumberGenerator) -> void:
@@ -96,10 +104,10 @@ static func _build_beach(parent: Node3D, track: IslandTrack, rng: RandomNumberGe
 		var b_profile := _beach_profile(track, i + 1)
 		for j in a_profile.size() - 1:
 			var corners := [
-				_v3(track.edge(i, a_profile[j][0]), a_profile[j][1]),
-				_v3(track.edge(i + 1, b_profile[j][0]), b_profile[j][1]),
-				_v3(track.edge(i + 1, b_profile[j + 1][0]), b_profile[j + 1][1]),
-				_v3(track.edge(i, a_profile[j + 1][0]), a_profile[j + 1][1]),
+				_v3(track.safe_edge(i, a_profile[j][0]), a_profile[j][1]),
+				_v3(track.safe_edge(i + 1, b_profile[j][0]), b_profile[j][1]),
+				_v3(track.safe_edge(i + 1, b_profile[j + 1][0]), b_profile[j + 1][1]),
+				_v3(track.safe_edge(i, a_profile[j + 1][0]), a_profile[j + 1][1]),
 			]
 			var colors := [a_profile[j][2], b_profile[j][2], b_profile[j + 1][2], a_profile[j + 1][2]]
 			for n in 4:
@@ -118,12 +126,12 @@ static func _build_foam(parent: Node3D, track: IslandTrack) -> void:
 		var u0 := float(i) / IslandTrack.SAMPLES * 96.0
 		var u1 := float(i + 1) / IslandTrack.SAMPLES * 96.0
 		var y := SEA_LEVEL + 0.1
-		var outer_a := track.water_line(i) + 32.0
-		var outer_b := track.water_line(i + 1) + 32.0
-		var inner_a := track.water_line(i) + 8.0
-		var inner_b := track.water_line(i + 1) + 8.0
-		var p := [_v3(track.edge(i, outer_a), y), _v3(track.edge(i + 1, outer_b), y),
-				_v3(track.edge(i + 1, inner_b), y), _v3(track.edge(i, inner_a), y)]
+		var outer_a := track.water_line(i) + 26.0
+		var outer_b := track.water_line(i + 1) + 26.0
+		var inner_a := track.water_line(i) + 3.2
+		var inner_b := track.water_line(i + 1) + 3.2
+		var p := [_v3(track.safe_edge(i, outer_a), y), _v3(track.safe_edge(i + 1, outer_b), y),
+				_v3(track.safe_edge(i + 1, inner_b), y), _v3(track.safe_edge(i, inner_a), y)]
 		var uv := [Vector2(u0, 0), Vector2(u1, 0), Vector2(u1, 1), Vector2(u0, 1)]
 		for k: int in [0, 1, 2, 0, 2, 3]:
 			st.set_uv(uv[k])
@@ -138,9 +146,13 @@ static func _build_forest_floor(parent: Node3D, track: IslandTrack, radius: floa
 	var st := MeshKit.begin()
 	var count := IslandTrack.SAMPLES / FOREST_STEP
 	for k in count:
-		var edge_a := track.edge(k * FOREST_STEP, track.forest_edge(k * FOREST_STEP) - 6.0)
-		var edge_b := track.edge((k + 1) * FOREST_STEP,
-				track.forest_edge((k + 1) * FOREST_STEP) - 6.0)
+		var ia := k * FOREST_STEP
+		var ib := (k + 1) * FOREST_STEP
+		var edge_a := track.edge(ia, track.forest_edge(ia) - 6.0)
+		var edge_b := track.edge(ib, track.forest_edge(ib) - 6.0)
+		var height_a := track.surface_height(ia, track.forest_edge(ia)) + 0.04
+		var height_b := track.surface_height(ib, track.forest_edge(ib)) + 0.04
+		var edge_heights := [height_a, height_b, height_b, height_a]
 		for j in FOREST_RINGS:
 			var f0 := float(j) / FOREST_RINGS
 			var f1 := float(j + 1) / FOREST_RINGS
@@ -149,7 +161,7 @@ static func _build_forest_floor(parent: Node3D, track: IslandTrack, radius: floa
 			var v := []
 			var c := []
 			for n in 4:
-				var h := ground_height(corners[n], fs[n], radius)
+				var h := ground_height(corners[n], fs[n], radius, edge_heights[n])
 				v.append(_v3(corners[n], h))
 				c.append(FOREST_FLOOR.lerp(HILL_TOP, clampf(h / 35.0, 0.0, 1.0)))
 			_quad(st, v[0], v[1], v[2], v[3], c[0], c[1], c[2], c[3])
@@ -233,11 +245,12 @@ static func _build_forest_edge(parent: Node3D, track: IslandTrack,
 	var palms: Array[Transform3D] = []
 	for n in 170:
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
-		var p := track.edge(i, track.forest_edge(i) - rng.randf_range(1.5, 8.0))
+		var palm_lateral := track.forest_edge(i) - rng.randf_range(1.5, 8.0)
+		var p := track.edge(i, palm_lateral)
 		var r := track.right(i)
 		var lean := atan2(r.y, r.x) + rng.randf_range(-0.5, 0.5)
 		var basis := Basis(Vector3.UP, -lean).scaled(Vector3.ONE * rng.randf_range(0.8, 1.3))
-		palms.append(Transform3D(basis, _v3(p, -0.1)))
+		palms.append(Transform3D(basis, _v3(p, track.ground_height(i, palm_lateral) - 0.1)))
 	_multimesh(parent, st.commit(), palms, false, rng)
 
 	# Banana plants: big leaves on a short green stem.
@@ -296,8 +309,10 @@ static func _build_forest_edge(parent: Node3D, track: IslandTrack,
 				Color("e83a5a") if k % 3 else Color("ff9ac0"))
 	_scatter_edge(parent, st.commit(), 130, track, rng, 0.5, 8.0, 0.7, 1.4, true)
 
-	# Boulders with a mossy top, half buried at the forest edge.
-	_scatter_edge(parent, _boulder_mesh(true), 70, track, rng, -0.5, 5.0, 0.8, 2.2, true)
+	# Boulders with a mossy top at the forest edge, some out on the sand. Solid.
+	for boulder in _scatter_edge(parent, _boulder_mesh(true), 70, track, rng, -1.5, 5.0, 0.8, 2.2,
+			true):
+		_add_rock_obstacle(track, boulder)
 
 
 static func _scatter_forest(parent: Node3D, mesh: Mesh, count: int, track: IslandTrack,
@@ -309,20 +324,22 @@ static func _scatter_forest(parent: Node3D, mesh: Mesh, count: int, track: Islan
 		# sqrt keeps the density even over the island's area.
 		var f := sqrt(rng.randf_range(0.0, 0.94))
 		var p := track.edge(i, track.forest_edge(i) - 9.0) * f
-		var y := ground_height(p, f, radius) - 0.2
+		var y := ground_height(p, f, radius, track.surface_height(i, track.forest_edge(i))) - 0.2
 		transforms.append(_varied(p, y, rng, scale_min, scale_max))
 	_multimesh(parent, mesh, transforms, tint, rng)
 
 
 static func _scatter_edge(parent: Node3D, mesh: Mesh, count: int, track: IslandTrack,
 		rng: RandomNumberGenerator, depth_min: float, depth_max: float, scale_min: float,
-		scale_max: float, tint: bool) -> void:
+		scale_max: float, tint: bool) -> Array[Transform3D]:
 	var transforms: Array[Transform3D] = []
 	for n in count:
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
-		var p := track.edge(i, track.forest_edge(i) - rng.randf_range(depth_min, depth_max))
-		transforms.append(_varied(p, 0.0, rng, scale_min, scale_max))
+		var lateral := track.forest_edge(i) - rng.randf_range(depth_min, depth_max)
+		var p := track.edge(i, lateral)
+		transforms.append(_varied(p, track.ground_height(i, lateral), rng, scale_min, scale_max))
 	_multimesh(parent, mesh, transforms, tint, rng)
+	return transforms
 
 
 static func _add_fronds(st: SurfaceTool, top: Vector3, count: int, length: float,
@@ -359,8 +376,9 @@ static func _build_beach_details(parent: Node3D, track: IslandTrack,
 	var shells: Array[Transform3D] = []
 	for n in 600:
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
-		var p := track.edge(i, rng.randf_range(track.forest_edge(i) + 1.0, track.water_line(i) + 4.0))
-		shells.append(_placed(p, 0.0, rng.randf() * TAU, rng.randf_range(0.5, 1.6)))
+		var shell_lateral := rng.randf_range(track.forest_edge(i) + 1.0, track.water_line(i) + 2.0)
+		var p := track.edge(i, shell_lateral)
+		shells.append(_placed(p, track.ground_height(i, shell_lateral), rng.randf() * TAU, rng.randf_range(0.5, 1.6)))
 	var mm := _multimesh(parent, shell.commit(), shells, false, rng, false)
 	var palette := [Color("f3e6d3"), Color("d9b38c"), Color("a39a90"), Color("f0c6b8")]
 	for n in mm.multimesh.instance_count:
@@ -375,8 +393,14 @@ static func _build_beach_details(parent: Node3D, track: IslandTrack,
 	var logs: Array[Transform3D] = []
 	for n in 40:
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
-		var p := track.edge(i, track.forest_edge(i) + rng.randf_range(0.5, 3.0))
-		logs.append(_placed(p, 0.0, rng.randf() * TAU, rng.randf_range(0.8, 1.3)))
+		var log_lateral := track.forest_edge(i) + rng.randf_range(0.5, 3.0)
+		var p := track.edge(i, log_lateral)
+		logs.append(_placed(p, track.ground_height(i, log_lateral), rng.randf() * TAU, rng.randf_range(0.8, 1.3)))
+		# Low and solid: run around it or jump over it.
+		var log_xform := logs[logs.size() - 1]
+		var along := Vector2(log_xform.basis.x.x, log_xform.basis.x.z)
+		for k in [-0.8, 0.0, 0.8]:
+			track.add_obstacle(p + along * k, 0.3, 0.45)
 	_multimesh(parent, wood.commit(), logs, true, rng)
 
 
@@ -388,8 +412,11 @@ static func _build_sea_life(parent: Node3D, track: IslandTrack, radius: float,
 	for n in 26:
 		var i := rng.randi_range(0, IslandTrack.SAMPLES - 1)
 		var p := track.edge(i, track.water_line(i) + rng.randf_range(25.0, 120.0))
+		if not track.is_open_sea(p, 20.0):
+			continue
 		var s := rng.randf_range(1.2, 3.5)
 		rocks.append(_varied(p, SEA_LEVEL - 0.4, rng, s, s * 1.3))
+		_add_rock_obstacle(track, rocks[rocks.size() - 1])
 		rings.append(_placed(p, SEA_LEVEL + 0.05, 0.0, s * 1.6))
 	_multimesh(parent, _boulder_mesh(false), rocks, true, rng)
 	var ring := MeshKit.begin()
@@ -429,39 +456,56 @@ static func _build_sea_life(parent: Node3D, track: IslandTrack, radius: float,
 
 static func _build_start_line(parent: Node3D, track: IslandTrack) -> void:
 	var r2 := track.right(0)
+	var t2 := track.tangent(0)
 	var right := Vector3(r2.x, 0, r2.y)
-	var basis := Basis(right, Vector3.UP, right.cross(Vector3.UP))
-	var origin := _v3(track.points[0], 0.0)
+	var forward := Vector3(t2.x, 0, t2.y)
 	var left_edge := track.forest_edge(0) - 1.0
 	var right_edge := track.water_line(0) + 1.0
 	var width := right_edge - left_edge
-	var middle := (left_edge + right_edge) / 2.0
 
-	var stripe := BoxMesh.new()
-	stripe.size = Vector3(width, 0.04, 0.8)
-	var line := MeshInstance3D.new()
-	line.mesh = stripe
-	line.transform = Transform3D(basis, origin + right * middle + Vector3.UP * 0.02)
-	line.material_override = _checker_material(int(width), 1)
-	parent.add_child(line)
+	# Checkered stripe that follows the banked sand.
+	var st := MeshKit.begin()
+	var steps := 16
+	for n in steps:
+		var l0 := lerpf(left_edge, right_edge, float(n) / steps)
+		var l1 := lerpf(left_edge, right_edge, float(n + 1) / steps)
+		var a := _v3(track.edge(0, l0), track.ground_height(0, l0) + 0.03)
+		var b := _v3(track.edge(0, l1), track.ground_height(0, l1) + 0.03)
+		var u0 := float(n) / steps
+		var u1 := float(n + 1) / steps
+		var quad := [[a - forward * 0.4, Vector2(u0, 0)], [b - forward * 0.4, Vector2(u1, 0)],
+				[b + forward * 0.4, Vector2(u1, 1)], [a + forward * 0.4, Vector2(u0, 1)]]
+		for k: int in [0, 1, 2, 0, 2, 3]:
+			st.set_uv(quad[k][1])
+			st.set_normal(Vector3.UP)
+			st.add_vertex(quad[k][0])
+	var stripe_mat := _checker_material(int(width), 1)
+	stripe_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_add_mesh(parent, st.commit(), stripe_mat, false)
 
+	# Banner on two posts, level, above the highest post.
+	var left_ground := track.ground_height(0, left_edge)
+	var right_ground := track.ground_height(0, right_edge)
+	var banner_y := maxf(left_ground, right_ground) + 5.8
 	var wood := StandardMaterial3D.new()
 	wood.albedo_color = Color("7a5232")
-	wood.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
-	for side in [left_edge, right_edge]:
+	wood.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
+	for side: Array in [[left_edge, left_ground], [right_edge, right_ground]]:
+		var height: float = banner_y + 0.7 - side[1]
 		var post := MeshInstance3D.new()
-		post.mesh = MeshKit.cylinder(0.25, 0.22, 6.5, 10)
-		post.position = origin + right * side + Vector3.UP * 3.25
+		post.mesh = MeshKit.cylinder(0.25, 0.22, height, 10)
+		post.position = _v3(track.edge(0, side[0]), side[1] + height / 2.0)
 		post.material_override = wood
 		parent.add_child(post)
 	var banner_mesh := BoxMesh.new()
 	banner_mesh.size = Vector3(width, 1.5, 0.15)
 	var banner := MeshInstance3D.new()
 	banner.mesh = banner_mesh
-	banner.transform = Transform3D(basis, origin + right * middle + Vector3.UP * 5.8)
+	var middle := (left_edge + right_edge) / 2.0
+	banner.transform = Transform3D(Basis(right, Vector3.UP, right.cross(Vector3.UP)),
+			_v3(track.edge(0, middle), banner_y))
 	banner.material_override = _checker_material(int(width * 0.7), 2)
 	parent.add_child(banner)
-
 
 # --- Helpers ------------------------------------------------------------
 
@@ -482,6 +526,7 @@ static func _multimesh(parent: Node3D, mesh: Mesh, transforms: Array[Transform3D
 	if not shadows:
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	instance.add_to_group("scenery_detail")
+	Settings.configure_detail(instance)
 	parent.add_child(instance)
 	return instance
 
@@ -509,7 +554,7 @@ static func _checker_material(columns: int, rows: int) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = ImageTexture.create_from_image(image)
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
 	return mat
 
 
@@ -541,3 +586,145 @@ static func _varied(p: Vector2, y: float, rng: RandomNumberGenerator, scale_min:
 	var tilt := Basis(Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized(),
 			rng.randf_range(0.0, 0.08))
 	return Transform3D(tilt * Basis(Vector3.UP, rng.randf() * TAU).scaled(shape), _v3(p, y))
+
+
+## A boulder blocks a circle about the size of its two stones.
+static func _add_rock_obstacle(track: IslandTrack, xform: Transform3D) -> void:
+	var size := xform.basis.get_scale()
+	var center := Vector2(xform.origin.x, xform.origin.z) \
+			+ Vector2(xform.basis.x.x, xform.basis.x.z) * 0.3
+	# Height above the ground it stands on (jumps are measured from the ground).
+	track.add_obstacle(center, 1.2 * maxf(size.x, size.z), 1.0 * size.y)
+
+
+# --- Track features: lake and bridges, logs, speed pads -----------------------------
+
+static func build_features(parent: Node3D, track: IslandTrack) -> void:
+	_build_lake(parent, track)
+	_build_bridges(parent, track)
+	_build_logs(parent, track)
+	_build_boosters(parent, track)
+
+
+static func _lake_samples(track: IslandTrack) -> Array[int]:
+	var list: Array[int] = []
+	for i in IslandTrack.SAMPLES:
+		var along := track.lake_along(track.lengths[i])
+		if along >= -IslandTrack.LAKE_SLOPE and along <= IslandTrack.LAKE_LENGTH + IslandTrack.LAKE_SLOPE:
+			list.append(i)
+	return list
+
+
+static func _build_lake(parent: Node3D, track: IslandTrack) -> void:
+	var st := MeshKit.begin()
+	var samples := _lake_samples(track)
+	for n in samples.size() - 1:
+		var i := samples[n]
+		var j := samples[n + 1]
+		var corners := []
+		for pair: Array in [[i, track.forest_edge(i) + 1.0], [j, track.forest_edge(j) + 1.0],
+				[j, track.water_line(j) - 1.0], [i, track.water_line(i) - 1.0]]:
+			var d: float = track.lengths[pair[0]]
+			corners.append(_v3(track.edge(pair[0], pair[1]), track.lake_water_height(d, pair[1])))
+		var blue := Color(0.32, 0.66, 0.78)
+		_quad(st, corners[0], corners[1], corners[2], corners[3], blue, blue, blue, blue)
+	st.generate_normals()
+	var mat := MeshKit.vertex_color_material()
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(1, 1, 1, 0.75)
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.specular_mode = BaseMaterial3D.SPECULAR_SCHLICK_GGX
+	mat.roughness = 0.15
+	_add_mesh(parent, st.commit(), mat, false)
+
+
+static func _build_bridges(parent: Node3D, track: IslandTrack) -> void:
+	var wood := MeshKit.vertex_color_material()
+	var samples := _lake_samples(track)
+	var warning_red := Color("d6423a")
+	for lane: int in [1, 3]:
+		var hole: float = IslandTrack.BRIDGE_HOLES[0 if lane == 1 else 1] * IslandTrack.LAKE_LENGTH
+		var st := MeshKit.begin()
+		var posts := MeshKit.begin()
+		for n in samples.size() - 1:
+			var i := samples[n]
+			var d: float = track.lengths[i]
+			var along := track.lake_along(d)
+			if absf(along - hole) < IslandTrack.HOLE_LENGTH * 0.5:
+				continue
+			var left := track.forest_edge(i) + 1.0
+			var width := (track.water_line(i) - 1.0 - left) / 5.0
+			var center := left + width * (lane + 0.5)
+			var top := track.ground_height_at(d, center)
+			var t2 := track.tangent(i)
+			var r2 := track.right(i)
+			var basis := Basis(Vector3(r2.x, 0, r2.y), Vector3.UP, -Vector3(t2.x, 0, t2.y))
+			var plank := Color("9c7650") if n % 2 == 0 else Color("8a6644")
+			var spacing := track.lengths[samples[n + 1]] - d
+			MeshKit.add(st, MeshKit.cylinder(0.5, 0.5, 1.0, 4),
+					Transform3D(basis * Basis(Vector3.UP, PI / 4.0).scaled(
+							Vector3(width * 0.71, 0.12, maxf(spacing, 0.5) * 0.66)),
+							_v3(track.edge(i, center), top - 0.06)), plank)
+			# Red and white posts at the bridge ends and around the hole.
+			var near_hole := absf(along - hole) < IslandTrack.HOLE_LENGTH * 0.5 + 1.2
+			if near_hole or n == 0 or n == samples.size() - 2:
+				for side: float in [-0.5, 0.5]:
+					var post_at := _v3(track.edge(i, center + width * side), top)
+					MeshKit.add(posts, MeshKit.cylinder(0.07, 0.07, 0.9, 6),
+							_at(post_at + Vector3.UP * 0.45), warning_red if near_hole else Color.WHITE)
+					MeshKit.add(posts, MeshKit.cylinder(0.075, 0.075, 0.15, 6),
+							_at(post_at + Vector3.UP * 0.75), Color.WHITE if near_hole else warning_red)
+		_add_mesh(parent, st.commit(), wood, true)
+		_add_mesh(parent, posts.commit(), wood, true)
+
+
+static func _build_logs(parent: Node3D, track: IslandTrack) -> void:
+	var bark := MeshKit.vertex_color_material()
+	for log: Dictionary in track.logs:
+		var i := track.index_at(log.distance)
+		var r2 := track.right(i)
+		var t2 := track.tangent(i)
+		var across := Vector3(r2.x, 0, r2.y)
+		var forward := Vector3(t2.x, 0, t2.y)
+		var ground := track.ground_height_at(log.distance, log.lateral)
+		var center := _v3(track.edge(i, log.lateral), ground + IslandTrack.LOG_RADIUS)
+		var st := MeshKit.begin()
+		var basis := Basis(forward, across, forward.cross(across))
+		MeshKit.add(st, MeshKit.cylinder(IslandTrack.LOG_RADIUS, IslandTrack.LOG_RADIUS * 0.92,
+				IslandTrack.LOG_LENGTH, 12), Transform3D(basis, center), Color("5e3d22"))
+		# Pale cut ends and a couple of stubby branches.
+		for end: float in [-0.5, 0.5]:
+			MeshKit.add(st, MeshKit.cylinder(IslandTrack.LOG_RADIUS * 0.85, IslandTrack.LOG_RADIUS * 0.85,
+					0.04, 12), Transform3D(basis, center + across * IslandTrack.LOG_LENGTH * end * 1.002),
+					Color("d9b07a"))
+			# A red flag at each end, easy to see from far away.
+			var pole: Vector3 = center + across * IslandTrack.LOG_LENGTH * end * 0.95
+			MeshKit.add(st, MeshKit.cylinder(0.04, 0.04, 1.6, 6), _at(pole + Vector3.UP * 0.8),
+					Color("e8e2d6"))
+			MeshKit.add(st, MeshKit.cylinder(0.25, 0.0, 0.5, 3),
+					Transform3D(Basis(Vector3.FORWARD, PI / 2.0).scaled(Vector3(1.0, 1.0, 0.15)),
+							pole + Vector3.UP * 1.45 + across * 0.25 * signf(end)), Color("e8412c"))
+		MeshKit.add(st, MeshKit.cylinder(0.09, 0.05, 0.7, 6),
+				Transform3D(Basis(across, 0.8) * basis, center + across * 1.6 + Vector3.UP * 0.3),
+				Color("6b4a2e"))
+		_add_mesh(parent, st.commit(), bark, true)
+
+
+static func _build_boosters(parent: Node3D, track: IslandTrack) -> void:
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/boost.gdshader")
+	for pad: Dictionary in track.boosters:
+		var i := track.index_at(pad.distance)
+		var r2 := track.right(i)
+		var t2 := track.tangent(i)
+		var mesh := PlaneMesh.new()
+		mesh.size = IslandTrack.BOOST_SIZE
+		var instance := MeshInstance3D.new()
+		instance.mesh = mesh
+		instance.material_override = mat
+		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		# Plane X across the track, -Z forward (the chevrons point that way).
+		instance.transform = Transform3D(
+				Basis(Vector3(r2.x, 0, r2.y), Vector3.UP, -Vector3(t2.x, 0, t2.y)),
+				_v3(track.edge(i, pad.lateral), track.ground_height_at(pad.distance, pad.lateral) + 0.06))
+		parent.add_child(instance)

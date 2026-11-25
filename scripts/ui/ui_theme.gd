@@ -37,6 +37,17 @@ static func make() -> Theme:
 	panel.set_content_margin_all(22)
 	theme.set_stylebox("panel", "PanelContainer", panel)
 
+	var track := _box(Color(1, 1, 1, 0.18))
+	track.content_margin_top = 4
+	track.content_margin_bottom = 4
+	theme.set_stylebox("slider", "HSlider", track)
+	var filled := _box(FOCUS_COLOR.darkened(0.15))
+	filled.content_margin_top = 4
+	filled.content_margin_bottom = 4
+	theme.set_stylebox("grabber_area", "HSlider", filled)
+	theme.set_stylebox("grabber_area_highlight", "HSlider", filled)
+	theme.set_stylebox("focus", "HSlider", focus)
+
 	theme.set_color("font_outline_color", "Label", Color(0, 0, 0, 0.85))
 	theme.set_constant("outline_size", "Label", 6)
 	return theme

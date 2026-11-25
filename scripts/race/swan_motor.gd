@@ -6,13 +6,41 @@ extends RefCounted
 ## A swan, not a car: slow build-up and at most 50 km/h on the ground.
 const MAX_SPEED := 13.9 # m/s, 50 km/h
 const ACCELERATION := 3.1 # about 4.5 s from 0 to top speed
-const BRAKE_DECELERATION := 9.0
+## Full brake stops from top speed in about 1.2 s; half the trigger, half the force.
+const BRAKE_DECELERATION := 12.0
 const COAST_DECELERATION := 1.6
 const TURN_RATE_SLOW := 2.4 # rad/s when almost stopped
 const TURN_RATE_FAST := 1.6 # rad/s at top speed
 const AIR_CONTROL := 0.35
 const JUMP_VELOCITY := 6.5
 const GRAVITY := 24.0
+## Coming down from a jump the swan glides with open wings: gentle fall.
+const GLIDE_GRAVITY := 7.0
+const MAX_GLIDE_FALL := 3.5
+## Turning has a cost: while steering, the top speed drops 1% every 0.1 s
+## (scaled by how hard you steer), down to 70%. It recovers when you let go.
+const TURN_CAP_LOSS_PER_SECOND := 0.1
+const TURN_CAP_MIN := 0.7
+const TURN_CAP_RECOVERY_PER_SECOND := 0.35
+## Slopes: uphill slows the swan and lowers its top speed (down to 75%);
+## downhill speeds it up and lets it run faster (up to 130%).
+const SLOPE_GRAVITY := 6.0
+const SLOPE_LIMIT_PER_GRADE := 2.5
+const SLOPE_LIMIT_MIN := 0.75
+const SLOPE_LIMIT_MAX := 1.3
+## Turbo: while held (and stamina lasts) more push and a higher top speed. Stamina
+## (0..1) drains while boosting and refills after a short pause.
+const TURBO_ACCEL_BONUS := 3.0
+const TURBO_LIMIT_BONUS := 0.2
+const STAMINA_DRAIN_PER_SECOND := 1.0 / 3.0 # empty in 3 s
+const STAMINA_REFILL_PER_SECOND := 0.1 # full again in 10 s
+const STAMINA_REFILL_DELAY := 0.5
+## Speed pads: a strong push and a higher top speed for a moment.
+const PAD_TIME := 1.4
+const PAD_ACCEL := 9.0
+const PAD_LIMIT_BONUS := 0.3
+## Each landing costs 5% of the speed, so jumps are a choice.
+const LANDING_SPEED_LOSS := 0.05
 
 var position := Vector3.ZERO
 ## Yaw in radians. 0 faces -Z.
@@ -21,6 +49,17 @@ var speed := 0.0
 var vertical_velocity := 0.0
 ## Set by the terrain each tick (1 = normal). The same rule for every swan.
 var max_speed_scale := 1.0
+## Top speed left after steering (1 = none lost).
+var turn_cap := 1.0
+## Grade of the ground along the heading (rise per meter; negative = downhill).
+## Set by the track each tick.
+var slope := 0.0
+var stamina := 1.0
+## True on the ticks the turbo is actually pushing.
+var boosting := false
+var _refill_wait := 0.0
+## Seconds left of a speed pad push.
+var pad_time := 0.0
 var on_ground := true
 var accelerating := false
 var braking := false
@@ -35,7 +74,7 @@ func forward() -> Vector3:
 
 
 func speed_ratio() -> float:
-	return minf(speed / MAX_SPEED, 1.0)
+	return speed / MAX_SPEED
 
 
 func step(intent: SwanIntent, tick: float) -> void:
@@ -53,8 +92,25 @@ func step(intent: SwanIntent, tick: float) -> void:
 	speed += ACCELERATION * intent.accel * control * tick
 	speed -= BRAKE_DECELERATION * intent.brake * control * tick
 	speed -= COAST_DECELERATION * (1.0 - intent.accel) * tick
-	speed = clampf(speed, 0.0, MAX_SPEED)
-	var limit := MAX_SPEED * max_speed_scale
+	if absf(intent.steer) > 0.1:
+		turn_cap = maxf(turn_cap - TURN_CAP_LOSS_PER_SECOND * absf(intent.steer) * tick, TURN_CAP_MIN)
+	else:
+		turn_cap = minf(turn_cap + TURN_CAP_RECOVERY_PER_SECOND * tick, 1.0)
+	if on_ground:
+		speed -= SLOPE_GRAVITY * slope * tick
+	_update_turbo(intent, tick)
+	if boosting:
+		speed += TURBO_ACCEL_BONUS * tick
+	if pad_time > 0.0:
+		pad_time -= tick
+		speed += PAD_ACCEL * tick
+	var slope_limit := clampf(1.0 - slope * SLOPE_LIMIT_PER_GRADE, SLOPE_LIMIT_MIN, SLOPE_LIMIT_MAX)
+	speed = clampf(speed, 0.0, MAX_SPEED * SLOPE_LIMIT_MAX * (1.0 + TURBO_LIMIT_BONUS + PAD_LIMIT_BONUS))
+	var limit := MAX_SPEED * max_speed_scale * turn_cap * slope_limit
+	if boosting:
+		limit *= 1.0 + TURBO_LIMIT_BONUS
+	if pad_time > 0.0:
+		limit *= 1.0 + PAD_LIMIT_BONUS
 	if speed > limit:
 		speed = move_toward(speed, limit, BRAKE_DECELERATION * tick)
 
@@ -63,10 +119,24 @@ func step(intent: SwanIntent, tick: float) -> void:
 	position += forward() * speed * tick
 
 	if not on_ground:
-		vertical_velocity -= GRAVITY * tick
+		# Fast up, slow down: a glide once past the top of the jump.
+		var gravity := GRAVITY if vertical_velocity > 0.0 else GLIDE_GRAVITY
+		vertical_velocity = maxf(vertical_velocity - gravity * tick, -MAX_GLIDE_FALL)
 		position.y += vertical_velocity * tick
 		if position.y <= 0.0:
 			position.y = 0.0
 			vertical_velocity = 0.0
 			on_ground = true
 			landed = true
+			speed *= 1.0 - LANDING_SPEED_LOSS
+
+
+func _update_turbo(intent: SwanIntent, tick: float) -> void:
+	boosting = intent.turbo and stamina > 0.0 and on_ground
+	if boosting:
+		stamina = maxf(stamina - STAMINA_DRAIN_PER_SECOND * tick, 0.0)
+		_refill_wait = STAMINA_REFILL_DELAY
+	elif _refill_wait > 0.0:
+		_refill_wait -= tick
+	else:
+		stamina = minf(stamina + STAMINA_REFILL_PER_SECOND * tick, 1.0)

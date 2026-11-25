@@ -3,9 +3,11 @@ extends RefCounted
 ## Colors offered in the wardrobe. Picked with left/right, so it works on a
 ## controller without a mouse.
 
+## Translation keys of the color names (see translations/strings.csv).
 static var names: PackedStringArray = [
-	"Branco", "Creme", "Preto", "Cinza", "Rosa", "Vermelho", "Laranja",
-	"Amarelo", "Dourado", "Verde", "Menta", "Azul-céu", "Azul", "Roxo", "Marrom",
+	"COLOR_WHITE", "COLOR_CREAM", "COLOR_BLACK", "COLOR_GRAY", "COLOR_PINK", "COLOR_RED",
+	"COLOR_ORANGE", "COLOR_YELLOW", "COLOR_GOLD", "COLOR_GREEN", "COLOR_MINT", "COLOR_SKY_BLUE",
+	"COLOR_BLUE", "COLOR_PURPLE", "COLOR_BROWN",
 ]
 static var colors: Array[Color] = [
 	Color("f7f5ee"), Color("f1e3c2"), Color("2b2b30"), Color("8d8f96"),
@@ -25,3 +27,11 @@ static func closest(color: Color) -> int:
 			best_distance = d
 			best = i
 	return best
+
+
+## Color names in the current language.
+static func display_names() -> PackedStringArray:
+	var translated := PackedStringArray()
+	for key in names:
+		translated.append(TranslationServer.translate(key))
+	return translated
