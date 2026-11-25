@@ -1,0 +1,62 @@
+# Privacy audit: what the game sends and stores
+
+Swan Race promises **no ads and no data collection** ([ADR 0009](adr/0009-offline-first-no-ads-cosmetic-only.md)).
+This file checks that promise against the code. Update it whenever a package,
+SDK or network feature is added, and before filling in any store privacy form.
+
+- **Last checked:** 2026-11-25, version 0.0.5 (Windows alpha)
+- **Result:** the game sends nothing. Nothing calls home.
+
+## What calls home
+
+| Package or code | Calls home? | Notes |
+|---|---|---|
+| Godot 4.7.2 engine (official export template) | No | No telemetry or crash reporting in the engine |
+| Game scripts (`scripts/`) | No | No `HTTPRequest`, `HTTPClient`, sockets, WebSocket or multiplayer anywhere |
+| `addons/build_info` | No | Runs only in the editor, at export time |
+| Store or platform SDKs (Google Play Games, Game Center, Steam, Firebase) | Not integrated | See "Before adding a service" |
+
+## Outside the game process
+
+| What | When | Leaves the device? |
+|---|---|---|
+| `OS.shell_open` to `https://schlupfwerk.com/<lang>` (`scripts/ui/home.gd`) | Only when the player presses "Site da Schlupfwerk" in the About tab | Opens the browser; the game sends nothing |
+| `git` (`scripts/core/game_version.gd`) | Editor only (`OS.has_feature("editor")`), never in an exported build | No |
+| PowerShell `Get-CimInstance Win32_VideoController` (`scripts/save/settings.gd`) | Windows, when the Video settings list the GPUs | No, it only counts the local GPUs |
+
+## Stored on the player's device only
+
+All under `user://` (on Windows, `%APPDATA%\Godot\app_userdata\Swan Race`).
+
+| File | Contents |
+|---|---|
+| `profile.cfg` | Characters (nicknames, looks) and lap records |
+| `settings.cfg` | Settings, including a chosen GPU name |
+| `music_*.wav` | Music the game renders once and caches |
+| `logs/` | Godot logs (up to 1000 files): GPU name, folder paths, errors |
+
+None of these are uploaded. Nicknames are typed by the player and stay local.
+
+## Store privacy forms (current answers)
+
+- **Google Play, Data safety:** no data collected, no data shared.
+- **Apple, App Privacy:** Data Not Collected.
+- **Steam:** no third-party accounts or data collection to disclose.
+
+These answers change as soon as any service in the next section ships.
+
+## Before adding a service
+
+Firebase, Google Play Games, Game Center, Steam, cloud saves or crash reporting
+all send data. Before any of them ships:
+
+1. Write an ADR, and update the privacy page on schlupfwerk.com (site ADR 0007).
+2. Make it opt-in where the store allows, with analytics and crash reporting off
+   by default.
+3. Add it to "What calls home" above and redo the store forms.
+
+## Open items
+
+- ADR 0009 says "no external links without a parental check". The About tab's
+  site button opens the browser directly. Add a parental gate before the mobile
+  release (stores require one in apps for children).
