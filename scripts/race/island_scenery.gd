@@ -216,14 +216,14 @@ static func _build_forest(parent: Node3D, track: IslandTrack, radius: float,
 	MeshKit.add(st, MeshKit.cylinder(0.22, 0.16, 9.0), _at(Vector3(0, 4.5, 0)), Color("c9c2b0"))
 	for k in 7:
 		var a := TAU * k / 7.0
-		MeshKit.add(st, MeshKit.sphere(1.0, 8, 4),
+		MeshKit.add(st, MeshKit.sphere(1.0, 12, 5),
 				_at(Vector3(cos(a) * 1.3, 9.0 - 0.2 * (k % 2), sin(a) * 1.3), Vector3(1.4, 0.18, 1.0),
 				Vector3(0, -a, 0.25)), Color("9bb38a") if k % 2 == 0 else Color("7f9f70"))
 	_scatter_forest(parent, st.commit(), 70, track, radius, rng, 0.8, 1.3, false)
 
 	# Palmito-juçara: slender, very tall palm with a small crown.
 	st = MeshKit.begin()
-	MeshKit.add(st, MeshKit.cylinder(0.14, 0.1, 13.0, 6), _at(Vector3(0, 6.5, 0)), Color("8f8a78"))
+	MeshKit.add(st, MeshKit.cylinder(0.14, 0.1, 13.0, 10), _at(Vector3(0, 6.5, 0)), Color("8f8a78"))
 	_add_fronds(st, Vector3(0, 13.0, 0), 7, 0.8, Color("4f8f35"))
 	_scatter_forest(parent, st.commit(), 90, track, radius, rng, 0.8, 1.2, false)
 
@@ -240,15 +240,14 @@ static func _build_forest(parent: Node3D, track: IslandTrack, radius: float,
 ## Plants along the forest edge, right next to the sand.
 static func _build_forest_edge(parent: Node3D, track: IslandTrack,
 		rng: RandomNumberGenerator) -> void:
-	# Coconut palms leaning out over the beach.
+	# Coconut palms leaning out over the beach: one smooth, curved trunk.
 	var st := MeshKit.begin()
-	var top := Vector3.ZERO
-	for j in 5:
-		var center := Vector3(0.18 * j * j, 0.9 + 1.7 * j, 0)
-		MeshKit.add(st, MeshKit.cylinder(0.24 - 0.02 * j, 0.22 - 0.02 * j, 1.8, 6),
-				_at(center, Vector3.ONE, Vector3(0, 0, -0.08 * j)),
-				Color("8a6a45").darkened(0.06 * (j % 2)))
-		top = center + Vector3(0.1 * j, 0.9, 0)
+	var trunk: Array[Vector3] = []
+	for j in 13:
+		var s := j / 12.0
+		trunk.append(Vector3(3.3 * s * s, 8.6 * s, 0))
+	var top: Vector3 = trunk[-1]
+	_tube(st, trunk, 0.25, 0.15, Color("8a6a45"))
 	_add_fronds(st, top, 8, 1.0, Color("4f9a36"))
 	for k in 3:
 		var a := TAU * k / 3.0
@@ -271,7 +270,7 @@ static func _build_forest_edge(parent: Node3D, track: IslandTrack,
 	for k in 6:
 		var a := TAU * k / 6.0 + 0.3
 		var dir := Vector3(cos(a), 0, sin(a))
-		MeshKit.add(st, MeshKit.sphere(1.0, 8, 4),
+		MeshKit.add(st, MeshKit.sphere(1.0, 12, 5),
 				_at(Vector3(0, 2.7, 0) + dir * 1.0, Vector3(1.25, 0.06, 0.4), Vector3(0, -a, 0.45)),
 				Color("7fb83f") if k % 2 == 0 else Color("6aa534"))
 	_scatter_edge(parent, st.commit(), 110, track, rng, 1.0, 9.0, 0.8, 1.3, true)
@@ -301,7 +300,7 @@ static func _build_forest_edge(parent: Node3D, track: IslandTrack,
 	st = MeshKit.begin()
 	for k in 3:
 		var a := TAU * k / 3.0
-		MeshKit.add(st, MeshKit.sphere(1.0, 8, 4),
+		MeshKit.add(st, MeshKit.sphere(1.0, 12, 5),
 				_at(Vector3(cos(a) * 0.4, 1.4, sin(a) * 0.4), Vector3(0.3, 1.2, 0.08),
 				Vector3(0, -a, 0.15)), Color("4f8f35"))
 	for k in 6:
@@ -354,6 +353,31 @@ static func _scatter_edge(parent: Node3D, mesh: Mesh, count: int, track: IslandT
 	return transforms
 
 
+## A smooth tube along a path (palm trunks), tapering from `r0` to `r1`.
+static func _tube(st: SurfaceTool, path: Array[Vector3], r0: float, r1: float, color: Color,
+		radial := 10) -> void:
+	var rings := []
+	var last := path.size() - 1
+	for n in path.size():
+		var along := (path[mini(n + 1, last)] - path[maxi(n - 1, 0)]).normalized()
+		var u := along.cross(Vector3.FORWARD).normalized()
+		var v := along.cross(u)
+		var radius := lerpf(r0, r1, float(n) / last)
+		var ring := []
+		for k in radial + 1:
+			var a := TAU * k / radial
+			var out := u * cos(a) + v * sin(a)
+			ring.append([path[n] + out * radius, out])
+		rings.append(ring)
+	for n in last:
+		for k in radial:
+			for corner: Array in [[n, k], [n + 1, k], [n + 1, k + 1], [n, k], [n + 1, k + 1], [n, k + 1]]:
+				var point: Array = rings[corner[0]][corner[1]]
+				st.set_color(color)
+				st.set_normal(point[1])
+				st.add_vertex(point[0])
+
+
 static func _add_fronds(st: SurfaceTool, top: Vector3, count: int, length: float,
 		color: Color) -> void:
 	for k in count:
@@ -361,7 +385,7 @@ static func _add_fronds(st: SurfaceTool, top: Vector3, count: int, length: float
 		var dir := Vector3(cos(yaw), 0, sin(yaw))
 		var frond := Basis(Vector3.UP, -yaw) * Basis(Vector3.FORWARD, 0.35)
 		var xform := Transform3D(frond, top + dir * 1.7 * length + Vector3.DOWN * 0.4)
-		MeshKit.add(st, MeshKit.sphere(1.0, 8, 4),
+		MeshKit.add(st, MeshKit.sphere(1.0, 12, 5),
 				xform * Transform3D(Basis.from_scale(Vector3(2.1 * length, 0.08, 0.38)), Vector3.ZERO),
 				color if k % 2 == 0 else color.darkened(0.12))
 

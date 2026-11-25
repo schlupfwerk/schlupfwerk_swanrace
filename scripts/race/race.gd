@@ -162,6 +162,10 @@ func _spawn_racers() -> void:
 
 func _process(delta: float) -> void:
 	_update_music(delta)
+	# Near the lake the camera pulls back, so the bridge holes are easy to see.
+	var to_lake := _track.lake_along(_player.laps.distance)
+	_camera.zoom_out = smoothstep(-40.0, -22.0, to_lake) \
+			* (1.0 - smoothstep(IslandTrack.LAKE_LENGTH, IslandTrack.LAKE_LENGTH + 8.0, to_lake))
 	if not _racing and not _finished:
 		_countdown -= delta
 		# Start lights: one red lamp and a short beep per second, then green.

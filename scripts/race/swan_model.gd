@@ -578,11 +578,11 @@ func _build_glasses() -> void:
 		_wear("glasses_aviator", _add(_head, _cylinder(0.064, 0.064, 0.006, 16),
 				at + Vector3(0.1 * side, -0.015, 0), Vector3(1.1, 1.0, 1.3), _lens_mat,
 				Vector3(PI / 2, 0, 0.25 * side)))
-		# Small round: little wire circles, close together (rock-star style).
+		# Small round: little wire circles out at the arms, joined by a long bridge.
 		_wear("glasses_small_round", _add(_head, _torus(0.038, 0.046),
-				at + Vector3(0.075 * side, 0, 0), Vector3.ONE, frame, Vector3(PI / 2, 0, 0)))
+				at + Vector3(0.15 * side, 0, 0), Vector3.ONE, frame, Vector3(PI / 2, 0, 0)))
 		_wear("glasses_small_round", _add(_head, _cylinder(0.04, 0.04, 0.006, 16),
-				at + Vector3(0.075 * side, 0, 0), Vector3.ONE, _lens_mat, Vector3(PI / 2, 0, 0)))
+				at + Vector3(0.15 * side, 0, 0), Vector3.ONE, _lens_mat, Vector3(PI / 2, 0, 0)))
 		arms.append(side)
 	# Visor: one wide lens across both eyes.
 	_wear("glasses_visor", _add(_head, _box(Vector3(0.44, 0.11, 0.012)), at + Vector3(0, 0, -0.01),
@@ -592,7 +592,10 @@ func _build_glasses() -> void:
 	# Bridge and arms, shared by every shape.
 	for style: String in SwanLook.GLASSES_STYLES:
 		var id := "glasses_" + style
-		if style != "visor":
+		if style == "small_round":
+			_wear(id, _add(_head, _box(Vector3(0.22, 0.012, 0.012)), at + Vector3(0, 0.012, 0),
+					Vector3.ONE, frame))
+		elif style != "visor":
 			_wear(id, _add(_head, _box(Vector3(0.05, 0.015, 0.015)), at + Vector3(0, 0.01, -0.01),
 					Vector3.ONE, frame))
 		for side: float in arms:
@@ -607,14 +610,15 @@ func _build_face_items() -> void:
 	lipstick.roughness = 0.2
 	_wear("lipstick", _add(_head, _cylinder(0.05, 0.019, 0.13, 12), Vector3(0, -0.04, -0.39 - SNOUT),
 			Vector3.ONE, lipstick, Vector3(-PI / 2, 0, 0)))
-	# Lashes: big and curled, standing out from the top edge of each eye.
+	# Lashes: big, fanning out from the outer corner of each eye (between its top
+	# and its side), so they show beside the eye instead of on top of it.
 	var black := _toon(DARK)
 	for side in [-1.0, 1.0]:
+		var eye := Vector3(0.12 * side, EYE_Y, -0.12)
 		for i in 3:
-			var spread := (i - 1.0) * 0.035
-			_wear("lashes", _capsule(_head, 0.012, 0.095,
-					Vector3((0.125 + spread) * side, EYE_Y + 0.07, -0.2 - absf(spread) * 0.3), black,
-					Vector3(-0.5, 0, (-0.4 - spread * 6.0) * side)))
+			var tilt := 0.55 + 0.4 * i
+			var out := Vector3(sin(tilt) * side, cos(tilt), -0.35).normalized()
+			_wear("lashes", _segment(_head, eye + out * 0.07, eye + out * 0.15, 0.011, black))
 	# Necklaces sit high on the neck, well above any collar or hood, tipping
 	# forward a little.
 	var center := Vector3(0, 0.5, -0.23)
