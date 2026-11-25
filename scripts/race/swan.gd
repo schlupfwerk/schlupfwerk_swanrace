@@ -150,6 +150,7 @@ func _process(delta: float) -> void:
 	_update_horn(delta)
 	model.wet = in_water
 	model.boosting = motor.boosting
+	model.gliding = not motor.on_ground and motor.vertical_velocity < 0.0
 	model.effort = clampf((motor.slope - 0.04) * 10.0, 0.0, 1.0) * (1.0 if intent.accel > 0.3 else 0.4)
 	model.animate(delta, motor.speed_ratio(), intent.steer, intent.accel,
 			intent.brake if motor.braking else 0.0,

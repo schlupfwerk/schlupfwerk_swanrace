@@ -30,6 +30,8 @@ var wet := false
 var drowning := 0.0
 ## True while the turbo is pushing: speed streaks behind the swan.
 var boosting := false
+## True while gliding down from a jump: wings wide open.
+var gliding := false
 ## 0..1 how hard the swan is working (steep climbs): drops of sweat fly off.
 var effort := 0.0
 
@@ -202,8 +204,9 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_wing_open = move_toward(_wing_open, clampf(brake, 0.0, 1.0), delta * 7.0)
 	var run_open := (0.45 + sin(_phase * 2.0) * 0.12) * speed_ratio
 	var flail := (0.9 + sin(Time.get_ticks_msec() * 0.03) * 0.6) * drowning
-	var open := maxf(maxf(ease(_wing_open, -2.0) * WING_OPEN_ANGLE, run_open), flail)
-	var sweep := 0.45 * speed_ratio * (1.0 - _wing_open) * (1.0 - drowning)
+	var glide_open := (1.25 + sin(Time.get_ticks_msec() * 0.012) * 0.12) if gliding else 0.0
+	var open := maxf(maxf(maxf(ease(_wing_open, -2.0) * WING_OPEN_ANGLE, run_open), flail), glide_open)
+	var sweep := 0.0 if gliding else 0.45 * speed_ratio * (1.0 - _wing_open) * (1.0 - drowning)
 	_wing_l.rotation = Vector3(0.0, -sweep, -open)
 	_wing_r.rotation = Vector3(0.0, sweep, open)
 

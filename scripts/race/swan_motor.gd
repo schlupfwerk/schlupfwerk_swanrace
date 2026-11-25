@@ -14,6 +14,9 @@ const TURN_RATE_FAST := 1.6 # rad/s at top speed
 const AIR_CONTROL := 0.35
 const JUMP_VELOCITY := 6.5
 const GRAVITY := 24.0
+## Coming down from a jump the swan glides with open wings: gentle fall.
+const GLIDE_GRAVITY := 7.0
+const MAX_GLIDE_FALL := 3.5
 ## Turning has a cost: while steering, the top speed drops 1% every 0.1 s
 ## (scaled by how hard you steer), down to 70%. It recovers when you let go.
 const TURN_CAP_LOSS_PER_SECOND := 0.1
@@ -105,7 +108,9 @@ func step(intent: SwanIntent, tick: float) -> void:
 	position += forward() * speed * tick
 
 	if not on_ground:
-		vertical_velocity -= GRAVITY * tick
+		# Fast up, slow down: a glide once past the top of the jump.
+		var gravity := GRAVITY if vertical_velocity > 0.0 else GLIDE_GRAVITY
+		vertical_velocity = maxf(vertical_velocity - gravity * tick, -MAX_GLIDE_FALL)
 		position.y += vertical_velocity * tick
 		if position.y <= 0.0:
 			position.y = 0.0
