@@ -16,18 +16,9 @@ const LOW_STEP := 0.035
 const LOW_MIN := 0.12
 const SPACING := 1.9
 const BLOCK := Vector3(1.6, 1.0, 1.6)
-## The painted backdrop panel: how far behind, how tall, horizon height.
-const BACKDROP_DISTANCE := 70.0
-const BACKDROP_HEIGHT := 155.0
-const BACKDROP_EYE := 4.5
-## How much of the drone's sweep the backdrop follows (0 = fixed, 1 = glued).
-const BACKDROP_FOLLOW := 0.6
 
 ## Final standings, best first: {"name", "look", "time"}.
 var standings: Array[Dictionary] = []
-## The map's painted podium backdrop (assets/tracks/<map>/podium_background.png).
-## The podium stands on its own stage in front of it, away from the 3D map.
-var backdrop: Texture2D
 ## Ground height under a point of the row (local x), so blocks never sink.
 var ground_at: Callable = func(_x: float) -> float: return 0.0
 
@@ -39,8 +30,6 @@ var _center_x := 0.0
 var _center_y := 0.0
 var _models: Array[SwanModel] = []
 var _trophy: Node3D
-var _backdrop: MeshInstance3D
-var _backdrop_y := 0.0
 var _trophy_base := Vector3.ZERO
 
 
@@ -76,7 +65,6 @@ func _ready() -> void:
 	# Far enough to see every block.
 	_distance = maxf(9.0, 5.0 + count * 1.3)
 	_center_x = (block_x(1) + block_x(maxi(count - 1, 2))) / 2.0
-	_build_backdrop()
 	_camera.fov = 55.0
 	# Only the podium: nothing of the map behind it gets drawn.
 	_camera.far = 150.0
@@ -126,13 +114,6 @@ func _place_camera() -> void:
 	_camera.position = Vector3(_center_x + sin(swing) * _distance, _center_y + 2.6 + _distance * 0.12,
 			cos(swing) * _distance)
 	_camera.look_at(to_global(Vector3(_center_x, _center_y + 1.3, 0.3)))
-	# The backdrop turns with part of the sweep: the scene still moves around the
-	# podium, but the edges of the picture never come into view.
-	if _backdrop:
-		var turn := swing * BACKDROP_FOLLOW
-		_backdrop.position = Vector3(_center_x - sin(turn) * BACKDROP_DISTANCE, _backdrop_y,
-				-cos(turn) * BACKDROP_DISTANCE)
-		_backdrop.rotation.y = turn
 
 
 func _add_swan(entry: Dictionary, at: Vector3, medal: Color, celebrating: bool, place: int) -> void:
@@ -166,40 +147,6 @@ func _add_swan(entry: Dictionary, at: Vector3, medal: Color, celebrating: bool, 
 		label.position.y += 0.9
 	add_child(label)
 	_models.append(model)
-
-
-## The painted background is a big panel far behind the podium, part of the
-## scene: the podium stays put on it and only the camera moves. Plus an
-## invisible floor that only shows the shadows.
-func _build_backdrop() -> void:
-	if backdrop:
-		var height := BACKDROP_HEIGHT
-		var quad := QuadMesh.new()
-		quad.size = Vector2(height * backdrop.get_width() / float(backdrop.get_height()), height)
-		var picture := StandardMaterial3D.new()
-		picture.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		picture.albedo_texture = backdrop
-		picture.disable_fog = true
-		var panel := MeshInstance3D.new()
-		panel.mesh = quad
-		panel.material_override = picture
-		panel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		# The painted horizon (about 42% from the top) at the drone's eye level.
-		_backdrop_y = BACKDROP_EYE - 0.08 * height
-		add_child(panel)
-		_backdrop = panel
-	var catcher := StandardMaterial3D.new()
-	catcher.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	catcher.shadow_to_opacity = true
-	catcher.albedo_color = Color("5a3a1a")
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(80, 40)
-	var floor_instance := MeshInstance3D.new()
-	floor_instance.mesh = plane
-	floor_instance.material_override = catcher
-	floor_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	floor_instance.position = Vector3(_center_x, 0.0, 0)
-	add_child(floor_instance)
 
 
 ## A golden cup that floats over the winner's head.

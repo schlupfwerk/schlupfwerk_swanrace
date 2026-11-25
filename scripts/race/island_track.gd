@@ -64,6 +64,7 @@ var _water := PackedFloat32Array()
 var obstacles: Array[Dictionary] = []
 ## Logs across the track: {"distance", "lateral"}. Speed pads: same keys.
 var logs: Array[Dictionary] = []
+var _podium_spot := -1.0
 var boosters: Array[Dictionary] = []
 ## How far you can go to each side at point i before the ground folds over
 ## itself in a tight curve (positive = sea side).
@@ -399,3 +400,47 @@ func log_ahead(distance: float, lateral: float, to: float) -> Dictionary:
 		if gap < to and absf(lateral - log.lateral) < LOG_LENGTH * 0.5 + 0.8:
 			return log
 	return {}
+
+
+## Where the podium goes after the race: the straightest, flattest stretch of
+## wide sand (about 28 m), away from logs, the lake, speed pads and the start.
+## Returns the distance where the row of blocks begins.
+func podium_spot() -> float:
+	if _podium_spot >= 0.0:
+		return _podium_spot
+	var best := INF
+	var keep_clear: Array[float] = [0.0]
+	for log in logs:
+		keep_clear.append(log.distance)
+	for pad in boosters:
+		keep_clear.append(pad.distance)
+	var d := 20.0
+	while d < LAP_LENGTH - 40.0:
+		var score := 0.0
+		var low := INF
+		var high := -INF
+		var first := heading_at(index_at(d - 4.0))
+		var blocked := false
+		var step := -4.0
+		while step <= 24.0:
+			var at := d + step
+			var i := index_at(at)
+			var height := ground_height_at(at, 0.0)
+			low = minf(low, height)
+			high = maxf(high, height)
+			score += absf(wrapf(heading_at(i) - first, -PI, PI)) * 4.0
+			if water_line(i) - forest_edge(i) < 22.0 or lake_along(at) > -12.0 \
+					and lake_along(at) < LAKE_LENGTH + 4.0:
+				blocked = true
+			step += 2.0
+		for spot in keep_clear:
+			if absf(wrapf(spot - (d + 10.0), -LAP_LENGTH / 2.0, LAP_LENGTH / 2.0)) < 22.0:
+				blocked = true
+		score += (high - low) * 3.0
+		if not blocked and score < best:
+			best = score
+			_podium_spot = d
+		d += 4.0
+	if _podium_spot < 0.0:
+		_podium_spot = LAP_LENGTH * 0.4
+	return _podium_spot
