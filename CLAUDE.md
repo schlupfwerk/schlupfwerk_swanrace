@@ -113,7 +113,11 @@ prioridade.
   - No vestiário o cisne gira sozinho até o jogador girar (Q/E, LB/RB, analógico direito
     ou arrastando com o mouse). Cada opção é **‹ | valor | ›**: A/Cruz avança, X/Quadrado
     ou Backspace volta.
-  - cores escolhidas de uma **paleta** (esquerda/direita), para funcionar no controle.
+  - cores escolhidas de uma **paleta** de 25 cores (esquerda/direita), para funcionar no
+    controle. Nomes longos de opções diminuem a letra para caber inteiros (nunca "...").
+  - **Óculos:** redondo, quadrado, aviador, viseira e redondo pequeno.
+  - **Costas:** mochila, bolsas e ovo ficam perto do pescoço (`PACK_SHIFT`); a bolsa vai
+    deitada. Colares ficam no alto do pescoço, acima de golas e capuz.
 - **Apelido** de até 16 caracteres, com botão de sortear (para quem está sem teclado).
   Aparece acima do cisne e no HUD.
 - **Todos os cisnes têm exatamente a mesma habilidade.** Não existem cisnes mais
@@ -125,7 +129,8 @@ prioridade.
   mais rápido, **mais baixa a cabeça** e **mais as asas apontam para trás**.
 - **Roupas são camadas de tecido** separadas do corpo (`shaders/cloth.gdshader`): jaquetas e
   moletom são soltos, a barra balança e vai para trás com a velocidade; a regata é justa.
-- **Rosto:** cabeça e olhos maiores, sobrancelhas e **expressões** automáticas (feliz, bravo no
+- **Rosto:** cabeça comprida e bicuda, olhos grandes e baixos (cílios ficam livres dos
+  chapéus), sem sobrancelhas, e **expressões** automáticas (feliz, bravo no
   turbo/subida, surpreso no ar, tonto ao bater, chorando ao se afogar ou em último, rindo ao
   vencer); pisca de vez em quando. Pernas com **escamas** (tracinhos de pata de galinha).
 - **Pulo:** sobe rápido e **desce planando de asas abertas**.
@@ -421,7 +426,7 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
 ## Versionamento
 - **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
-- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.3**;
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.4**;
   só o dono do projeto decide quando ela sobe.
 - **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
   Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada

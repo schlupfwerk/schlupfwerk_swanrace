@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Swan Race"
-config/version="0.0.3"
+config/version="0.0.4"
 run/main_scene="res://scenes/intro.tscn"
 boot_splash/bg_color=Color(0.07450981, 0.13725491, 0.22745098, 1)
 config/features=PackedStringArray("4.7", "Mobile")

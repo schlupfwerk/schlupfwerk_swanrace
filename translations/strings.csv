@@ -214,3 +214,14 @@ AUTO_THROTTLE_ON,Auto speed on,Corrida automática ligada
 AUTO_THROTTLE_OFF,Manual speed,Corrida manual
 QUIT_GAME,Quit game,Sair do jogo
 QUIT_CONFIRM,Press again to quit,Aperte de novo para sair
+COLOR_SILVER,Silver,Prateado
+COLOR_MAGENTA,Magenta,Magenta
+COLOR_CORAL,Coral,Coral
+COLOR_WINE,Wine,Vinho
+COLOR_PEACH,Peach,Pêssego
+COLOR_LIME,Lime,Verde-limão
+COLOR_DARK_GREEN,Dark green,Verde-escuro
+COLOR_TURQUOISE,Turquoise,Turquesa
+COLOR_NAVY,Navy blue,Azul-marinho
+COLOR_LILAC,Lilac,Lilás
+GLASSES_SMALL_ROUND,Small round,Redondo pequeno
