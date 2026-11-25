@@ -13,6 +13,7 @@ enum Face { HAPPY, ANGRY, LAUGH, CRY, SURPRISED, DIZZY }
 const FEATHER_SHADER := preload("res://shaders/feather.gdshader")
 const LENS_SHADER := preload("res://shaders/lens.gdshader")
 const CLOTH_SHADER := preload("res://shaders/cloth.gdshader")
+const CAPE_SHADER := preload("res://shaders/cape.gdshader")
 const LEG_SHADER := preload("res://shaders/leg.gdshader")
 
 const BODY_HEIGHT := 1.15
@@ -101,7 +102,8 @@ var _dance_offset := randf() * TAU
 ## Celebrating on the podium (last place): see celebrate().
 var _celebrating := false
 var _jaw := Node3D.new()
-var _cape := Node3D.new()
+## The sock's foot: hidden inside closed footwear, or it pokes through.
+var _sock_feet: Array[MeshInstance3D] = []
 ## Everything on the back hangs from here and swings with the stride.
 var _back := Node3D.new()
 
@@ -151,8 +153,11 @@ func apply_look(look: SwanLook) -> void:
 	# Closed footwear hides the bare feet; the Japanese sandals show them.
 	var footwear := look.footwear()
 	var socks := look.is_wearing("socks")
+	var open_feet := footwear == "" or footwear == "flip_flops"
 	for foot in _bare_feet:
-		foot.visible = (footwear == "" or footwear == "flip_flops") and not socks
+		foot.visible = open_feet and not socks
+	for foot in _sock_feet:
+		foot.visible = open_feet and socks
 	# Jackets and the hoodie turn the wings into sleeves; roomy clothes move the
 	# wings out so they come through the fabric.
 	var outfit := look.slot_item("outfit")
@@ -243,10 +248,7 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_back.rotation.z = sin(_phase + 0.9) * 0.16 * moving
 	_back.rotation.x = absf(sin(_phase + 0.5)) * 0.12 * moving - 0.04 * moving
 	_back.position.y = 0.45 + absf(cos(_phase)) * 0.04 * moving
-	# The cape flies out behind as the swan speeds up.
-	var cape_lift := 0.12 + 1.0 * speed_ratio + sin(Time.get_ticks_msec() * 0.012) * 0.08 * speed_ratio
-	_cape.rotation.x = lerpf(_cape.rotation.x, cape_lift, smooth)
-	# Fabric trails behind with speed and bounces with the stride.
+	# Fabric (and the cape) trails behind with speed and bounces with the stride.
 	var sway := clampf(speed_ratio * 0.9 + absf(sin(_phase)) * 0.25 * moving, 0.0, 1.3)
 	for mat: ShaderMaterial in _cloth_mats.values():
 		mat.set_shader_parameter("sway", sway)
@@ -643,12 +645,9 @@ func _build_outfits() -> void:
 	_wear("winter_jacket", _add(_body_pivot, _torus(0.14, 0.3), Vector3(0, 0.43, -0.45),
 			Vector3(1, 1.4, 1), _item("winter_jacket"), Vector3(-0.35, 0, 0)))
 
-	# Tank top: tight, closed, with straps; the wings stay feathers.
-	_cloth("tank_top", 0.3, -0.3, 0.0, 0.035, 0.0, 0.12)
-	var tank := _item("tank_top")
-	for side in [-1.0, 1.0]:
-		_wear("tank_top", _add(_body_pivot, _box(Vector3(0.08, 0.03, 0.62)),
-				Vector3(0.26 * side, 0.43, -0.1), Vector3.ONE, tank, Vector3(0.2, 0, 0.25 * side)))
+	# Tank top: tight and closed, covering the back, with a scoop neck at the
+	# front and armholes for the wings (the wings stay feathers).
+	_cloth("tank_top", 0.41, -0.34, 0.0, 0.03, 0.0, 0.12, 0.17, 0.2)
 
 	# Hoodie: closed and roomy, a hood behind the neck, front pocket and strings.
 	_cloth("hoodie", 0.34, -0.4, 0.0, 0.1, 0.06, 0.8)
@@ -664,9 +663,10 @@ func _build_outfits() -> void:
 
 ## A fabric tube around the body, from `top` down to `bottom` (body space),
 ## leaving `gap` degrees open at the front. `margin` is how far it stands off
-## the feathers, `flare` how much wider the hem gets.
+## the feathers, `flare` how much wider the hem gets. `neckline` lowers the
+## top at the front and `armholes` at the sides.
 func _cloth(id: String, top: float, bottom: float, gap: float, margin: float, flare: float,
-		looseness: float) -> ShaderMaterial:
+		looseness: float, neckline := 0.0, armholes := 0.0) -> ShaderMaterial:
 	_item(id)
 	var mat := ShaderMaterial.new()
 	mat.shader = CLOTH_SHADER
@@ -681,14 +681,15 @@ func _cloth(id: String, top: float, bottom: float, gap: float, margin: float, fl
 	var grid := []
 	for j in rings + 1:
 		var t := float(j) / rings
-		var y := lerpf(top, bottom, t)
-		# Follow the body's egg shape, standing off it.
-		var shape := sqrt(maxf(0.2, 1.0 - pow(y / 0.44, 2.0)))
-		var rx := 0.5 * shape + margin + flare * t
-		var rz := 0.65 * shape + margin + flare * t
 		var row := []
 		for k in columns + 1:
 			var a := lerpf(from, to, float(k) / columns)
+			var edge := top - neckline * pow(maxf(cos(a), 0.0), 2.0) - armholes * pow(sin(a), 8.0)
+			var y := lerpf(edge, bottom, t)
+			# Follow the body's egg shape, standing off it.
+			var shape := sqrt(maxf(0.2, 1.0 - pow(y / 0.44, 2.0)))
+			var rx := 0.5 * shape + margin + flare * t
+			var rz := 0.65 * shape + margin + flare * t
 			row.append([Vector3(sin(a) * rx, y, -cos(a) * rz - 0.03), Vector2(float(k) / columns, t)])
 		grid.append(row)
 	for j in rings:
@@ -715,14 +716,14 @@ func _build_footwear() -> void:
 	var dark_sole := _toon(Color("3b2a1e"))
 	var wood_dark := _toon(WOOD.darkened(0.3))
 	for knee in _knees:
-		# Socks up to the middle of the shin, with a white stripe at the top.
+		# Knee socks: up the whole shin to the knee, with a white stripe at the top.
 		var socks := _item("socks")
-		_wear("socks", _add(knee, _cylinder(0.058, 0.062, 0.26, 12), Vector3(0, -0.29, 0.0),
+		_wear("socks", _add(knee, _cylinder(0.058, 0.064, 0.37, 12), Vector3(0, -0.235, 0.0),
 				Vector3.ONE, socks))
-		_wear("socks", _add(knee, _cylinder(0.064, 0.064, 0.035, 12), Vector3(0, -0.15, 0.0),
+		_wear("socks", _add(knee, _cylinder(0.068, 0.068, 0.035, 12), Vector3(0, -0.06, 0.0),
 				Vector3.ONE, white))
-		_wear("socks", _sphere(knee, 0.5, Vector3(0.2, 0.1, 0.34), Vector3(0, -0.395, -0.1), socks,
-				Vector3.ZERO, 12, 6))
+		_sock_feet.append(_wear("socks", _sphere(knee, 0.5, Vector3(0.2, 0.1, 0.34),
+				Vector3(0, -0.395, -0.1), socks, Vector3.ZERO, 12, 6)))
 		# Sneakers: chunky rounded shoe, white sole and laces.
 		_wear("sneakers", _add(knee, _shoe(0.1, 0.38), Vector3(0, -0.37, -0.08),
 				Vector3(1.1, 1.0, 0.75), _item("sneakers"), Vector3(PI / 2, 0, 0)))
@@ -778,26 +779,22 @@ func _build_back_items() -> void:
 	for side in [-1.0, 1.0]:
 		_wear("backpack", _add(_body_pivot, _torus(0.22, 0.26), Vector3(0.24 * side, 0.3, 0.0),
 				Vector3(0.5, 1.3, 1.6), strap_dark, Vector3(0, 0, PI / 2)))
-	# Shoulder bag: carried on the back, strap across the chest.
+	# Shoulder bag: carried on the back.
 	var bag := _item("bag")
-	_back_strap("bag", strap_dark)
 	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.56, 0.34, 0.22), Vector3(0, 0.5, 0.46),
 			bag, on_back))
 	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.58, 0.13, 0.24), Vector3(0, 0.63, 0.41),
 			bag, on_back))
-	# Superhero cape: hangs from the shoulders and flies back with speed.
+	# Superhero cape: tied at the shoulders, lies over the back and flies out
+	# behind with speed (cape.gdshader).
 	var cape := _item("cape")
-	cape.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_cape.position = Vector3(0, 0.36, -0.2)
-	_body_pivot.add_child(_cape)
-	_wear("cape", _add(_cape, _box(Vector3(0.95, 1.15, 0.03)), Vector3(0, -0.5, 0.42),
-			Vector3.ONE, cape, Vector3(-0.15, 0, 0)))
+	_wear("cape", _cape_mesh())
 	_wear("cape", _add(_body_pivot, _torus(0.14, 0.2), Vector3(0, 0.4, -0.45), Vector3.ONE, cape,
 			Vector3(-0.35, 0, 0)))
 	# Bags with a pet: the bag on the back, the head popping out of the top and
 	# looking back (at the camera and the swans behind).
-	_pet_bag("dog_bag", strap_dark, Color("c58a4a"), false)
-	_pet_bag("cat_bag", strap_dark, Color("9a9aa2"), true)
+	_pet_bag("dog_bag", Color("c58a4a"), false)
+	_pet_bag("cat_bag", Color("9a9aa2"), true)
 	# Ostrich egg carried on the back in a sling.
 	var sling := _item("ostrich_egg")
 	_wear("ostrich_egg", _sphere(_body_pivot, 0.5, Vector3(0.42, 0.52, 0.42), Vector3(0, 0.6, 0.36),
@@ -818,21 +815,64 @@ func _build_back_items() -> void:
 				_body_pivot.remove_child(mesh)
 				_back.add_child(mesh)
 				mesh.transform = to_back * xform
-	var cape_xform := _cape.transform
-	_body_pivot.remove_child(_cape)
-	_back.add_child(_cape)
-	_cape.transform = to_back * cape_xform
 
 
-## A strap from one shoulder across the chest to the other hip.
-func _back_strap(id: String, mat: Material) -> void:
-	_wear(id, _add(_body_pivot, _torus(0.52, 0.56), Vector3(0, 0.08, -0.02),
-			Vector3(1.0, 1.0, 1.2), mat, Vector3(0.3, 0, 0.9)))
+## The cape at rest: a sheet lying over the back (and the tail tuft), standing
+## off the feathers, from the shoulders to the tail. The shader lifts it.
+func _cape_mesh() -> MeshInstance3D:
+	var top_z := -0.24
+	var hem_z := 0.62
+	var width_top := 0.34
+	var width_hem := 0.78
+	var mat := ShaderMaterial.new()
+	mat.shader = CAPE_SHADER
+	mat.set_shader_parameter("top_y", _back_height(0.0, top_z) + 0.035)
+	mat.set_shader_parameter("top_z", top_z)
+	mat.set_shader_parameter("cape_length", 0.95)
+	mat.set_shader_parameter("width_top", width_top)
+	mat.set_shader_parameter("width_hem", width_hem)
+	_cloth_mats["cape"] = mat
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rows := 14
+	var columns := 12
+	var grid := []
+	for j in rows + 1:
+		var v := float(j) / rows
+		var z := lerpf(top_z, hem_z, v)
+		var width := lerpf(width_top, width_hem, v)
+		var row := []
+		for k in columns + 1:
+			var u := float(k) / columns
+			var x := (u - 0.5) * width
+			row.append([Vector3(x, _back_height(x, z) + 0.035, z), Vector2(u, v)])
+		grid.append(row)
+	for j in rows:
+		for k in columns:
+			for corner: Array in [[j, k], [j, k + 1], [j + 1, k + 1], [j, k], [j + 1, k + 1], [j + 1, k]]:
+				var point: Array = grid[corner[0]][corner[1]]
+				st.set_uv(point[1])
+				st.add_vertex(point[0])
+	st.index()
+	st.generate_normals()
+	var instance := MeshInstance3D.new()
+	instance.mesh = st.commit()
+	instance.material_override = mat
+	_body_pivot.add_child(instance)
+	_meshes.append(instance)
+	return instance
 
 
-func _pet_bag(id: String, strap: Material, fur_color: Color, cat: bool) -> void:
+## Height of the top of the body (and the tail tuft) at x, z (body space).
+static func _back_height(x: float, z: float) -> float:
+	var body := 0.425 * sqrt(maxf(0.0, 1.0 - pow(x / 0.5, 2.0) - pow(z / 0.65, 2.0)))
+	var tuft_in := 1.0 - pow(x / 0.26, 2.0) - pow((z - 0.6) / 0.28, 2.0)
+	var tuft := 0.2 + 0.2 * sqrt(tuft_in) if tuft_in > 0.0 else 0.0
+	return maxf(body, tuft)
+
+
+func _pet_bag(id: String, fur_color: Color, cat: bool) -> void:
 	var bag := _item(id)
-	_back_strap(id, strap)
 	_wear(id, _sphere(_body_pivot, 0.5, Vector3(0.5, 0.42, 0.32), Vector3(0, 0.52, 0.46), bag,
 			Vector3(-0.55, 0, 0)))
 	var fur := _toon(fur_color)

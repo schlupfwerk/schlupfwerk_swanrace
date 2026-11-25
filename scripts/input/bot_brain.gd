@@ -53,6 +53,11 @@ func update_intent(intent: SwanIntent, tick: float) -> void:
 		var gap := fposmod(pad.distance - distance, IslandTrack.LAP_LENGTH)
 		if gap > 4.0 and gap < 35.0 and _rng.randf() < skill * 0.05:
 			_lane = pad.lateral
+	# Ramps too: a good bot lines up for the leap.
+	for ramp in track.ramps:
+		var gap := fposmod(ramp.distance - distance, IslandTrack.LAP_LENGTH)
+		if gap > 4.0 and gap < 40.0 and _rng.randf() < skill * 0.05:
+			_lane = ramp.lateral
 	# On the lake, good bots take a bridge (and must jump its hole).
 	var lake_gap := -track.lake_along(distance)
 	if lake_gap > 0.0 and lake_gap < 25.0:

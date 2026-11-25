@@ -27,7 +27,12 @@ static func apply(swan: Swan, laps: LapTracker, track: IslandTrack) -> void:
 	var race_heading := track.heading_at(i)
 
 	var ground := track.ground_height_at(laps.distance, lateral)
-	swan.ground_y = ground
+	# Ramps: the swan runs up the slope and, at the top, takes off.
+	var ramp := track.ramp_height(laps.distance, lateral) if swan.motor.on_ground else 0.0
+	if ramp >= IslandTrack.RAMP_HEIGHT * IslandTrack.RAMP_LIP:
+		swan.motor.launch(ramp)
+		ramp = 0.0
+	swan.ground_y = ground + ramp
 	# Wet where there is water: the sea, or the shallow lake (not its bridges).
 	var in_lake := track.in_lake_water(laps.distance, lateral)
 	var in_water := ground < IslandTrack.SEA_LEVEL + 0.15 or in_lake

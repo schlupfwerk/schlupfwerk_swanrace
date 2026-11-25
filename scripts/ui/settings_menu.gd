@@ -296,6 +296,9 @@ func _refresh_rows() -> void:
 # --- Audio --------------------------------------------------------------------
 
 func _build_audio_page(list: VBoxContainer) -> void:
+	_add_row(list, "SOUND", OFF_ON, int(Settings.sound_on), func(i: int) -> void:
+		Settings.sound_on = i == 1
+		Settings.apply_audio())
 	for entry in [["MASTER_VOLUME", "master_volume"], ["MUSIC_VOLUME", "music_volume"],
 			["SFX_VOLUME", "sfx_volume"]]:
 		var row := SliderRow.new().setup(tr(entry[0]), Settings.get(entry[1]))

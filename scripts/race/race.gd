@@ -125,7 +125,14 @@ func _spawn_racers() -> void:
 		var racer := {"swan": swan, "laps": laps, "player": is_player, "finished": false,
 				"time": 0.0, "name": "", "best": 0.0}
 		if is_player:
-			swan.brain = PlayerInput.new()
+			var player_input := PlayerInput.new()
+			# Easy: automatic throttle, the buttons take over when used.
+			if Settings.difficulty == 0:
+				player_input.auto_throttle = true
+				player_input.motor = swan.motor
+				player_input.auto_changed.connect(func(on: bool) -> void:
+					_hud.show_message(tr("AUTO_THROTTLE_ON" if on else "AUTO_THROTTLE_OFF"), 2.0))
+			swan.brain = player_input
 			swan.look = Profile.look
 			_player = racer
 			player_laps = laps

@@ -67,6 +67,8 @@ var master_volume := 100
 var music_volume := 80
 var sfx_volume := 100
 var mute_in_background := true
+## All sound on or off (shortcut M / Back-View-Share on the controller).
+var sound_on := true
 
 ## GPU names learned by running with an explicit --gpu-index: index -> name.
 var _known_gpus := {}
@@ -74,6 +76,8 @@ var _known_gpus := {}
 var _gpu_boot_ok := true
 var _fps_label := Label.new()
 var _fps_timer := 0.0
+var _sound_toast := Label.new()
+var _sound_toast_tween: Tween
 
 
 func _ready() -> void:
@@ -129,7 +133,7 @@ func _load_preset(value: Quality) -> void:
 func reset_to_defaults() -> void:
 	var keep_gpu := gpu_index
 	for property in ["window_mode", "resolution", "monitor", "vsync", "fps_limit", "show_fps",
-			"fov", "master_volume", "music_volume", "sfx_volume", "mute_in_background"]:
+			"fov", "master_volume", "music_volume", "sfx_volume", "mute_in_background", "sound_on"]:
 		set(property, get_script().get_property_default_value(property))
 	_set_platform_defaults()
 	set_quality(Quality.HIGH if is_desktop() else Quality.MEDIUM)
@@ -206,10 +210,49 @@ func configure_detail(instance: MultiMeshInstance3D) -> void:
 
 
 func apply_audio() -> void:
-	_set_bus("Master", master_volume)
+	_set_bus("Master", master_volume if sound_on else 0)
 	_set_bus("Music", music_volume)
 	_set_bus("SFX", sfx_volume)
 	changed.emit()
+
+
+## The sound shortcut works everywhere (menus, race, podium), except while
+## typing a nickname: the text field takes the key first.
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_sound") and not event.is_echo():
+		get_viewport().set_input_as_handled()
+		toggle_sound()
+
+
+func toggle_sound() -> void:
+	sound_on = not sound_on
+	apply_audio()
+	_save_sound_on()
+	_show_sound_toast()
+
+
+## Saves only this choice, so unconfirmed changes in an open settings menu
+## are not saved along with it.
+func _save_sound_on() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVE_PATH) != OK:
+		save_settings()
+		return
+	cfg.set_value("audio", "sound_on", sound_on)
+	var error := cfg.save(SAVE_PATH)
+	if error != OK:
+		push_warning("Could not save settings: %s" % error_string(error))
+
+
+func _show_sound_toast() -> void:
+	_sound_toast.text = tr("SOUND_ON_TOAST" if sound_on else "SOUND_OFF_TOAST")
+	_sound_toast.modulate.a = 1.0
+	_sound_toast.visible = true
+	if _sound_toast_tween:
+		_sound_toast_tween.kill()
+	_sound_toast_tween = create_tween()
+	_sound_toast_tween.tween_interval(1.2)
+	_sound_toast_tween.tween_property(_sound_toast, "modulate:a", 0.0, 0.4)
 
 
 func _set_bus(bus_name: String, volume: int) -> void:
@@ -342,6 +385,16 @@ func _build_fps_overlay() -> void:
 	_fps_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_fps_label.visible = show_fps
 	layer.add_child(_fps_label)
+	# "Sound off" / "Sound on" notice, shown briefly at the top.
+	_sound_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_sound_toast.offset_top = 70
+	_sound_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_sound_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sound_toast.add_theme_font_size_override("font_size", 26)
+	_sound_toast.add_theme_constant_override("outline_size", 8)
+	_sound_toast.add_theme_color_override("font_outline_color", Color.BLACK)
+	_sound_toast.visible = false
+	layer.add_child(_sound_toast)
 	changed.connect(func() -> void: _fps_label.visible = show_fps)
 
 
@@ -373,7 +426,7 @@ func save_settings() -> void:
 		cfg.set_value("video", key, get(key))
 	cfg.set_value("video", "known_gpus", _known_gpus)
 	cfg.set_value("video", "gpu_boot_ok", _gpu_boot_ok)
-	for key in ["master_volume", "music_volume", "sfx_volume", "mute_in_background"]:
+	for key in ["master_volume", "music_volume", "sfx_volume", "mute_in_background", "sound_on"]:
 		cfg.set_value("audio", key, get(key))
 	var error := cfg.save(SAVE_PATH)
 	if error != OK:
@@ -413,6 +466,7 @@ func load_settings() -> void:
 	music_volume = clampi(cfg.get_value("audio", "music_volume", music_volume), 0, 100)
 	sfx_volume = clampi(cfg.get_value("audio", "sfx_volume", sfx_volume), 0, 100)
 	mute_in_background = bool(cfg.get_value("audio", "mute_in_background", mute_in_background))
+	sound_on = bool(cfg.get_value("audio", "sound_on", sound_on))
 
 
 func _set_platform_defaults() -> void:

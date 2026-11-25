@@ -57,7 +57,8 @@ conforme o terreno:
 | Ar | mergulhar (+velocidade, perde altura) | planar (–velocidade, mantém altura) | bater asas (ganha altura) |
 
 No teclado (PC): A/D ou setas para virar, W/↑ para acelerar,
-S/↓ para frear e Espaço para pular.
+S/↓ para frear e Espaço para pular. **M** liga/desliga o som em qualquer tela (no
+controle: **Back/View/Share**), com aviso na tela; a escolha fica salva (`Settings.sound_on`).
 
 **Controle (gamepad)**, em todas as plataformas: Xbox, PS4/PS5 e controles genéricos
 Bluetooth no celular (Android e iOS). Analógico esquerdo ou direcional para virar,
@@ -144,7 +145,16 @@ prioridade.
   grafismo na borda, um cipó de folhas que cresce com a velocidade e uma pena como
   ponteiro.
 
+## Abertura (`scenes/intro.tscn`, cena inicial)
+- Depois do splash da Godot (fundo azul-marinho da marca), o cartão do estúdio: logo
+  **Schlupfwerk** (`assets/brand/schlupfwerk_logo.svg`, cópia do site, importado em 14×) e
+  "INDIE GAMES"; qualquer botão pula.
+- Depois, o título: um ovo grande balança três vezes e **choca o cisne**, que buzina;
+  aparecem "SCHLUPFWERK" e "SWAN RACE" e o "Pressione Start/Enter/Options" piscando. Start,
+  Enter, A, clique ou toque vão para o menu (antes do ovo chocar, adianta tudo).
+
 ## Menu (home, `scenes/home.tscn`)
+- **No PC**, a aba Correr tem **Sair do jogo** (pede confirmação: aperta de novo).
 - **Abas no topo:** **Meus personagens | Correr | Configurações**. Troca pelas **setas**: ↑ no topo
   do conteúdo leva às abas, ←/→ troca (uma vez por toque), ↓ entra. Também Tab/PgUp ou clique.
   **Gatilhos não trocam de aba** (disparavam várias vezes). Abre na aba Correr. Música suave.
@@ -181,7 +191,8 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - **Placa de vídeo:** por padrão a Godot escolhe a **dedicada** (Vulkan prefere GPU
   dedicada). O jogador pode escolher outra; aplica reiniciando com `--gpu-index`. Se a
   placa escolhida não abrir, o jogo volta sozinho para a automática.
-- **Áudio:** volume geral, música e efeitos (padrão de mercado) e som em segundo plano.
+- **Áudio:** som ligado/desligado (também pelo atalho M / Back), volume geral, música e
+  efeitos (padrão de mercado) e som em segundo plano.
 - Cenário novo deve respeitar as configurações: sol no grupo `sun`
   (`Settings.configure_sun`), enfeites em MultiMesh no grupo `scenery_detail`
   (`Settings.configure_detail`).
@@ -207,7 +218,7 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   e melhor volta salva.
 
 **Obstáculos e atrações da pista** (`IslandTrack`, posições fixas na volta):
-- **Troncos grandes** atravessados (4 por volta, 9 m de largura, bandeiras vermelhas nas
+- **Troncos grandes** atravessados (4 por volta; o último bem depois da 3ª rampa, 9 m de largura, bandeiras vermelhas nas
   pontas): dá para pular ou contornar pelas bordas. **Batendo de frente** num tronco ou numa pedra,
   o cisne para e **reaparece logo depois do obstáculo**, a 0 km/h e piscando por 2 s (nunca fica
   preso). Raspando de lado, só desliza.
@@ -215,6 +226,12 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   ponte, água, ponte, água). Cada ponte tem um **buraco**, a 30% e a 70% do comprimento:
   pule ou caia na água. A ponte não tem divisórias: só **postes vermelhos e brancos em volta do buraco**.
 - **Aceleradores** no chão (4 por volta): empurrão forte e +30% de velocidade por ~1,4 s.
+  As setas apontam para a frente.
+- **Rampas** de madeira (3 por volta, `IslandTrack.RAMP_SPOTS`, borda amarela e preta): o
+  cisne sobe e, no topo, dá um **pulão** (mais alto quanto mais rápido; ~2 m e ~30 m de voo
+  a toda), com um empurrão curto, e **plana perdendo velocidade** até pousar perto da
+  velocidade normal. Ficam nas retas mais planas e largas: a 1ª passa **por cima do tronco**,
+  a 3ª vem logo depois de um acelerador (combo). Os bots bons miram nelas.
 - **Alerta de obstáculo** (Configurações → Geral, liga/desliga): "Pule!!" antes de troncos e
   buracos.
 - A altura do chão é **interpolada** entre as amostras da pista (sem degraus nas subidas).
@@ -235,7 +252,9 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   progressivo**: gatilho todo abre a asa inteira e para em ~1,2 s; meio gatilho abre meia asa
   e freia pela metade.
 - **Na curva** o cisne inclina o corpo e vira a cabeça para o lado da curva.
-- **Relevo:** a pista tem subidas e descidas (até ~15 m, rampas de até ~16%; na subida a
+- **Relevo:** a pista tem subidas e descidas (até ~13 m, inclinação de até ~11% fora do lago,
+  medida pela distância percorrida, não por amostra; a borda da água e do mato estreita aos
+  poucos, sem "dentes" que jogam o cisne num barranco; na subida a
   câmera abaixa e o cisne sua) e é
   **inclinada nas curvas** (até ~12°, o lado de dentro mais baixo). Subida: perde velocidade e
   o máximo cai até 75%; descida: ganha velocidade e passa dos 50 km/h (até 130%). O cisne
@@ -266,6 +285,9 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   −30%) e volta ao soltar. **Pouso** de pulo tira 5% da velocidade.
 - **Minimapa** no canto superior esquerdo com o ponto de GPS de cada cisne.
 - **Dificuldade** (Fácil, Médio, Difícil) em Configurações → Geral; os bots vão usar.
+  **No fácil o cisne corre sozinho** (pensando em criança no celular): acelera e tira o pé em
+  curva forte a toda. Os botões de acelerar e frear continuam valendo: usou, vira **manual**;
+  4 s sem tocar em nenhum dos dois, volta o **automático** (aviso na tela nas duas trocas).
   **Dicas** (seta no alto da tela apontando para onde a pista vai e avisos como "Use o
   turbo!!" numa subida forte): automático (ligado no fácil e no médio), ligado ou desligado.
 
@@ -399,7 +421,7 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
 ## Versionamento
 - **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
-- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.2**;
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.3**;
   só o dono do projeto decide quando ela sobe.
 - **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
   Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada
