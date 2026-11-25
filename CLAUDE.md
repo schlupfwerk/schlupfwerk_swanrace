@@ -385,7 +385,7 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
 ## Versionamento
 - **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
-- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.1**;
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.2**;
   só o dono do projeto decide quando ela sobe.
 - **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
   Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada

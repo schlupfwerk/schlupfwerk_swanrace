@@ -41,7 +41,7 @@ whatever you use.
 
 ## Status
 
-🐣 **Alpha 0.0.1**: playable prototype on Windows. One track (the Desert Island),
+🐣 **Alpha 0.0.2**: playable prototype on Windows. One track (the Desert Island),
 AI racers, character customization. Expect rough edges and big changes.
 
 ## Building
