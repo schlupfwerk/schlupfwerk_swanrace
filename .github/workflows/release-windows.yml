@@ -1,7 +1,9 @@
-# Builds the Windows version of the game from the tagged source and attaches
+
+# Builds the Windows version of the game from tagged source and attaches
 # it to the GitHub release. Runs on every version tag (v0.0.6-alpha, v1.0.0...)
-# or by hand from the Actions tab (then the zip is only kept as an artifact).
-# Code signing (SignPath Foundation) will be a step between export and package.
+# or manually from the Actions tab (then the zip is only kept as an artifact).
+# Code signing (SignPath Foundation) will be added between export and package.
+
 name: Release (Windows)
 
 on:
@@ -21,6 +23,7 @@ jobs:
     defaults:
       run:
         shell: bash
+
     steps:
       - name: Check out the tagged source
         uses: actions/checkout@v4
@@ -28,6 +31,13 @@ jobs:
           lfs: true
           # The build number is the commit count, so the whole history is needed.
           fetch-depth: 0
+
+      # Only publish releases from commits that belong to main.
+      - name: Verify release source
+        if: github.ref_type == 'tag'
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
       - name: Install Godot and the Windows export templates
         run: |
@@ -44,7 +54,6 @@ jobs:
           echo "GODOT=$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-stable_win64_console.exe" >> "$GITHUB_ENV"
 
       - name: Import the project
-        # The .godot cache is not in the repository; build it once before exporting.
         run: '"$GODOT" --headless --path . --import'
 
       - name: Export the game
@@ -74,7 +83,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Alpha and beta tags are published as pre-releases.
           prerelease=""
           if [[ "$GITHUB_REF_NAME" == *alpha* || "$GITHUB_REF_NAME" == *beta* ]]; then prerelease="--prerelease"; fi
           gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 \
