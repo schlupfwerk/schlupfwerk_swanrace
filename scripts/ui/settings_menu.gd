@@ -35,6 +35,23 @@ func _ready() -> void:
 		Settings.save_settings()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = UiTheme.make()
+	InputGlyphs.changed.connect(_update_hint)
+	_build()
+
+
+## Builds every child. Called again by _rebuild (new language or defaults):
+## the menu stays the same node, so whoever opened it can still close it.
+func _build() -> void:
+	_tab_buttons.clear()
+	_pages.clear()
+	_resolutions.clear()
+	_advanced_rows.clear()
+	_advanced_box = VBoxContainer.new()
+	_advanced_button = Button.new()
+	_quality_row = null
+	_resolution_row = null
+	_gpu_info = Label.new()
+	_hint = Label.new()
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.55)
 	add_child(dim)
@@ -90,22 +107,16 @@ func _ready() -> void:
 	reset.pressed.connect(_on_reset)
 	buttons.add_child(reset)
 	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Changes show at once; Apply saves them and goes back. B/Esc cancels.
 	var apply := Button.new()
 	apply.text = tr("APPLY")
 	apply.custom_minimum_size = Vector2(160, 48)
 	apply.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	apply.pressed.connect(func() -> void: Settings.save_settings())
+	apply.pressed.connect(_confirm)
 	buttons.add_child(apply)
-	# Below: confirm (save and go back). B/Esc cancels.
-	var confirm := Button.new()
-	confirm.text = tr("CONFIRM")
-	confirm.custom_minimum_size.y = 52
-	confirm.pressed.connect(_confirm)
-	column.add_child(confirm)
 
 	_hint.add_theme_font_size_override("font_size", 18)
 	column.add_child(_hint)
-	InputGlyphs.changed.connect(_update_hint)
 	_update_hint()
 	_show_tab(start_tab)
 
@@ -356,11 +367,11 @@ func _on_reset() -> void:
 
 ## Builds the menu again (new language or defaults), on the same tab.
 func _rebuild() -> void:
-	var replacement := SettingsMenu.new()
-	replacement.start_tab = _tab
-	replacement.closed.connect(func() -> void: closed.emit())
-	get_parent().add_child(replacement)
-	queue_free()
+	start_tab = _tab
+	for child in get_children():
+		remove_child(child)
+		child.queue_free()
+	_build()
 
 
 ## Confirm: keep and save everything, then close.
