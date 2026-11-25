@@ -75,6 +75,18 @@ static func _build_sea(parent: Node3D, radius: float) -> void:
 	parent.add_child(sea)
 
 
+## Height of a beach profile (see _beach_profile) at a lateral offset, straight
+## between its points, like the drawn mesh.
+static func _profile_height(profile: Array, lateral: float) -> float:
+	for n in profile.size() - 1:
+		var a: Array = profile[n]
+		var b: Array = profile[n + 1]
+		if lateral <= b[0]:
+			var t := clampf((lateral - a[0]) / maxf(b[0] - a[0], 0.001), 0.0, 1.0)
+			return lerpf(a[1], b[1], t)
+	return profile[-1][1]
+
+
 static func _beach_profile(track: IslandTrack, i: int) -> Array:
 	var forest := track.forest_edge(i)
 	var water := track.water_line(i)
@@ -463,18 +475,26 @@ static func _build_start_line(parent: Node3D, track: IslandTrack) -> void:
 	var right_edge := track.water_line(0) + 1.0
 	var width := right_edge - left_edge
 
-	# Checkered stripe that follows the banked sand.
+	# Checkered stripe that follows the banked sand. Every corner takes the
+	# height of the sand right under it (front and back edges too, the line is
+	# on a slope), so no part of it sinks into the sand.
 	var st := MeshKit.begin()
-	var steps := 16
+	var steps := 48
+	# Heights from the drawn sand mesh (straight between its profile points),
+	# not the smooth ground: where the two differ the mesh would cover the line.
+	var corner := func(lateral: float, along: float) -> Vector3:
+		var i := track.index_at(fposmod(along, IslandTrack.LAP_LENGTH))
+		var height := maxf(_profile_height(_beach_profile(track, i), lateral),
+				_profile_height(_beach_profile(track, i + 1), lateral))
+		height = maxf(height, track.ground_height_at(fposmod(along, IslandTrack.LAP_LENGTH), lateral))
+		return _v3(track.edge(0, lateral), height + 0.05) + forward * along
 	for n in steps:
 		var l0 := lerpf(left_edge, right_edge, float(n) / steps)
 		var l1 := lerpf(left_edge, right_edge, float(n + 1) / steps)
-		var a := _v3(track.edge(0, l0), track.ground_height(0, l0) + 0.03)
-		var b := _v3(track.edge(0, l1), track.ground_height(0, l1) + 0.03)
 		var u0 := float(n) / steps
 		var u1 := float(n + 1) / steps
-		var quad := [[a - forward * 0.4, Vector2(u0, 0)], [b - forward * 0.4, Vector2(u1, 0)],
-				[b + forward * 0.4, Vector2(u1, 1)], [a + forward * 0.4, Vector2(u0, 1)]]
+		var quad := [[corner.call(l0, -0.4), Vector2(u0, 0)], [corner.call(l1, -0.4), Vector2(u1, 0)],
+				[corner.call(l1, 0.4), Vector2(u1, 1)], [corner.call(l0, 0.4), Vector2(u0, 1)]]
 		for k: int in [0, 1, 2, 0, 2, 3]:
 			st.set_uv(quad[k][1])
 			st.set_normal(Vector3.UP)

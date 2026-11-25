@@ -15,6 +15,8 @@ var _name := Label.new()
 var _value := Label.new()
 var _prev := Button.new()
 var _next := Button.new()
+## Normal text size; long names and values shrink below it to fit, never "...".
+var _text_size := 21
 
 
 func setup(p_label: String, p_options: PackedStringArray, p_index: int) -> OptionRow:
@@ -73,7 +75,8 @@ func _build() -> void:
 	_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name.size_flags_stretch_ratio = 0.75
 	_name.clip_text = true
-	_name.add_theme_font_size_override("font_size", 21)
+	_name.add_theme_font_size_override("font_size", _text_size)
+	_name.resized.connect(_fit_texts)
 	_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(_name)
@@ -82,6 +85,21 @@ func _build() -> void:
 		arrow.focus_mode = Control.FOCUS_NONE
 		arrow.custom_minimum_size = Vector2(38, 0)
 		arrow.add_theme_font_size_override("font_size", 26)
+		# Own slim style: the theme's button padding made the arrows taller than
+		# the row (they hung below it). The extra bottom margin lifts the ‹ ›
+		# glyphs, which sit low in the font, to the middle of the row.
+		for state in ["normal", "hover", "pressed", "disabled"]:
+			var box_style := StyleBoxFlat.new()
+			box_style.bg_color = Color(1, 1, 1, {"normal": 0.07, "hover": 0.16, "pressed": 0.26,
+					"disabled": 0.03}[state])
+			box_style.set_corner_radius_all(8)
+			box_style.content_margin_left = 0
+			box_style.content_margin_right = 0
+			box_style.content_margin_top = 0
+			box_style.content_margin_bottom = 4
+			arrow.add_theme_stylebox_override(state, box_style)
+		arrow.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		arrow.size_flags_vertical = Control.SIZE_FILL
 	_prev.text = "‹"
 	_next.text = "›"
 	_prev.pressed.connect(func() -> void: change(-1))
@@ -90,8 +108,9 @@ func _build() -> void:
 	_value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_value.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_value.add_theme_font_size_override("font_size", 21)
+	_value.clip_text = true
+	_value.add_theme_font_size_override("font_size", _text_size)
+	_value.resized.connect(_fit_texts)
 	_value.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(_prev)
 	box.add_child(_value)
@@ -109,6 +128,21 @@ func _refresh() -> void:
 	var shade := Color(1, 1, 1, 0.4) if disabled else Color.WHITE
 	_name.modulate = shade
 	_value.modulate = shade
+	_fit_texts()
+
+
+## Shrinks the name or the value (down to 11 px) when it does not fit at the
+## normal size, so every option reads in full.
+func _fit_texts() -> void:
+	for label: Label in [_name, _value]:
+		if label.size.x <= 1.0:
+			continue
+		var font := label.get_theme_font("font")
+		var text_size := _text_size
+		while text_size > 11 and font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
+				text_size).x > label.size.x:
+			text_size -= 1
+		label.add_theme_font_size_override("font_size", text_size)
 
 
 func _notification(what: int) -> void:
@@ -128,8 +162,10 @@ func set_enabled(enabled: bool) -> void:
 func compact() -> OptionRow:
 	custom_minimum_size.y = 34
 	_name.custom_minimum_size.x = 150
-	_name.add_theme_font_size_override("font_size", 17)
-	_value.add_theme_font_size_override("font_size", 17)
+	_text_size = 17
+	_name.add_theme_font_size_override("font_size", _text_size)
+	_value.add_theme_font_size_override("font_size", _text_size)
+	_fit_texts()
 	for arrow: Button in [_prev, _next]:
 		arrow.custom_minimum_size.x = 30
 		arrow.add_theme_font_size_override("font_size", 20)

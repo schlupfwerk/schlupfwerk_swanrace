@@ -27,16 +27,27 @@ const OUTLINE_WIDTH := 0.008
 const SLEEVED := ["jacket", "winter_jacket", "hoodie"]
 const DARK := Color("151518")
 const WOOD := Color("8a6440")
-## Eye shape per expression: eye height, pupil size, brow height, brow tilt
-## (positive = inner end down, angry).
+## Eye shape per expression: eye height, pupil size.
 const EXPRESSIONS := {
-	Face.HAPPY: [0.85, 1.0, 0.17, -0.15],
-	Face.ANGRY: [0.7, 0.9, 0.145, 0.55],
-	Face.LAUGH: [0.16, 1.0, 0.19, -0.35],
-	Face.CRY: [0.8, 1.05, 0.165, -0.55],
-	Face.SURPRISED: [1.15, 0.65, 0.215, -0.1],
-	Face.DIZZY: [0.95, 1.0, 0.18, 0.0],
+	Face.HAPPY: [0.85, 1.0],
+	Face.ANGRY: [0.7, 0.9],
+	Face.LAUGH: [0.16, 1.0],
+	Face.CRY: [0.8, 1.05],
+	Face.SURPRISED: [1.15, 0.65],
+	Face.DIZZY: [0.95, 1.0],
 }
+## Head shape: the beak (and what sits on it) starts this much further forward
+## than on a round head, for a longer, pointier face.
+const SNOUT := 0.1
+## Eyes sit low on the head, well under any hat, so the lashes show.
+const EYE_Y := -0.02
+## Packs on the back (not the cape) sit this far from where they were drawn:
+## forward and up, close to the neck instead of on the tail.
+const PACK_SHIFT := Vector3(0, 0.08, -0.22)
+## Hats sit this much higher than they used to (caps and beanies come down
+## over the forehead; brimmed hats rest on top of the head).
+const HAT_LIFT := 0.09
+const BRIM_LIFT := 0.02
 
 static var _outline: StandardMaterial3D
 
@@ -74,7 +85,6 @@ var _item_mats := {}
 var _cloth_mats := {}
 var _eyes: Array[Node3D] = []
 var _pupils: Array[Node3D] = []
-var _brows: Array[Node3D] = []
 var _tears: CPUParticles3D
 var _blink := 0.0
 var _next_blink := 3.0
@@ -274,7 +284,7 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 		_celebrate_pose()
 
 
-## Eyes, pupils and brows follow the expression; the swan blinks now and then.
+## Eyes and pupils follow the expression; the swan blinks now and then.
 func _animate_face(delta: float) -> void:
 	var shape: Array = EXPRESSIONS[expression]
 	var blend := 1.0 - exp(-12.0 * delta)
@@ -295,9 +305,6 @@ func _animate_face(delta: float) -> void:
 			pupil.position = Vector3(0.025 * side_sign, 0.01, -0.045) + Vector3(cos(t), sin(t), 0) * 0.018
 		else:
 			pupil.position = pupil.position.lerp(Vector3(0.025 * side_sign, 0.01, -0.045), blend)
-		var brow := _brows[side]
-		brow.position.y = lerpf(brow.position.y, shape[2], blend)
-		brow.rotation.z = lerp_angle(brow.rotation.z, -shape[3] * side_sign, blend)
 	if _celebrating:
 		# Wink: the left eye shut tight, the right one wide open.
 		_eyes[0].scale.y = 0.1
@@ -350,15 +357,18 @@ func _build_head() -> void:
 	_head.position = Vector3(0, 0.94, -0.2)
 	_head.scale = Vector3.ONE * HEAD_SCALE
 	_neck.add_child(_head)
-	_sphere(_head, 0.21, Vector3(0.95, 0.95, 1.1), Vector3.ZERO, _feather_mat)
-	_add(_head, _cylinder(0.085, 0.015, 0.3, 12), Vector3(0, -0.04, -0.3), Vector3.ONE,
+	# A long, pointy head: stretched forward, then a feathered snout tapering
+	# into the beak.
+	_sphere(_head, 0.21, Vector3(0.92, 0.95, 1.3), Vector3.ZERO, _feather_mat)
+	_sphere(_head, 0.13, Vector3(0.95, 0.8, 1.5), Vector3(0, -0.035, -0.2), _feather_mat)
+	_add(_head, _cylinder(0.085, 0.015, 0.3, 12), Vector3(0, -0.04, -0.3 - SNOUT), Vector3.ONE,
 			_toon(BEAK_COLOR), Vector3(-PI / 2, 0, 0))
-	# Big cartoon eyes: each eye squashes for expressions and blinks; brows above.
+	# Big cartoon eyes, low on the head: each eye squashes for expressions and blinks.
 	var white := _toon(Color.WHITE)
 	var black := _toon(DARK)
 	for side in [-1.0, 1.0]:
 		var eye := Node3D.new()
-		eye.position = Vector3(0.12 * side, 0.065, -0.12)
+		eye.position = Vector3(0.12 * side, EYE_Y, -0.12)
 		_head.add_child(eye)
 		_eyes.append(eye)
 		_sphere(eye, 0.078, Vector3.ONE, Vector3.ZERO, white)
@@ -368,11 +378,6 @@ func _build_head() -> void:
 		_pupils.append(pupil)
 		_sphere(pupil, 0.042, Vector3.ONE, Vector3.ZERO, black)
 		_sphere(pupil, 0.012, Vector3.ONE, Vector3(-0.012, 0.015, -0.03), white, Vector3.ZERO, 6, 4)
-		var brow := Node3D.new()
-		brow.position = Vector3(0.12 * side, 0.17, -0.15)
-		_head.add_child(brow)
-		_brows.append(brow)
-		_capsule(brow, 0.013, 0.11, Vector3.ZERO, black, Vector3(0, 0, PI / 2))
 	# Tears for the crying face.
 	_tears = CPUParticles3D.new()
 	_tears.emitting = false
@@ -389,7 +394,8 @@ func _build_head() -> void:
 	drop.material = drop_mat
 	_tears.mesh = drop
 	_tears.emission_shape = CPUParticles3D.EMISSION_SHAPE_POINTS
-	_tears.emission_points = PackedVector3Array([Vector3(-0.17, 0.02, -0.15), Vector3(0.17, 0.02, -0.15)])
+	_tears.emission_points = PackedVector3Array([Vector3(-0.17, EYE_Y - 0.045, -0.15),
+			Vector3(0.17, EYE_Y - 0.045, -0.15)])
 	_tears.direction = Vector3(0, -1, -0.2)
 	_tears.spread = 15.0
 	_tears.initial_velocity_min = 0.4
@@ -472,51 +478,58 @@ func _wear(id: String, mesh: MeshInstance3D) -> MeshInstance3D:
 
 func _build_head_items() -> void:
 	var band := _toon(Color("3a2a22"))
+	# Hats sit on their own pivot, a little above the head, clear of the eyes.
+	var hats := Node3D.new()
+	hats.position.y = HAT_LIFT
+	_head.add_child(hats)
+	var brimmed := Node3D.new()
+	brimmed.position.y = BRIM_LIFT
+	_head.add_child(brimmed)
 	# Cap.
 	var cap := _item("cap")
-	_wear("cap", _add(_head, _dome(0.225), Vector3(0, 0.06, 0.02), Vector3(1, 1, 1.05), cap))
-	_wear("cap", _add(_head, _cylinder(0.17, 0.17, 0.025, 16), Vector3(0, 0.07, -0.19),
+	_wear("cap", _add(hats, _dome(0.225), Vector3(0, 0.06, 0.02), Vector3(1, 1, 1.05), cap))
+	_wear("cap", _add(hats, _cylinder(0.17, 0.17, 0.025, 16), Vector3(0, 0.07, -0.19),
 			Vector3(1, 1, 1.25), cap))
-	_wear("cap", _sphere(_head, 0.03, Vector3.ONE, Vector3(0, 0.29, 0.02), cap))
+	_wear("cap", _sphere(hats, 0.03, Vector3.ONE, Vector3(0, 0.29, 0.02), cap))
 	# Straw hat: wide brim, low crown, ribbon.
 	var straw := _item("straw_hat")
-	_wear("straw_hat", _add(_head, _cylinder(0.44, 0.44, 0.03, 24), Vector3(0, 0.13, 0),
+	_wear("straw_hat", _add(brimmed, _cylinder(0.44, 0.44, 0.03, 24), Vector3(0, 0.13, 0),
 			Vector3.ONE, straw))
-	_wear("straw_hat", _add(_head, _cylinder(0.2, 0.17, 0.17, 18), Vector3(0, 0.22, 0),
+	_wear("straw_hat", _add(brimmed, _cylinder(0.2, 0.17, 0.17, 18), Vector3(0, 0.22, 0),
 			Vector3.ONE, straw))
-	_wear("straw_hat", _add(_head, _cylinder(0.205, 0.2, 0.05, 18), Vector3(0, 0.17, 0),
+	_wear("straw_hat", _add(brimmed, _cylinder(0.205, 0.2, 0.05, 18), Vector3(0, 0.17, 0),
 			Vector3.ONE, _toon(Color("c0392b"))))
 	# Top hat: tall crown and a band.
 	var top := _item("top_hat")
-	_wear("top_hat", _add(_head, _cylinder(0.3, 0.3, 0.03, 20), Vector3(0, 0.15, 0),
+	_wear("top_hat", _add(brimmed, _cylinder(0.3, 0.3, 0.03, 20), Vector3(0, 0.15, 0),
 			Vector3.ONE, top))
-	_wear("top_hat", _add(_head, _cylinder(0.17, 0.18, 0.4, 18), Vector3(0, 0.36, 0),
+	_wear("top_hat", _add(brimmed, _cylinder(0.17, 0.18, 0.4, 18), Vector3(0, 0.36, 0),
 			Vector3.ONE, top))
-	_wear("top_hat", _add(_head, _cylinder(0.185, 0.185, 0.06, 18), Vector3(0, 0.2, 0),
+	_wear("top_hat", _add(brimmed, _cylinder(0.185, 0.185, 0.06, 18), Vector3(0, 0.2, 0),
 			Vector3.ONE, band))
 	# Cowboy hat: curled brim and a rounded crown.
 	var cowboy := _item("cowboy_hat")
-	_wear("cowboy_hat", _add(_head, _cylinder(0.36, 0.36, 0.025, 20), Vector3(0, 0.13, 0),
+	_wear("cowboy_hat", _add(brimmed, _cylinder(0.36, 0.36, 0.025, 20), Vector3(0, 0.13, 0),
 			Vector3(1, 1, 0.85), cowboy))
 	var curl := TorusMesh.new()
 	curl.inner_radius = 0.3
 	curl.outer_radius = 0.4
 	curl.rings = 20
 	curl.ring_segments = 6
-	_wear("cowboy_hat", _add(_head, curl, Vector3(0, 0.16, 0), Vector3(1.05, 0.5, 0.9), cowboy))
-	_wear("cowboy_hat", _sphere(_head, 0.2, Vector3(1.0, 0.85, 1.15), Vector3(0, 0.24, 0), cowboy))
-	_wear("cowboy_hat", _add(_head, _cylinder(0.2, 0.2, 0.045, 18), Vector3(0, 0.17, 0),
+	_wear("cowboy_hat", _add(brimmed, curl, Vector3(0, 0.16, 0), Vector3(1.05, 0.5, 0.9), cowboy))
+	_wear("cowboy_hat", _sphere(brimmed, 0.2, Vector3(1.0, 0.85, 1.15), Vector3(0, 0.24, 0), cowboy))
+	_wear("cowboy_hat", _add(brimmed, _cylinder(0.2, 0.2, 0.045, 18), Vector3(0, 0.17, 0),
 			Vector3(1, 1, 1.12), band))
 	# Beanie with a pompom.
 	var beanie := _item("beanie")
-	_wear("beanie", _add(_head, _dome(0.235), Vector3(0, 0.02, 0.01), Vector3(1, 1.1, 1.08), beanie))
+	_wear("beanie", _add(hats, _dome(0.235), Vector3(0, 0.02, 0.01), Vector3(1, 1.1, 1.08), beanie))
 	var rim := TorusMesh.new()
 	rim.inner_radius = 0.19
 	rim.outer_radius = 0.255
 	rim.rings = 20
 	rim.ring_segments = 8
-	_wear("beanie", _add(_head, rim, Vector3(0, 0.04, 0.01), Vector3(1, 0.8, 1.08), beanie))
-	_wear("beanie", _sphere(_head, 0.075, Vector3.ONE, Vector3(0, 0.3, 0.01), _toon(Color("f4f4f4"))))
+	_wear("beanie", _add(hats, rim, Vector3(0, 0.04, 0.01), Vector3(1, 0.8, 1.08), beanie))
+	_wear("beanie", _sphere(hats, 0.075, Vector3.ONE, Vector3(0, 0.3, 0.01), _toon(Color("f4f4f4"))))
 	# Curly wig.
 	var wig := _item("wig")
 	for p in [Vector3(0, 0.18, 0.02), Vector3(-0.12, 0.13, 0.05), Vector3(0.12, 0.13, 0.05),
@@ -528,6 +541,9 @@ func _build_head_items() -> void:
 	_wear("wig_long", _add(_head, _dome(0.235), Vector3(0, 0.0, 0.02), Vector3(1.05, 1.05, 1.1),
 			long_wig))
 	_wear("wig_long", _sphere(_head, 0.12, Vector3(1.4, 0.45, 0.8), Vector3(0, 0.15, -0.14), long_wig))
+	# Hair over the whole back of the head, down to the neck (clear of the eyes).
+	_wear("wig_long", _sphere(_head, 0.235, Vector3(1.05, 1.0, 0.95), Vector3(0, -0.03, 0.12),
+			long_wig))
 	for k in 5:
 		var x := (k - 2) * 0.07
 		_wear("wig_long", _capsule(_head, 0.055, 0.55, Vector3(x, -0.16, 0.16 + absf(x) * 0.2),
@@ -536,7 +552,7 @@ func _build_head_items() -> void:
 
 func _build_glasses() -> void:
 	# Perched halfway down the beak.
-	var at := Vector3(0, 0.02, -0.33)
+	var at := Vector3(0, 0.02, -0.36)
 	var frame := _item("glasses")
 	for style: String in SwanLook.GLASSES_STYLES:
 		_item_meshes["glasses_" + style] = []
@@ -562,6 +578,11 @@ func _build_glasses() -> void:
 		_wear("glasses_aviator", _add(_head, _cylinder(0.064, 0.064, 0.006, 16),
 				at + Vector3(0.1 * side, -0.015, 0), Vector3(1.1, 1.0, 1.3), _lens_mat,
 				Vector3(PI / 2, 0, 0.25 * side)))
+		# Small round: little wire circles, close together (rock-star style).
+		_wear("glasses_small_round", _add(_head, _torus(0.038, 0.046),
+				at + Vector3(0.075 * side, 0, 0), Vector3.ONE, frame, Vector3(PI / 2, 0, 0)))
+		_wear("glasses_small_round", _add(_head, _cylinder(0.04, 0.04, 0.006, 16),
+				at + Vector3(0.075 * side, 0, 0), Vector3.ONE, _lens_mat, Vector3(PI / 2, 0, 0)))
 		arms.append(side)
 	# Visor: one wide lens across both eyes.
 	_wear("glasses_visor", _add(_head, _box(Vector3(0.44, 0.11, 0.012)), at + Vector3(0, 0, -0.01),
@@ -575,7 +596,8 @@ func _build_glasses() -> void:
 			_wear(id, _add(_head, _box(Vector3(0.05, 0.015, 0.015)), at + Vector3(0, 0.01, -0.01),
 					Vector3.ONE, frame))
 		for side: float in arms:
-			_wear(id, _add(_head, _box(Vector3(0.015, 0.015, 0.3)), Vector3(0.2 * side, 0.04, -0.19),
+			_wear(id, _add(_head, _box(Vector3(0.015, 0.015, 0.33)),
+					Vector3(0.2 * side, 0.04, -0.195),
 					Vector3.ONE, frame))
 
 
@@ -583,30 +605,32 @@ func _build_face_items() -> void:
 	# Lipstick: only the tip of the beak.
 	var lipstick := _item("lipstick")
 	lipstick.roughness = 0.2
-	_wear("lipstick", _add(_head, _cylinder(0.05, 0.019, 0.13, 12), Vector3(0, -0.04, -0.39),
+	_wear("lipstick", _add(_head, _cylinder(0.05, 0.019, 0.13, 12), Vector3(0, -0.04, -0.39 - SNOUT),
 			Vector3.ONE, lipstick, Vector3(-PI / 2, 0, 0)))
-	# Lashes: short and curled, right on the top edge of each eye.
+	# Lashes: big and curled, standing out from the top edge of each eye.
 	var black := _toon(DARK)
 	for side in [-1.0, 1.0]:
 		for i in 3:
-			var spread := (i - 1.0) * 0.03
-			_wear("lashes", _capsule(_head, 0.008, 0.055,
-					Vector3((0.12 + spread) * side, 0.15, -0.165 - absf(spread) * 0.3), black,
-					Vector3(-0.35, 0, (-0.35 - spread * 6.0) * side)))
-	# Necklaces hang loose, low on the neck and tipping forward.
-	var center := Vector3(0, 0.2, -0.12)
-	var radius := 0.205
-	var tilt := Basis(Vector3.RIGHT, -0.85)
+			var spread := (i - 1.0) * 0.035
+			_wear("lashes", _capsule(_head, 0.012, 0.095,
+					Vector3((0.125 + spread) * side, EYE_Y + 0.07, -0.2 - absf(spread) * 0.3), black,
+					Vector3(-0.5, 0, (-0.4 - spread * 6.0) * side)))
+	# Necklaces sit high on the neck, well above any collar or hood, tipping
+	# forward a little.
+	var center := Vector3(0, 0.5, -0.23)
+	var radius := 0.15
+	var tilt_angle := -0.5
+	var tilt := Basis(Vector3.RIGHT, tilt_angle)
 	var front := center + tilt * Vector3(0, 0, -radius)
 	var round := _item("necklace_round")
 	round.metallic = 0.6
 	_wear("necklace_round", _add(_neck, _torus(radius - 0.013, radius + 0.013), center, Vector3.ONE,
-			round, Vector3(-0.85, 0, 0)))
+			round, Vector3(tilt_angle, 0, 0)))
 	var vee := _item("necklace")
 	vee.metallic = 0.6
 	_wear("necklace", _add(_neck, _torus(radius - 0.01, radius + 0.01), center, Vector3.ONE,
-			vee, Vector3(-0.85, 0, 0)))
-	var pendant := front + Vector3(0, -0.12, -0.03)
+			vee, Vector3(tilt_angle, 0, 0)))
+	var pendant := front + Vector3(0, -0.08, -0.03)
 	for side in [-1.0, 1.0]:
 		var start := center + tilt * Vector3(side * radius * sin(0.8), 0, -radius * cos(0.8))
 		_wear("necklace", _segment(_neck, start, pendant, 0.011, vee))
@@ -618,7 +642,7 @@ func _build_face_items() -> void:
 		var a := TAU * k / 18.0
 		var on_ring := tilt * Vector3(sin(a) * radius, 0, -cos(a) * radius)
 		# A little lower at the front, like a real string of pearls.
-		var droop := 0.05 * maxf(cos(a), 0.0)
+		var droop := 0.03 * maxf(cos(a), 0.0)
 		_wear("necklace_pearls", _sphere(_neck, 0.028, Vector3.ONE,
 				center + on_ring + Vector3(0, -droop, 0), pearls, Vector3.ZERO, 8, 5))
 
@@ -638,12 +662,13 @@ func _build_outfits() -> void:
 	_wear("jacket", _add(_body_pivot, _torus(0.13, 0.23), Vector3(0, 0.42, -0.47), Vector3.ONE,
 			sleeve, Vector3(-0.35, 0, 0)))
 
-	# Winter jacket: thick, quilted, open at the front, with a big collar.
-	var winter := _cloth("winter_jacket", 0.34, -0.4, 60.0, 0.15, 0.05, 0.55)
+	# Winter jacket: puffy and quilted but close to the body, covering the back
+	# up to the shoulders, open at the front, with a snug collar.
+	var winter := _cloth("winter_jacket", 0.4, -0.4, 60.0, 0.075, 0.03, 0.4, 0.1, 0.0)
 	winter.set_shader_parameter("quilt", 1.0)
 	winter.set_shader_parameter("roughness_value", 0.9)
-	_wear("winter_jacket", _add(_body_pivot, _torus(0.14, 0.3), Vector3(0, 0.43, -0.45),
-			Vector3(1, 1.4, 1), _item("winter_jacket"), Vector3(-0.35, 0, 0)))
+	_wear("winter_jacket", _add(_body_pivot, _torus(0.13, 0.23), Vector3(0, 0.42, -0.46),
+			Vector3(1, 1.15, 1), _item("winter_jacket"), Vector3(-0.35, 0, 0)))
 
 	# Tank top: tight and closed, covering the back, with a scoop neck at the
 	# front and armholes for the wings (the wings stay feathers).
@@ -778,13 +803,14 @@ func _build_back_items() -> void:
 			Vector3.ONE, strap_dark, on_back))
 	for side in [-1.0, 1.0]:
 		_wear("backpack", _add(_body_pivot, _torus(0.22, 0.26), Vector3(0.24 * side, 0.3, 0.0),
-				Vector3(0.5, 1.3, 1.6), strap_dark, Vector3(0, 0, PI / 2)))
+				Vector3(0.5, 1.3, 1.6), strap_dark, Vector3(0, 0, PI / 2))).set_meta("strap", true)
 	# Shoulder bag: carried on the back.
 	var bag := _item("bag")
-	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.56, 0.34, 0.22), Vector3(0, 0.5, 0.46),
-			bag, on_back))
-	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.58, 0.13, 0.24), Vector3(0, 0.63, 0.41),
-			bag, on_back))
+	# Lies flat on the back (not standing up), with a flap over the top.
+	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.56, 0.34, 0.22), Vector3(0, 0.39, 0.46),
+			bag, Vector3(-1.35, 0, 0)))
+	_wear("bag", _sphere(_body_pivot, 0.5, Vector3(0.6, 0.1, 0.36), Vector3(0, 0.47, 0.42),
+			bag, Vector3(-0.2, 0, 0)))
 	# Superhero cape: tied at the shoulders, lies over the back and flies out
 	# behind with speed (cape.gdshader).
 	var cape := _item("cape")
@@ -803,18 +829,27 @@ func _build_back_items() -> void:
 			Vector3(1.0, 0.6, 1.0), sling, Vector3(-0.4, 0, 0)))
 	for side in [-1.0, 1.0]:
 		_wear("ostrich_egg", _add(_body_pivot, _torus(0.22, 0.26), Vector3(0.22 * side, 0.3, 0.0),
-				Vector3(0.5, 1.3, 1.6), sling, Vector3(0, 0, PI / 2)))
+				Vector3(0.5, 1.3, 1.6), sling, Vector3(0, 0, PI / 2))).set_meta("strap", true)
 	# Hang it all from the swinging back pivot, keeping where each piece is.
+	# The packs go on a pivot of their own, moved up the back towards the neck;
+	# the cape and the straps around the body stay put.
 	_back.position = Vector3(0, 0.45, 0.05)
 	_body_pivot.add_child(_back)
+	var pack_pivot := Node3D.new()
+	pack_pivot.position = PACK_SHIFT
+	_back.add_child(pack_pivot)
 	var to_back := Transform3D(Basis(), -_back.position)
 	for id: String in SwanLook.SLOTS["back"]:
 		for mesh: MeshInstance3D in _item_meshes[id]:
-			if mesh.get_parent() == _body_pivot:
-				var xform := mesh.transform
-				_body_pivot.remove_child(mesh)
+			if mesh.get_parent() != _body_pivot:
+				continue
+			var xform := mesh.transform
+			_body_pivot.remove_child(mesh)
+			if id == "cape" or mesh.has_meta("strap"):
 				_back.add_child(mesh)
-				mesh.transform = to_back * xform
+			else:
+				pack_pivot.add_child(mesh)
+			mesh.transform = to_back * xform
 
 
 ## The cape at rest: a sheet lying over the back (and the tail tuft), standing
@@ -1228,7 +1263,7 @@ func celebrate(medal: Color) -> void:
 	number.double_sided = false
 	_neck.add_child(number)
 	# Lower beak that opens wide, with a pink tongue.
-	_jaw.position = Vector3(0, -0.075, -0.17)
+	_jaw.position = Vector3(0, -0.075, -0.17 - SNOUT)
 	_head.add_child(_jaw)
 	_add(_jaw, _cylinder(0.07, 0.012, 0.26, 12), Vector3(0, -0.01, -0.13), Vector3(1, 0.55, 1),
 			_toon(BEAK_COLOR.darkened(0.08)), Vector3(-PI / 2, 0, 0))

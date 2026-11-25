@@ -17,7 +17,7 @@ const SLOTS := {
 ## Items that are simply worn or not, each with one color.
 const EXTRAS := ["lashes", "lipstick", "socks"]
 ## Glasses shapes ("" = no glasses).
-const GLASSES_STYLES := ["round", "square", "aviator", "visor"]
+const GLASSES_STYLES := ["round", "square", "aviator", "visor", "small_round"]
 const NICKNAME_MAX_LENGTH := 16
 
 @export var nickname := TranslationServer.translate("DEFAULT_NICKNAME")

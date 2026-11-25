@@ -31,7 +31,7 @@ const SLOT_ROWS := [
 const EXTRA_ROWS := [["lipstick", "LIPSTICK", "head", true], ["lashes", "LASHES", "head", false],
 		["socks", "SOCKS", "feet", true]]
 const GLASSES_LABELS: PackedStringArray = ["NONE", "GLASSES_ROUND", "GLASSES_SQUARE",
-		"GLASSES_AVIATOR", "GLASSES_VISOR"]
+		"GLASSES_AVIATOR", "GLASSES_VISOR", "GLASSES_SMALL_ROUND"]
 const TURN_SPEED := 2.2
 const AUTO_TURN_SPEED := 0.4
 const DEFAULT_ITEM_COLOR := Color("e8413c")

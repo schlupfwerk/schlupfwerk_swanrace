@@ -23,6 +23,7 @@ var _first_race_row: Control
 var _selector: PanelContainer
 var _selector_row: OptionRow
 var _go_button := Button.new()
+var _customize_button: Button
 var _settings: SettingsMenu
 var _hint := Label.new()
 var _music := AudioStreamPlayer.new()
@@ -262,6 +263,7 @@ func _build_selector() -> void:
 	_go_button.pressed.connect(_race_now)
 	buttons.add_child(_go_button)
 	var customize := Button.new()
+	_customize_button = customize
 	customize.text = tr("CUSTOMIZE")
 	customize.custom_minimum_size = Vector2(260, 56)
 	customize.add_theme_font_size_override("font_size", 24)
@@ -272,6 +274,15 @@ func _build_selector() -> void:
 	_selector_row.focus_neighbor_bottom = _selector_row.get_path_to(_go_button)
 	_go_button.focus_neighbor_top = _go_button.get_path_to(_selector_row)
 	customize.focus_neighbor_top = customize.get_path_to(_selector_row)
+	# Left/right between the two buttons (and nowhere else), down stays put,
+	# up from the character row goes to the tab bar.
+	_go_button.focus_neighbor_right = _go_button.get_path_to(customize)
+	customize.focus_neighbor_left = customize.get_path_to(_go_button)
+	_go_button.focus_neighbor_left = _go_button.get_path_to(_go_button)
+	customize.focus_neighbor_right = customize.get_path_to(customize)
+	_go_button.focus_neighbor_bottom = _go_button.get_path_to(_go_button)
+	customize.focus_neighbor_bottom = customize.get_path_to(customize)
+	_selector_row.focus_neighbor_top = _selector_row.get_path_to(_tab_buttons[Tab.RACE])
 
 
 ## Opens a tab. `stay_on_bar` keeps the focus on the tab bar (arrows).
@@ -351,7 +362,11 @@ func _focus_content() -> void:
 		Tab.CHARACTERS:
 			_editor.focus_first()
 		Tab.RACE:
-			_race_button.grab_focus()
+			# The character selector replaces the race panel while it is open.
+			if _selector.visible:
+				_go_button.grab_focus()
+			else:
+				_race_button.grab_focus()
 		Tab.SETTINGS:
 			if _settings:
 				_settings.focus_first()
