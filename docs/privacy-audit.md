@@ -20,7 +20,7 @@ SDK or network feature is added, and before filling in any store privacy form.
 
 | What | When | Leaves the device? |
 |---|---|---|
-| `OS.shell_open` to `https://schlupfwerk.com/<lang>` (`scripts/ui/home.gd`) | Only when the player presses "Site da Schlupfwerk" in the About tab | Opens the browser; the game sends nothing |
+| `OS.shell_open` to `https://schlupfwerk.com/<lang>` (`scripts/ui/home.gd`) | Only when the player presses "Site da Schlupfwerk" in the About tab and an adult passes the parental gate (`scripts/ui/parental_gate.gd`) | Opens the browser; the game sends nothing |
 | `git` (`scripts/core/game_version.gd`) | Editor only (`OS.has_feature("editor")`), never in an exported build | No |
 | PowerShell `Get-CimInstance Win32_VideoController` (`scripts/save/settings.gd`) | Windows, when the Video settings list the GPUs | No, it only counts the local GPUs |
 
@@ -55,8 +55,9 @@ all send data. Before any of them ships:
    by default.
 3. Add it to "What calls home" above and redo the store forms.
 
-## Open items
+## External links
 
-- ADR 0009 says "no external links without a parental check". The About tab's
-  site button opens the browser directly. Add a parental gate before the mobile
-  release (stores require one in apps for children).
+ADR 0009 allows no external link without a parental check, and the stores
+require one in apps for children. Every link that leaves the game goes through
+`ParentalGate` (a multiplication with three answers; works with a controller).
+Today that is only the studio site in the About tab.
