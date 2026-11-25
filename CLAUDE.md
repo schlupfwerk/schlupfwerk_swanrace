@@ -38,7 +38,11 @@ Inspiração de formato: corridas no estilo Chocobo Racing, mas com identidade p
 - **Público infantil:** sem chat aberto e sem links externos sem uma verificação para os pais.
 
 ## Controles
-Esquerda/direita (botões no lado esquerdo da tela, ou **inclinação do celular**,
+**Prioridade agora (protótipo no Windows): teclado, controle de Xbox e de PS5.** O jogo
+e os menus têm que ser **100% usáveis sem mouse**. O mouse (e o toque, no celular) é só
+uma opção extra nos menus; na corrida ele não faz nada.
+
+No celular: esquerda/direita (botões no lado esquerdo da tela, ou **inclinação do celular**,
 opcional e com calibração) e três botões no lado direito. Os botões mudam de função
 conforme o terreno:
 
@@ -70,10 +74,81 @@ analógicos: `accel` e `brake` devem usar a força (`Input.get_action_strength`)
   - Uma opção nas configurações para fixar os botões de toque sempre visíveis.
 
 As **transições entre terrenos** são o coração do jogo, principalmente a decolagem a
-partir da água. Prototipe e ajuste isso antes de qualquer outra coisa.
+partir da água. Depois da base (o cisne correndo bem num terreno plano), elas são a
+prioridade.
+
+## O cisne
+- **Visual:** cisne cartoon misturado com avestruz (pescoço longo em S, corpo redondo,
+  pernas compridas). Forma **simples e lisa**, poucos detalhes e poucos triângulos,
+  montada com primitivas suaves e shading toon.
+- **Personalização** (tudo só visual):
+  - penas em **cor sólida ou gradiente** (cor de baixo → cor de cima);
+  - cor das **patas**;
+  - acessórios: **boné, peruca, óculos, cílios, maquiagem, colar e jaqueta**, cada um
+    com cor. Com a jaqueta, as asas viram as mangas.
+  - **calçado** (um por vez): **descalço, tênis, botas, sapatos ou chinelo**, com cor.
+    Calçado fechado esconde os pés; o chinelo deixa os pés à mostra.
+  - cores escolhidas de uma **paleta** (esquerda/direita), para funcionar no controle.
+- **Apelido** de até 16 caracteres, com botão de sortear (para quem está sem teclado).
+  Aparece acima do cisne e no HUD.
+- **Todos os cisnes têm exatamente a mesma habilidade.** Não existem cisnes mais
+  rápidos, mais leves ou com atributos diferentes; os números do movimento são os
+  mesmos para todos (`SwanMotor`).
+- **É um cisne, não um carro:** no chão, no máximo **50 km/h**, chegando lá em uns
+  **4,5 s**. Passadas longas, pernas afastadas.
+- **Jeito desengonçado:** o corpo balança e torce a cada passada, os joelhos abrem; quanto
+  mais rápido, **mais baixa a cabeça** e **mais as asas apontam para trás**.
+- **Contorno preto fino** em todo o cisne (casca invertida, segunda passada dos
+  materiais) e **penas visíveis** (escamas de penas no shader, penas longas nas asas e
+  leque na cauda).
+- **Rastro de pegadas** de até 3 s, que muda com o calçado: patinha de cisne descalço,
+  e marcas diferentes para tênis, bota, sapato e chinelo. Nada de pegada na água.
+- **Efeitos:** ao **acelerar**, solta um rastro de fumaça/poeira; ao **frear**, abre as
+  asas e solta um vento; ao **cair de um pulo**, o corpo achata e solta um anel de poeira.
+- **Sons:** passos na areia (grãos + baque, 4 variações sorteadas), pulo, aterrissagem
+  e batida no mato. Por enquanto são sintetizados no código (`scripts/audio/sfx.gd`).
+- **Música provisória da Ilha Deserta:** composta e sintetizada no código
+  (`scripts/audio/island_music.gd`: ukulele, steel guitar, baixo e chocalho, clima
+  havaiano), gerada numa thread e guardada em `user://`. Será trocada pela definitiva.
+- **HUD com cara de selva, nunca de carro:** o velocímetro é um disco de madeira com
+  grafismo na borda, um cipó de folhas que cresce com a velocidade e uma pena como
+  ponteiro.
+
+## Áudio
+- Barramentos: `Master`, `Music` e `SFX` (`default_bus_layout.tres`).
+- **Música:** cada país/pista terá a sua, **sem direitos autorais** (licença compatível,
+  com entrada em `assets/CREDITS.md`). A primeira pista, na praia, pede algo que lembre
+  praia. O dono do projeto escolhe as músicas; não adicione música por conta própria.
 
 ## Pistas
-Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
+**Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
+`desert_island`). Voltas na praia de uma ilha deserta, **1.600 m**, com curvas para a
+**esquerda e para a direita** (baías) e **largura da areia variável** (~20 a 40 m).
+- **Mata Atlântica à esquerda:** morros, árvores de copa redonda, emergentes, embaúbas,
+  palmitos-juçara, ipês amarelos e rosas, quaresmeiras, coqueiros, bananeiras,
+  samambaias, bromélias, helicônias, hibiscos e pedras com musgo. Tudo com tamanho,
+  proporção e inclinação variados (nada repetido).
+- **Mar à direita:** ondas, manchas de cor, espuma rolando na praia, rochas com espuma,
+  ilhéu com farol, veleiros ao longe e peixes pulando.
+- Sol visível no céu e sombras longas. Música provisória com cara de Havaí.
+- Largada com faixa e pórtico quadriculados, contagem regressiva, voltas cronometradas
+  e melhor volta salva.
+
+**Regras do terreno** (`TrackRules`, iguais para todos os cisnes):
+- **Água:** molhado e **55% mais lento**, afunda um pouco, respinga. Não dá para ir
+  para o mar aberto (limite ~26 m além da linha da água).
+- **Mato:** **bate**, a velocidade vai a **0**, balança a cabeça com estrelinhas e se
+  vira de volta para a direção da corrida.
+- **Nunca na contramão:** o cisne não consegue virar mais de 80° da direção da pista.
+
+**Regra de tempo de volta:** o tamanho da pista sai da física do `SwanMotor`. Na pista
+de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**; a pista foi aumentada
+em 60% e os tempos subiram na mesma proporção: hoje o piloto automático perfeito faz
+**~1:57** saindo parado. Se mudar velocidade ou aceleração, recalcule (ver
+`IslandTrack`).
+
+Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
+descida:
 - **Suíça**: neve nos Alpes → vilarejo → lago alpino → voo pelos vales
 - **Alemanha**: Floresta Negra/Baviera → cidade medieval → rio Reno → voo sobre castelos
 - **Rio de Janeiro**: sandboard ou descida na grama de um morro → vielas e escadarias
@@ -81,7 +156,9 @@ Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
   Retrate o lado vibrante e colorido (casas, pipas, música); **nunca** violência.
 
 ## Bots
-- Cada bot tem **nome, skin e personalidade** (ex.: ótimo na descida e ruim no voo).
+- Cada bot tem **apelido, visual e personalidade**. A personalidade muda só o **jeito
+  de pilotar** (ex.: arrisca mais na descida, voa com cuidado), nunca os atributos:
+  todos os cisnes têm a mesma habilidade.
 - Cometem **erros humanos** de vez em quando.
 - Dificuldade fácil, normal e difícil. No fácil, um *rubber banding* leve.
 - **Bots usam exatamente a mesma interface de controle do jogador** (ver Arquitetura).
@@ -100,10 +177,13 @@ Inspiradas em lugares reais. Cada país pode trocar o tipo de descida:
   - `Services`: placar, conquistas e save na nuvem (Game Center / Play Games / Steamworks)
   - `Store`: só a gorjeta (StoreKit / Google Play Billing / Steam)
   - Steam via plugin **GodotSteam** (GDExtension). Sem DRM obrigatório do Steam.
-- **Skins por recolor:** um shader com uma textura-máscara (corpo, asas, bico, detalhes)
-  e uma paleta de 3 ou 4 cores por skin. Cada skin é um recurso de dados (id, nome,
-  cores), sem modelo nem textura nova. Acessórios (chapéu, cachecol) podem vir depois.
-  Todo item tem um **id fixo que nunca muda**.
+- **Personalização por dados (ADR 0015):** `SwanLook` guarda apelido, estilo e cores
+  das penas, cor das patas e acessórios usados (`id → cor`). As penas usam um shader
+  (`shaders/feather.gdshader`) com cor sólida ou gradiente vertical; os acessórios são
+  peças simples já presentes no modelo, ligadas/desligadas e recoloridas. Sem textura
+  nem modelo novo por item. Todo item tem um **id fixo que nunca muda**.
+- **Simulação em passo fixo** (60 ticks/s) dentro do `Swan`, com interpolação na hora
+  de desenhar: determinística e lisa em qualquer taxa de quadros.
 - **Save:** guarda itens ganhos, personalização, recordes e configurações. O **save
   local é a fonte da verdade** (funciona offline); a nuvem sincroniza quando há
   internet. Conflitos se resolvem **mesclando** (união dos itens, melhor recorde por
@@ -118,24 +198,39 @@ scripts/         GDScript
   race/          lógica da corrida, cisne, pista
   input/         PlayerInput, BotBrain
   services/      camada de Services e Store
-  ui/            HUD, menus
+  save/          save local (autoload Profile)
+  ui/            HUD, menus, vestiário
+shaders/         shaders (.gdshader)
 assets/          modelos, texturas, sons e músicas (licença CC BY-NC-SA 4.0)
   CREDITS.md     autores e licenças de assets de terceiros
 docs/
 ```
 
-## Primeiro marco: protótipo jogável
-- Uma pista reta e curta com os 4 terrenos em sequência (cerca de 1 minuto de corrida)
-- O cisne low poly montado com formas simples (sem arte final ainda)
-- 2 bots com personalidades diferentes
-- HUD: terreno atual, velocidade, posição, tempo, contagem regressiva e resultado
-- Botões de toque com o texto mudando conforme o terreno
-- Inclinação opcional com calibração
-- Jogável com controle de Xbox e de PS5 no PC
-- Rodando no Samsung S23 (Android). O iOS fica para quando houver um Mac; o Steam,
-  para depois do protótipo.
+## Primeiro marco: protótipo jogável (siga esta ordem)
+O protótipo é feito e testado **no Windows**, com teclado e controles de Xbox e PS5.
+
+1. **Praia plana (feito):** terreno 100% reto, sem obstáculos; areia com matinhos e
+   pedrinhas só de enfeite (nada afeta o cisne). Cisne andando com esquerda/direita,
+   acelerar, frear e pular; velocímetro; rastro ao acelerar e vento ao frear;
+   vestiário com personalização e apelido, salvo localmente.
+2. **Praia da Ilha (feito):** circuito em volta da ilha, com largada, voltas e tempos.
+   **Sensação de corrida:** ajustar velocidade, curva, pulo e câmera até ficar gostoso.
+   Obstáculos na praia vêm depois. O **voo** será explicado pelo dono do projeto antes
+   de ser feito.
+3. **Os 4 terrenos** numa pista reta e curta (cerca de 1 minuto), com as transições,
+   principalmente a decolagem da água.
+4. **2 bots** com personalidades diferentes (mesma habilidade, ver Bots).
+5. **HUD completo:** terreno atual, velocidade, posição, tempo, contagem regressiva e
+   resultado.
+6. **Android (Samsung S23):** botões de toque com o texto mudando conforme o terreno e
+   inclinação opcional com calibração.
+
+iOS fica para quando houver um Mac; o Steam, para depois do protótipo.
 
 Critério de sucesso: **é divertido nos primeiros 30 segundos?**
+
+**Depois (anotado):** controle de hora do dia e clima; neve escorregadia; o voo (o dono
+do projeto vai explicar antes); obstáculos na praia; bots.
 
 ## Ambiente de desenvolvimento (Windows)
 1. **Godot 4**, a versão estável padrão (**não** a .NET), de godotengine.org.
@@ -161,6 +256,15 @@ compilado e enviado ao TestFlight. No futuro, isso pode rodar no GitHub Actions
 **Steam (depois):** conta no Steamworks e pagamento da taxa do Steam Direct (confira o
 valor atual). A Godot exporta para Windows/Linux; o upload é feito com o SteamPipe.
 O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
+
+## Versionamento
+- **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.1**;
+  só o dono do projeto decide quando ela sobe.
+- **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
+  Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada
+  exportação (com o hash do commit) e preenche o versionCode/versionName do Android e a
+  versão do executável do Windows. Pelo editor, `GameVersion` lê direto do git.
 
 ## Regras do repositório
 - Decisões de arquitetura ficam em `docs/adr/` (ADRs, em inglês). Mudou uma decisão?

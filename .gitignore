@@ -24,3 +24,6 @@ export_credentials.cfg
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated on export by addons/build_info
+build_info.cfg
