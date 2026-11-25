@@ -30,6 +30,7 @@ var _customize_button: Button
 var _settings: SettingsMenu
 var _about_panel: PanelContainer
 var _site_button := Button.new()
+var _gate := ParentalGate.new()
 var _hint := Label.new()
 var _music := AudioStreamPlayer.new()
 
@@ -97,6 +98,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _selector.visible:
 		_close_selector()
+	elif _gate.visible:
+		_gate.cancel()
 	elif _tab == Tab.CHARACTERS:
 		_select_tab(Tab.RACE)
 	else:
@@ -329,8 +332,19 @@ func _build_about() -> void:
 	_site_button.text = tr("ABOUT_SITE")
 	_site_button.custom_minimum_size = Vector2(300, 56)
 	_site_button.add_theme_font_size_override("font_size", 22)
-	_site_button.pressed.connect(func() -> void: OS.shell_open("%s/%s" % [SITE, language]))
+	# The link opens only after the parental gate (ADR 0009).
+	_site_button.pressed.connect(func() -> void:
+		buttons.visible = false
+		_gate.open())
 	buttons.add_child(_site_button)
+	column.add_child(_gate)
+	_gate.passed.connect(func() -> void:
+		OS.shell_open("%s/%s" % [SITE, language])
+		buttons.visible = true
+		_site_button.grab_focus())
+	_gate.cancelled.connect(func() -> void:
+		buttons.visible = true
+		_site_button.grab_focus())
 	_site_button.focus_neighbor_top = _site_button.get_path_to(_tab_buttons[Tab.ABOUT])
 	for side in ["focus_neighbor_bottom", "focus_neighbor_left", "focus_neighbor_right"]:
 		_site_button.set(side, _site_button.get_path_to(_site_button))
@@ -340,6 +354,9 @@ func _build_about() -> void:
 func _select_tab(tab: int, stay_on_bar := false) -> void:
 	if _selector.visible:
 		_close_selector(false)
+	if _gate.visible:
+		_gate.visible = false
+		_site_button.get_parent().visible = true
 	if _settings and tab != Tab.SETTINGS:
 		_settings.queue_free()
 		_settings = null
