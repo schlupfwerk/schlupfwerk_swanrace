@@ -95,8 +95,12 @@ var _daze_stars := Node3D.new()
 var _turn_look := 0.0
 ## Head toss when honking: 1 right after, fading to 0.
 var _honk := 0.0
-## Biting a medal on the podium: the head nods up and down.
-var _biting := false
+## Dancing lightly on the podium: sways, bobs the head, taps the feet.
+var dancing := false
+var _dance_offset := randf() * TAU
+## Celebrating on the podium (last place): see celebrate().
+var _celebrating := false
+var _jaw := Node3D.new()
 var _cape := Node3D.new()
 ## Everything on the back hangs from here and swings with the stride.
 var _back := Node3D.new()
@@ -220,8 +224,6 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_honk = move_toward(_honk, 0.0, delta * 2.5)
 	_head.rotation.x = -(_neck.rotation.x + _body_pivot.rotation.x) * 0.75 + 0.5 * drowning
 	_head.rotation.x -= sin(_honk * PI) * 0.5
-	if _biting:
-		_head.rotation.x += 0.25 + sin(Time.get_ticks_msec() * 0.012) * 0.18
 	_daze_stars.visible = _daze > 0.05
 	_daze_stars.rotation.y += delta * 6.0
 	_animate_face(delta)
@@ -264,6 +266,10 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 			1.0 - 0.24 * squash + 0.12 * stretch, 1.0 + 0.16 * squash - 0.06 * stretch)
 	_body_pivot.position.y -= 0.14 * squash
 	_feather_mat.set_shader_parameter("root_y", global_position.y)
+	if dancing:
+		_dance_pose()
+	if _celebrating:
+		_celebrate_pose()
 
 
 ## Eyes, pupils and brows follow the expression; the swan blinks now and then.
@@ -290,6 +296,10 @@ func _animate_face(delta: float) -> void:
 		var brow := _brows[side]
 		brow.position.y = lerpf(brow.position.y, shape[2], blend)
 		brow.rotation.z = lerp_angle(brow.rotation.z, -shape[3] * side_sign, blend)
+	if _celebrating:
+		# Wink: the left eye shut tight, the right one wide open.
+		_eyes[0].scale.y = 0.1
+		_eyes[1].scale.y = 1.05
 	_tears.emitting = expression == Face.CRY
 
 
@@ -1161,10 +1171,81 @@ func hang_medal(color: Color) -> void:
 	_medal(_neck, Vector3(0, 0.03, -0.32), color, Vector3(-0.3, 0, 0))
 
 
-## Last place: holds a medal in the beak and keeps biting it, proudly.
-func bite_medal(color: Color) -> void:
-	_medal(_head, Vector3(0, -0.08, -0.47), color, Vector3(-0.2, 0.0, 0.0))
-	_biting = true
+## Last place celebrates as if it had won: a "1" medal on the neck, a bottle
+## of fizz spraying foam in one wing, winking and laughing with the beak wide
+## open, legs apart, bouncing.
+func celebrate(medal: Color) -> void:
+	_celebrating = true
+	hang_medal(medal)
+	var number := Label3D.new()
+	number.text = "1"
+	number.font_size = 64
+	number.outline_size = 0
+	number.pixel_size = 0.0022
+	number.modulate = Color("6b4a10")
+	number.position = Vector3(0, 0.03, -0.355)
+	number.rotation = Vector3(-0.3, PI, 0)
+	number.double_sided = false
+	_neck.add_child(number)
+	# Lower beak that opens wide, with a pink tongue.
+	_jaw.position = Vector3(0, -0.075, -0.17)
+	_head.add_child(_jaw)
+	_add(_jaw, _cylinder(0.07, 0.012, 0.26, 12), Vector3(0, -0.01, -0.13), Vector3(1, 0.55, 1),
+			_toon(BEAK_COLOR.darkened(0.08)), Vector3(-PI / 2, 0, 0))
+	_sphere(_jaw, 0.05, Vector3(1.0, 0.35, 1.6), Vector3(0, 0.01, -0.1), _toon(Color("e8607a")))
+	# The bottle, held up in the right wing, neck pointing up and out.
+	var glass := _toon(Color("1f6b3a"))
+	glass.roughness = 0.15
+	var bottle := Node3D.new()
+	bottle.position = Vector3(0.06, -0.42, -0.12)
+	bottle.scale = Vector3.ONE * 1.3
+	_wing_r.add_child(bottle)
+	_add(bottle, _cylinder(0.07, 0.07, 0.3, 14), Vector3.ZERO, Vector3.ONE, glass)
+	_add(bottle, _cylinder(0.025, 0.07, 0.12, 14), Vector3(0, -0.21, 0), Vector3.ONE, glass,
+			Vector3(PI, 0, 0))
+	_add(bottle, _cylinder(0.028, 0.028, 0.08, 10), Vector3(0, -0.3, 0), Vector3.ONE,
+			_toon(Color("d9b44a")))
+	_add(bottle, _box(Vector3(0.1, 0.12, 0.02)), Vector3(0, 0.0, -0.07), Vector3.ONE,
+			_toon(Color("f3ead2")))
+	var foam := CPUParticles3D.new()
+	foam.position = Vector3(0, -0.36, 0)
+	foam.amount = 60
+	foam.lifetime = 1.1
+	foam.local_coords = false
+	foam.direction = Vector3(0, -1, 0)
+	foam.spread = 14.0
+	foam.initial_velocity_min = 3.0
+	foam.initial_velocity_max = 4.5
+	foam.gravity = Vector3(0, -6.0, 0)
+	foam.scale_amount_min = 0.5
+	foam.scale_amount_max = 1.4
+	var drop := SphereMesh.new()
+	drop.radius = 0.035
+	drop.height = 0.07
+	drop.radial_segments = 6
+	drop.rings = 3
+	var foam_mat := StandardMaterial3D.new()
+	foam_mat.albedo_color = Color("fffbe8")
+	foam_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	drop.material = foam_mat
+	foam.mesh = drop
+	bottle.add_child(foam)
+
+
+## The celebration pose, on top of the normal animation.
+func _celebrate_pose() -> void:
+	var t := Time.get_ticks_msec() * 0.001
+	# Bottle up and forward, shaking.
+	_wing_r.rotation = Vector3(0.75, 0.2, 2.0 + sin(t * 9.0) * 0.12)
+	_wing_l.rotation = Vector3(0.6, -0.3, -0.35)
+	_jaw.rotation.x = -0.6 - sin(t * 14.0) * 0.12
+	_head.rotation.x -= 0.35
+	_head.rotation.z = sin(t * 3.0) * 0.12
+	_body_pivot.rotation.z = sin(t * 3.0) * 0.08
+	_body_pivot.position.y -= 0.06 + absf(sin(t * 6.0)) * 0.05
+	# Legs wide apart, knees bent.
+	_hips[0].rotation.z = -0.32
+	_hips[1].rotation.z = 0.32
 
 
 func _medal(parent: Node3D, at: Vector3, color: Color, rot: Vector3) -> void:
@@ -1174,3 +1255,17 @@ func _medal(parent: Node3D, at: Vector3, color: Color, rot: Vector3) -> void:
 	_add(parent, _cylinder(0.09, 0.09, 0.025, 20), at, Vector3.ONE, metal, rot + Vector3(PI / 2, 0, 0))
 	_add(parent, _cylinder(0.06, 0.06, 0.03, 20), at + Vector3(0, 0, -0.005), Vector3.ONE,
 			_toon(color.lightened(0.25)), rot + Vector3(PI / 2, 0, 0))
+
+
+## A light dance, on top of the idle animation (each swan a little off-beat).
+func _dance_pose() -> void:
+	var t := Time.get_ticks_msec() * 0.001 * 4.2 + _dance_offset
+	_body_pivot.rotation.z = sin(t) * 0.1
+	_body_pivot.position.y -= absf(sin(t)) * 0.06
+	_head.rotation.z = sin(t + 0.6) * 0.15
+	_head.rotation.x += sin(t * 2.0) * 0.08
+	_wing_l.rotation = Vector3(0.0, 0.0, -0.25 - maxf(sin(t), 0.0) * 0.35)
+	_wing_r.rotation = Vector3(0.0, 0.0, 0.25 + maxf(-sin(t), 0.0) * 0.35)
+	# Tapping feet: one knee lifts, then the other.
+	_hips[0].rotation.x = -maxf(sin(t), 0.0) * 0.35
+	_hips[1].rotation.x = -maxf(-sin(t), 0.0) * 0.35

@@ -195,42 +195,62 @@ func set_start_lights(lit: int, go := false) -> void:
 	_lights.go = go
 
 
-## Race over: the standings table (the player highlighted) and what to do next.
+## Race over: the standings across the bottom of the screen (in columns of 6,
+## the player highlighted), the best lap of the race and what to do next.
+## Everything else of the race HUD goes away so the podium shows above.
 func show_results(standings: Array[Dictionary]) -> void:
-	_center_label.text = ""
-	_place.visible = false
-	var lines := PackedStringArray()
+	var root := _results.get_parent()
+	for child in root.get_children():
+		if child is CanvasItem:
+			child.visible = false
+			child.process_mode = Node.PROCESS_MODE_DISABLED
+	var board := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.08, 0.1, 0.75)
+	style.set_corner_radius_all(14)
+	style.set_content_margin_all(16)
+	board.add_theme_stylebox_override("panel", style)
+	root.add_child(board)
+	board.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 20)
+	board.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	board.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	board.add_child(column)
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 48)
+	column.add_child(columns)
 	var fastest := {}
+	var label: RichTextLabel
 	for n in standings.size():
+		if n % 6 == 0:
+			label = _board_label(20)
+			columns.add_child(label)
 		var entry: Dictionary = standings[n]
-		var marker := "»  " if entry.player else ""
 		var best: float = entry.get("best", 0.0)
-		lines.append("%s%d.  %s   %s   (%s)" % [marker, n + 1, entry.name, format_time(entry.time),
-				format_time(best) if best > 0.0 else "--"])
+		var line := "%d.  %s   %s   (%s)" % [n + 1, entry.name, format_time(entry.time),
+				format_time(best) if best > 0.0 else "--"]
+		# The player stands out in yellow.
+		label.text += ("» [color=#ffd23f]%s[/color]" % line if entry.player else line) + "\n"
 		if best > 0.0 and (fastest.is_empty() or best < fastest.best):
 			fastest = entry
+	var footer := _board_label(18)
 	if not fastest.is_empty():
-		lines.append("")
-		lines.append(tr("PODIUM_BEST_LAP") % [format_time(fastest.best), fastest.name])
-	lines.append("")
-	lines.append(tr("RESULTS_HINT_" + InputGlyphs._suffix()))
-	_results.text = "
-".join(lines)
-	# Only the standings on screen over the podium.
-	for child in _results.get_parent().get_children():
-		if child is CanvasItem:
-			child.visible = child == _results
-			if child != _results:
-				child.process_mode = Node.PROCESS_MODE_DISABLED
-	var board := StyleBoxFlat.new()
-	board.bg_color = Color(0.08, 0.08, 0.1, 0.72)
-	board.set_corner_radius_all(14)
-	board.set_content_margin_all(22)
-	_results.add_theme_stylebox_override("normal", board)
-	_results.add_theme_font_size_override("font_size", 24)
-	_results.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_results.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, 40)
-	_results.visible = true
+		footer.text = tr("PODIUM_BEST_LAP") % [format_time(fastest.best), fastest.name] + "      "
+	footer.text += tr("RESULTS_HINT_" + InputGlyphs._suffix())
+	column.add_child(footer)
+
+
+static func _board_label(font_size: int) -> RichTextLabel:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.fit_content = true
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.scroll_active = false
+	label.add_theme_font_size_override("normal_font_size", font_size)
+	label.add_theme_constant_override("outline_size", 6)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
+	return label
 
 
 ## "Jump!" warning, pulsing while an obstacle is ahead.

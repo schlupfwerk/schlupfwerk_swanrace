@@ -304,6 +304,10 @@ func _show_podium() -> void:
 	var spot := _track.edge(_track.index_at(at), 0.0)
 	podium.position = Vector3(spot.x, _track.ground_height_at(at, 0.0), spot.y)
 	podium.rotation.y = _track.heading_at(_track.index_at(at)) + PI / 2.0
+	podium.ground_at = func(x: float) -> float:
+		var p: Vector3 = podium.transform * Vector3(x, 0.0, 0.0)
+		var info := _track.locate(Vector2(p.x, p.z), -1)
+		return _track.ground_height_at(info["distance"], info["lateral"]) - podium.position.y
 	add_child(podium)
 	_hud.show_results(standings)
 

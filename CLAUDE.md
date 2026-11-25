@@ -236,8 +236,9 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 - **Voltas:** número de voltas na aba Correr do menu (padrão 3). HUD mostra
   "Volta 2/3" e o tempo total. **Última volta:** aviso e a música troca (com fade) para uma
   versão mais rápida e animada (`scripts/audio/final_lap_music.gd`). **Chegada:** apito de 2 s,
-  a câmera se afasta girando e, depois, o **pódio**: 1º, 2º e 3º com medalhas e o **último colocado
-  mordendo a medalha**, todo orgulhoso. Um **drone** vai e volta em 180° em volta do pódio, com o
+  a câmera se afasta girando e, depois, o **pódio**: **um lugar por corredor** (12 corredores, 12 lugares), 1º, 2º e 3º com
+  medalhas e o **último colocado comemorando como se tivesse vencido** (medalha de "1", garrafa
+  espirrando espuma, piscando e rindo de bico aberto; referência do dono do projeto: pato do meme). Todos **dançam de leve**; um **drone** vai e volta em 60° na frente do pódio, com o
   placar (posição, tempo total e melhor volta de cada um, e a melhor volta da corrida) e uma
   **musiquinha de corrida finalizada** (`scripts/audio/victory_music.gd`), até o jogador sair
   (correr de novo ou voltar ao menu).
