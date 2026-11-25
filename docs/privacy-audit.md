@@ -4,7 +4,7 @@ Swan Race promises **no ads and no data collection** ([ADR 0009](adr/0009-offlin
 This file checks that promise against the code. Update it whenever a package,
 SDK or network feature is added, and before filling in any store privacy form.
 
-- **Last checked:** 2026-11-25, version 0.0.6 (Windows alpha)
+- **Last checked:** 2026-11-25, version 0.0.7 (Windows alpha)
 - **Result:** the game sends nothing. Nothing calls home.
 
 ## What calls home
