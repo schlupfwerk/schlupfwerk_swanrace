@@ -48,6 +48,9 @@ const PACK_SHIFT := Vector3(0, 0.08, -0.22)
 ## over the forehead; brimmed hats rest on top of the head).
 const HAT_LIFT := 0.09
 const BRIM_LIFT := 0.02
+## Round parts get this many more segments with high scenery detail (the PC
+## default): smoother silhouettes, since the swans are always seen up close.
+const SMOOTH_SEGMENTS := 1.6
 
 static var _outline: StandardMaterial3D
 
@@ -1081,8 +1084,8 @@ func _sphere(parent: Node3D, radius: float, scl: Vector3, pos: Vector3, mat: Mat
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
-	mesh.radial_segments = radial
-	mesh.rings = rings
+	mesh.radial_segments = _seg(radial)
+	mesh.rings = _seg(rings)
 	return _add(parent, mesh, pos, scl, mat, rot)
 
 
@@ -1091,8 +1094,8 @@ func _capsule(parent: Node3D, radius: float, height: float, pos: Vector3, mat: M
 	var mesh := CapsuleMesh.new()
 	mesh.radius = radius
 	mesh.height = height
-	mesh.radial_segments = 14
-	mesh.rings = 6
+	mesh.radial_segments = _seg(14)
+	mesh.rings = _seg(6)
 	return _add(parent, mesh, pos, Vector3.ONE, mat, rot)
 
 
@@ -1110,13 +1113,18 @@ func _add(parent: Node3D, mesh: Mesh, pos: Vector3, scl: Vector3, mat: Material,
 	return instance
 
 
+## Segment count for a round part: more of them with high scenery detail.
+static func _seg(count: int) -> int:
+	return roundi(count * SMOOTH_SEGMENTS) if Settings.detail >= 2 else count
+
+
 static func _dome(radius: float) -> SphereMesh:
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius
 	mesh.is_hemisphere = true
-	mesh.radial_segments = 16
-	mesh.rings = 6
+	mesh.radial_segments = _seg(16)
+	mesh.rings = _seg(6)
 	return mesh
 
 
@@ -1125,7 +1133,7 @@ static func _cylinder(bottom: float, top: float, height: float, radial := 12) ->
 	mesh.bottom_radius = bottom
 	mesh.top_radius = top
 	mesh.height = height
-	mesh.radial_segments = radial
+	mesh.radial_segments = _seg(radial)
 	mesh.rings = 1
 	return mesh
 
@@ -1134,8 +1142,8 @@ static func _torus(inner: float, outer: float) -> TorusMesh:
 	var mesh := TorusMesh.new()
 	mesh.inner_radius = inner
 	mesh.outer_radius = outer
-	mesh.rings = 20
-	mesh.ring_segments = 6
+	mesh.rings = _seg(20)
+	mesh.ring_segments = _seg(6)
 	return mesh
 
 
@@ -1143,8 +1151,8 @@ static func _shoe(radius: float, length: float) -> CapsuleMesh:
 	var mesh := CapsuleMesh.new()
 	mesh.radius = radius
 	mesh.height = length
-	mesh.radial_segments = 12
-	mesh.rings = 4
+	mesh.radial_segments = _seg(12)
+	mesh.rings = _seg(4)
 	return mesh
 
 

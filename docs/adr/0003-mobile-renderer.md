@@ -1,6 +1,6 @@
 # 0003. Mobile renderer
 
-- **Status:** Accepted
+- **Status:** Superseded by [0016](0016-forward-plus-on-desktop.md)
 - **Date:** 2026-11-24
 
 ## Context

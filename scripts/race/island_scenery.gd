@@ -596,8 +596,10 @@ static func _checker_material(columns: int, rows: int) -> StandardMaterial3D:
 		for y in rows:
 			image.set_pixel(x, y, Color.WHITE if (x + y) % 2 == 0 else Color("1d1d22"))
 	var mat := StandardMaterial3D.new()
+	# Crisp squares up close, mipmaps far away: no shimmering or moiré.
+	image.generate_mipmaps()
 	mat.albedo_texture = ImageTexture.create_from_image(image)
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
 	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_LAMBERT_WRAP
 	return mat
 

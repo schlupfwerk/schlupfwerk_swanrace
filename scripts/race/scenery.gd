@@ -21,7 +21,6 @@ static func add_environment(parent: Node) -> void:
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.9
 	# A soft glow and gentle contrast, so the scene reads smooth, not busy.
 	env.glow_enabled = true
 	env.glow_intensity = 0.35
@@ -34,8 +33,15 @@ static func add_environment(parent: Node) -> void:
 	env.fog_light_color = Color("c9dbec")
 	env.fog_density = 0.0018
 	env.fog_sky_affect = 0.0
+	# Ambient occlusion (PC only) comes from the video settings: soft contact
+	# shadows under trees, rocks and swans, sized for this low-poly scale.
+	env.ssao_radius = 1.2
+	env.ssao_intensity = 1.6
+	env.ssao_power = 1.4
+	Settings.configure_environment(env)
 	var world_env := WorldEnvironment.new()
 	world_env.environment = env
+	world_env.add_to_group("world_environment")
 	parent.add_child(world_env)
 
 	var sun := DirectionalLight3D.new()
@@ -45,9 +51,9 @@ static func add_environment(parent: Node) -> void:
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	sun.directional_shadow_blend_splits = true
 	sun.light_energy = 1.0
-	sun.shadow_blur = 1.6
 	sun.shadow_opacity = 0.75
-	# Shadows on/off and distance come from the video settings.
+	# Shadows on/off, distance and softness come from the video settings
+	# (they depend on the renderer). So does the ambient light.
 	sun.add_to_group("sun")
 	Settings.configure_sun(sun)
 	parent.add_child(sun)

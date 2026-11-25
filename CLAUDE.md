@@ -23,7 +23,7 @@ Inspiração de formato: corridas no estilo Chocobo Racing, mas com identidade p
 - **Engine: Godot 4 (versão estável mais recente), GDScript.** Um único projeto, um
   único repositório. **Não há código em Kotlin nem em Swift.** Código nativo só entra,
   se um dia for preciso, por plugins (Game Center, Play Games, compras).
-- **Renderer: Mobile.** O jogo precisa rodar bem em celulares comuns (e roda bem no PC).
+- **Renderer: Forward+ no PC, Mobile nos celulares** (ADR 0016). Mudança visual se confere nos dois: `--rendering-method mobile` roda o Mobile no PC.
 - **Plataformas:** Android, iOS e, no Steam, Windows, Linux/SteamOS (Steam Deck,
   build nativo, mirando "Steam Deck Verified") e macOS. Todas saem do mesmo projeto,
   só muda o preset de exportação. Não há versão para navegador. O foco continua sendo
