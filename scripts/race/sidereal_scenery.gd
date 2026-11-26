@@ -12,7 +12,8 @@ const DECK_UNDER := Color("17132e")
 const EDGE_GLOW := Color("38e8ff")
 const LINE_GLOW := Color("ff5ad1")
 const HOLE_GLOW := Color("ff8a2a")
-const ASTEROID := Color("6e6478")
+const ASTEROID := Color("a8987f")
+const ASTEROID_GLOW := Color("ffcf3a")
 const DECK_THICKNESS := 0.6
 const STEP := 2
 const PLANETS := [
@@ -236,14 +237,42 @@ static func _build_asteroids(parent: Node3D, course: SiderealCircuit, rng: Rando
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = _asteroid_mesh()
 	mm.instance_count = course.obstacles.size()
+	# Glowing lava cracks on the rock and a glowing ring on the deck around
+	# it, so the asteroids stand out against the dark deck from far away.
+	var glow := MultiMesh.new()
+	glow.transform_format = MultiMesh.TRANSFORM_3D
+	glow.mesh = _asteroid_glow_mesh()
+	glow.instance_count = course.obstacles.size()
 	for n in course.obstacles.size():
 		var o := course.obstacles[n]
 		var y := course.ground_height_at(o.d, o.l)
-		mm.set_instance_transform(n, IslandScenery._placed(o.p, y - 0.05, rng.randf() * TAU, o.r * 0.9))
+		var xform := IslandScenery._placed(o.p, y - 0.05, rng.randf() * TAU, o.r * 0.9)
+		mm.set_instance_transform(n, xform)
+		glow.set_instance_transform(n, xform)
 	var instance := MultiMeshInstance3D.new()
 	instance.multimesh = mm
 	instance.material_override = MeshKit.vertex_color_material()
 	parent.add_child(instance)
+	var glow_instance := MultiMeshInstance3D.new()
+	glow_instance.multimesh = glow
+	glow_instance.material_override = _glow_material(ASTEROID_GLOW)
+	glow_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(glow_instance)
+
+
+## The glowing parts of a deck asteroid (in the same space as _asteroid_mesh).
+static func _asteroid_glow_mesh() -> Mesh:
+	var st := MeshKit.begin()
+	var ring := TorusMesh.new()
+	ring.inner_radius = 1.45
+	ring.outer_radius = 1.7
+	ring.rings = 24
+	ring.ring_segments = 4
+	MeshKit.add(st, ring, IslandScenery._at(Vector3(0, 0.08, 0), Vector3(1.0, 0.3, 1.0)), Color.WHITE)
+	for spot: Vector3 in [Vector3(0.75, 0.55, -0.45), Vector3(-0.6, 0.7, 0.5), Vector3(0.1, 0.95, 0.3),
+			Vector3(-0.85, 0.3, -0.3)]:
+		MeshKit.add(st, MeshKit.sphere(0.16, 6, 3), IslandScenery._at(spot, Vector3(1.0, 0.5, 1.6)), Color.WHITE)
+	return MeshKit.finish(st)
 
 
 static func _build_planets(parent: Node3D, course: SiderealCircuit) -> void:

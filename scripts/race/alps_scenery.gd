@@ -3,8 +3,12 @@ extends RefCounted
 ## Builds the Swiss Alps around an AlpsCourse: the snowy slope with fences,
 ## pines and rocks, the alpine road with guard rails, lines and pine forest,
 ## mountains all around, the start and finish gates, logs and the animals'
-## bodies. Decoration only: what collides lives in the course (CourseRules).
+## bodies. Along parts of the road the forest opens into pastures with cows
+## grazing, which moo as the player goes by (ProximitySound). Decoration only: what
+## collides lives in the course (CourseRules).
 
+## Open pastures along the road, no trees: [from, to] in meters into the road.
+const PASTURES := [[130.0, 300.0], [540.0, 690.0]]
 const SNOW := Color("f1f5fa")
 const SNOW_SHADE := Color("d9e3ee")
 const ASPHALT := Color("4b4e54")
@@ -34,6 +38,7 @@ static func build(parent: Node3D, course: AlpsCourse) -> void:
 	_build_rails(parent, course)
 	_build_road_lines(parent, course)
 	_build_forest(parent, course, room, rng)
+	_build_pastures(parent, course, room, rng)
 	_build_obstacles(parent, course, rng)
 	_build_logs(parent, course)
 	_build_gate(parent, course, course.start_distance, Color("d52b1e"))
@@ -141,7 +146,7 @@ static func _build_valley(parent: Node3D, course: AlpsCourse) -> void:
 	meadow.mesh = mesh
 	meadow.material_override = Scenery.flat(MEADOW, 1.0)
 	var middle := course.points[course.sample_count() / 2]
-	meadow.position = Vector3(middle.x, AlpsCourse.TOP_HEIGHT - AlpsCourse.DROP - 3.0, middle.y)
+	meadow.position = Vector3(middle.x, AlpsCourse.TOP_HEIGHT - AlpsCourse.DROP - 12.0, middle.y)
 	meadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(meadow)
 
@@ -293,6 +298,9 @@ static func _build_forest(parent: Node3D, course: AlpsCourse, room: PackedVector
 	while i < count:
 		var d := course.lengths[i]
 		var snow := course.terrain(d) == CourseTrack.Terrain.SNOW
+		if _in_pasture(d):
+			i += 4
+			continue
 		for side: float in [-1.0, 1.0]:
 			var edge := course.right_edge(i) if side > 0.0 else -course.left_edge(i)
 			var limit := minf(REACH - 6.0, 0.8 * (room[i].y if side > 0.0 else room[i].x))
@@ -310,6 +318,47 @@ static func _build_forest(parent: Node3D, course: AlpsCourse, room: PackedVector
 		i += 3 if snow else 4
 	_multimesh(parent, _pine_mesh(false), road, true, rng)
 	_multimesh(parent, _pine_mesh(true), slope, true, rng)
+
+
+## True on the road where the forest opens into a pasture (a little margin
+## at each end so the trees thin out rather than stop at a line).
+static func _in_pasture(d: float) -> bool:
+	for pasture: Array in PASTURES:
+		var from: float = AlpsCourse.ROAD_START + pasture[0]
+		var to: float = AlpsCourse.ROAD_START + pasture[1]
+		if d > from and d < to:
+			return true
+	return false
+
+
+## Cows grazing in the pastures, on both sides of the road, and the node that
+## makes them moo when the player goes by.
+static func _build_pastures(parent: Node3D, course: AlpsCourse, room: PackedVector2Array,
+		rng: RandomNumberGenerator) -> void:
+	var cows: Array[Transform3D] = []
+	var herds := PackedVector3Array()
+	for pasture: Array in PASTURES:
+		for side: float in [-1.0, 1.0]:
+			var middle: float = AlpsCourse.ROAD_START + (pasture[0] + pasture[1]) * 0.5 + rng.randf_range(-30.0, 30.0)
+			var count := rng.randi_range(4, 6)
+			for n in count:
+				var at: float = middle + rng.randf_range(-35.0, 35.0)
+				var i := course.index_at(at)
+				var edge := course.right_edge(i) if side > 0.0 else -course.left_edge(i)
+				var limit := minf(REACH - 8.0, 0.8 * (room[i].y if side > 0.0 else room[i].x))
+				var out := minf(edge + rng.randf_range(8.0, 30.0), limit)
+				var lateral := out * side
+				var p := course.edge(i, lateral)
+				cows.append(_placed(p, _ground_y(course, at, lateral), rng.randf() * TAU, rng.randf_range(0.9, 1.1)))
+			var mi := course.index_at(middle)
+			var herd_lateral := ((course.right_edge(mi) if side > 0.0 else -course.left_edge(mi)) + 16.0) * side
+			var spot := course.edge(mi, herd_lateral)
+			herds.append(Vector3(spot.x, _ground_y(course, middle, herd_lateral) + 1.0, spot.y))
+	_multimesh(parent, _animal_mesh("cow"), cows, false, rng)
+	var mooing := ProximitySound.new()
+	mooing.spots = herds
+	mooing.stream = Sfx.moo()
+	parent.add_child(mooing)
 
 
 ## Height of the drawn ground (with the valley walls) at a place.
@@ -504,6 +553,9 @@ static func _animal_mesh(kind: String) -> Mesh:
 		"deer":
 			coat = Color("9a6a3e")
 			size = 1.1
+		"boar":
+			coat = Color("4a3a2e")
+			size = 0.8
 	var body_y := 0.75 * size
 	MeshKit.add(st, MeshKit.sphere(0.5, 10, 6),
 			_at(Vector3(0, body_y, 0), Vector3(0.75, 0.75, 1.5) * size), coat)
@@ -541,6 +593,15 @@ static func _animal_mesh(kind: String) -> Mesh:
 				MeshKit.add(st, MeshKit.cylinder(0.025, 0.0, 0.25, 5),
 						_at(base + Vector3(x * 1.6, 0.35, -0.08), Vector3.ONE, Vector3(-0.5, 0, 0)),
 						Color("c9b48a"))
+		"boar":
+			# A wild boar: a long snout, little tusks and a bristly ridge on the back.
+			MeshKit.add(st, MeshKit.cylinder(0.12, 0.08, 0.3, 6),
+					_at(head + Vector3(0, -0.05, -0.2), Vector3.ONE, Vector3(PI / 2, 0, 0)), coat.lightened(0.1))
+			for x: float in [-0.08, 0.08]:
+				MeshKit.add(st, MeshKit.cylinder(0.025, 0.0, 0.14, 5),
+						_at(head + Vector3(x, 0.0, -0.32), Vector3.ONE, Vector3(0.5, 0, 0)), Color("f2ead8"))
+			MeshKit.add(st, MeshKit.sphere(0.3, 8, 4), _at(Vector3(0, body_y + 0.3 * size, -0.1),
+					Vector3(0.3, 0.5, 1.6) * size), coat.darkened(0.3))
 	return MeshKit.finish(st)
 
 

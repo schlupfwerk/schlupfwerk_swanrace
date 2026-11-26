@@ -39,7 +39,7 @@ const ROAD_CURVES := [
 ## Logs on the road (meters into the road) and the animals crossing it.
 const ROAD_LOGS := [120.0, 330.0, 520.0, 700.0, 880.0]
 const ROAD_ANIMALS := [200.0, 420.0, 610.0, 790.0, 945.0]
-const GOATS := 9
+const GOATS := 4
 
 
 func _init() -> void:
@@ -83,7 +83,8 @@ func _height_at(d: float) -> float:
 	# Rolling road (grades up to about 11%), flat again for the finish.
 	var r := d - ROAD_START
 	var fade := smoothstep(0.0, 60.0, r) * (1.0 - smoothstep(ROAD_LENGTH - 60.0, ROAD_LENGTH - 10.0, r))
-	return bottom + fade * (4.0 * sin(TAU * r / 420.0) + 1.5 * sin(TAU * r / 170.0 + 1.0))
+	# Only rises above the valley floor: no dips below it.
+	return bottom + fade * 0.6 * (5.5 + 4.0 * sin(TAU * r / 420.0) + 1.5 * sin(TAU * r / 170.0 + 1.0))
 
 
 func _half_width(d: float) -> Vector2:
@@ -148,28 +149,29 @@ func _place_features() -> void:
 		movers.append(mover)
 
 
-## Rows of pines and rocks down the slope, never closing it: each row leaves
+## Sparse rows of pines and rocks down the slope (one or two every ~30 m; it was
+## too hard with more), never closing it: each row leaves
 ## wide gaps. Pines are too tall to jump; rocks can be jumped.
 func _place_slope_obstacles(rng: RandomNumberGenerator) -> void:
 	var d := 90.0
 	while d < SKI_END - 30.0:
 		var i := index_at(d)
 		var used: Array[float] = []
-		for n in rng.randi_range(1, 3):
+		for n in rng.randi_range(1, 2):
 			var lateral := rng.randf_range(left_edge(i) + 3.0, right_edge(i) - 3.0)
 			var clear := true
 			for other in used:
-				if absf(other - lateral) < 7.0:
+				if absf(other - lateral) < 12.0:
 					clear = false
 			if not clear:
 				continue
 			used.append(lateral)
 			var at := d + rng.randf_range(-3.0, 3.0)
-			if rng.randf() < 0.7:
+			if rng.randf() < 0.5:
 				add_obstacle(at, lateral, 0.8, 99.0)
 			else:
 				add_obstacle(at, lateral, 1.0, 0.6)
-		d += rng.randf_range(11.0, 17.0)
+		d += rng.randf_range(28.0, 40.0)
 
 
 func _place_goats(rng: RandomNumberGenerator) -> void:
