@@ -315,6 +315,19 @@ plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Medido na 
   Decisão do dono: **manter assim**, a linha de corrida é uma habilidade que vale a pena.
 Se mudar velocidade, aceleração, largura da areia ou o traçado, recalcule (ver `IslandTrack`).
 
+**Segundo mapa: Alpes Suíços** (`AlpsCourse`, `AlpsScenery`, id `swiss_alps`, ADR 0022). **Ponta a
+ponta, sem voltas** (`CourseTrack`, `course_race.tscn`): largada no alto da montanha, chegada numa
+vilinha de chalés. ~2:00 para um bom piloto:
+- **Pista de esqui (~40 s):** 760 m descendo 120 m, 44 m de largura, poucas curvas. O cisne **esquia**
+  (`SwanMotor.skiing`): acelerar = agachar (até 72 km/h, curva mais aberta), frear = abrir as asas.
+  Pinheiros (não dá para pular), pedras (dá) e **cabras andando** pela pista (`CourseMover`). Redes
+  laranja nas laterais.
+- **Estrada alpina (~1:20):** 1 km de estrada de duas faixas (sem carros), muitas curvas para os dois
+  lados, guard-rail (o cisne desliza nele, sem atordoar), faixa tracejada e pinheiros dos dois lados.
+  Troncos atravessados e **vacas e veados cruzando**.
+- Escolha do mapa na aba Correr (`Settings.map`, `Maps`); voltas ficam desativadas nos mapas ponta a
+  ponta. O recorde é o **tempo total** por mapa. Música provisória: a da ilha (o dono escolhe).
+
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
 descida:
 - **Suíça**: neve nos Alpes → vilarejo → lago alpino → voo pelos vales

@@ -249,3 +249,12 @@ TOUCH_BRAKE,BRAKE,FREAR
 TOUCH_JUMP,JUMP,PULAR
 TOUCH_TURBO,TURBO,TURBO
 TOUCH_HORN,HORN,BUZINA
+MAP,Map,Mapa
+MAP_SWISS_ALPS,Swiss Alps,Alpes Suíços
+STRETCH_SKI_SLOPE,Ski slope,Pista de esqui
+STRETCH_ALPINE_ROAD,Alpine road,Estrada alpina
+HUD_TO_FINISH,Finish in %d m,Chegada em %d m
+SKIS_OFF,Skis off: run!,Tira os esquis: corre!
+FINAL_STRETCH,Final stretch!,Reta final!
+MSG_BEST_TIME,Best time!  %s,Melhor tempo!  %s
+MSG_TIME,Time  %s,Tempo  %s

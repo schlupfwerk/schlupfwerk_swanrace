@@ -55,6 +55,8 @@ var difficulty := 1
 var obstacle_alert := true
 ## Laps per race.
 var laps := 3
+## Map picked in the Race tab (an id from Maps.LIST).
+var map := "desert_island"
 ## Swans in a race: the player plus bots (1 = racing alone).
 var racers := 6
 ## Direction arrow on screen: 0 automatic (on in easy and medium), 1 on, 2 off.
@@ -475,6 +477,7 @@ func save_settings() -> void:
 	cfg.set_value("general", "language", language)
 	cfg.set_value("general", "difficulty", difficulty)
 	cfg.set_value("general", "laps", laps)
+	cfg.set_value("general", "map", map)
 	cfg.set_value("general", "obstacle_alert", obstacle_alert)
 	cfg.set_value("general", "racers", racers)
 	cfg.set_value("general", "direction_indicator", direction_indicator)
@@ -498,6 +501,7 @@ func load_settings() -> void:
 	language = _pick(cfg.get_value("general", "language", language), LANGUAGES, "")
 	difficulty = clampi(cfg.get_value("general", "difficulty", difficulty), 0, 2)
 	laps = _pick(int(cfg.get_value("general", "laps", laps)), LAP_OPTIONS, 3)
+	map = Maps.LIST[Maps.index_of(str(cfg.get_value("general", "map", map)))].id
 	obstacle_alert = bool(cfg.get_value("general", "obstacle_alert", obstacle_alert))
 	racers = clampi(int(cfg.get_value("general", "racers", racers)), 1, 12)
 	direction_indicator = clampi(cfg.get_value("general", "direction_indicator", direction_indicator), 0, 2)

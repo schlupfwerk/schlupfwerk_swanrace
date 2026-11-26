@@ -51,6 +51,24 @@ const RAMP_MAX_FALL := 1.8
 const RAMP_AIR_DRAG := 0.8
 ## How fast the extra speed of the push fades while gliding (m/s per second).
 const RAMP_SETTLE := 3.0
+## Skiing (on snow, ADR 0022): gravity does the work. Accelerate = tuck (a
+## higher top speed, wider turns); brake = open the wings (a snowplough).
+const SKI_MAX_SPEED := 20.0 # m/s, 72 km/h, tucked
+## Top speed standing up (not tucked), as a share of SKI_MAX_SPEED.
+const SKI_UPRIGHT_SCALE := 0.8
+## Downhill pull: speed gained per second for each unit of grade.
+const SKI_SLOPE_GRAVITY := 14.0
+## Pushing with the accelerate button on flat snow (like poling).
+const SKI_PUSH := 2.0
+const SKI_FRICTION := 0.5
+## Carving costs a little speed while steering (m/s per second at full lock).
+const SKI_CARVE_LOSS := 0.8
+const SKI_BRAKE := 0.7 # share of BRAKE_DECELERATION
+const SKI_TURN_RATE := 1.5 # rad/s
+## Turning while fully tucked: this share of SKI_TURN_RATE.
+const SKI_TUCK_TURN := 0.65
+## Extra speed above the limit fades at this rate (m/s per second).
+const SKI_SETTLE := 4.0
 
 var position := Vector3.ZERO
 ## Yaw in radians. 0 faces -Z.
@@ -79,6 +97,8 @@ var jumped := false
 var landed := false
 ## Flying off a ramp (until it lands).
 var ramp_flight := false
+## On skis (set by the course each tick): the snow rules above apply.
+var skiing := false
 
 
 func forward() -> Vector3:
@@ -101,6 +121,38 @@ func step(intent: SwanIntent, tick: float) -> void:
 
 	accelerating = intent.accel > 0.05
 	braking = intent.brake > 0.05 and speed > 0.5
+	if skiing:
+		_step_ski(intent, tick, control)
+	else:
+		_step_run(intent, tick, control)
+
+	var turn_rate := lerpf(TURN_RATE_SLOW, TURN_RATE_FAST, speed_ratio())
+	if skiing:
+		turn_rate = SKI_TURN_RATE * lerpf(1.0, SKI_TUCK_TURN, intent.accel)
+	heading = wrapf(heading - intent.steer * turn_rate * control * tick, -PI, PI)
+	position += forward() * speed * tick
+
+	if not on_ground:
+		# Fast up, slow down: a glide once past the top of the jump. Off a
+		# ramp the glide is longer and the air slows the swan down.
+		var glide := RAMP_GLIDE_GRAVITY if ramp_flight else GLIDE_GRAVITY
+		var gravity := GRAVITY if vertical_velocity > 0.0 else glide
+		var max_fall := RAMP_MAX_FALL if ramp_flight else MAX_GLIDE_FALL
+		vertical_velocity = maxf(vertical_velocity - gravity * tick, -max_fall)
+		position.y += vertical_velocity * tick
+		if ramp_flight and vertical_velocity < 0.0:
+			speed = maxf(speed - RAMP_AIR_DRAG * tick, 0.0)
+		if position.y <= 0.0:
+			position.y = 0.0
+			vertical_velocity = 0.0
+			on_ground = true
+			landed = true
+			ramp_flight = false
+			speed *= 1.0 - LANDING_SPEED_LOSS
+
+
+## Running: the swan's own legs push it (sand, grass, road).
+func _step_run(intent: SwanIntent, tick: float, control: float) -> void:
 	speed += ACCELERATION * intent.accel * control * tick
 	speed -= BRAKE_DECELERATION * intent.brake * control * tick
 	speed -= COAST_DECELERATION * (1.0 - intent.accel) * tick
@@ -129,27 +181,28 @@ func step(intent: SwanIntent, tick: float) -> void:
 		var settle := RAMP_SETTLE if ramp_flight else BRAKE_DECELERATION
 		speed = move_toward(speed, limit, settle * tick)
 
-	var turn_rate := lerpf(TURN_RATE_SLOW, TURN_RATE_FAST, speed_ratio())
-	heading = wrapf(heading - intent.steer * turn_rate * control * tick, -PI, PI)
-	position += forward() * speed * tick
 
-	if not on_ground:
-		# Fast up, slow down: a glide once past the top of the jump. Off a
-		# ramp the glide is longer and the air slows the swan down.
-		var glide := RAMP_GLIDE_GRAVITY if ramp_flight else GLIDE_GRAVITY
-		var gravity := GRAVITY if vertical_velocity > 0.0 else glide
-		var max_fall := RAMP_MAX_FALL if ramp_flight else MAX_GLIDE_FALL
-		vertical_velocity = maxf(vertical_velocity - gravity * tick, -max_fall)
-		position.y += vertical_velocity * tick
-		if ramp_flight and vertical_velocity < 0.0:
-			speed = maxf(speed - RAMP_AIR_DRAG * tick, 0.0)
-		if position.y <= 0.0:
-			position.y = 0.0
-			vertical_velocity = 0.0
-			on_ground = true
-			landed = true
-			ramp_flight = false
-			speed *= 1.0 - LANDING_SPEED_LOSS
+## Skiing: the slope pulls the swan down; tucking raises the top speed,
+## opening the wings slows it down, carving costs a little speed.
+func _step_ski(intent: SwanIntent, tick: float, control: float) -> void:
+	if on_ground:
+		speed -= SKI_SLOPE_GRAVITY * slope * tick
+	speed += SKI_PUSH * intent.accel * control * tick
+	speed -= BRAKE_DECELERATION * SKI_BRAKE * intent.brake * control * tick
+	speed -= (SKI_FRICTION + SKI_CARVE_LOSS * absf(intent.steer)) * tick
+	turn_cap = 1.0
+	_update_turbo(intent, tick)
+	if boosting:
+		speed += TURBO_ACCEL_BONUS * tick
+	if pad_time > 0.0:
+		pad_time -= tick
+		speed += PAD_ACCEL * tick
+	var limit := SKI_MAX_SPEED * lerpf(SKI_UPRIGHT_SCALE, 1.0, intent.accel) * max_speed_scale
+	if boosting:
+		limit *= 1.0 + TURBO_LIMIT_BONUS
+	speed = clampf(speed, 0.0, SKI_MAX_SPEED * 1.5)
+	if speed > limit:
+		speed = move_toward(speed, limit, SKI_SETTLE * tick)
 
 
 ## Takes off from the top of a ramp, `height` meters above the ground below.
