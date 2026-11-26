@@ -58,6 +58,16 @@ var breaks: Array[Dictionary] = []
 ## Sides (-1 left, 1 right) whose edge is a solid wall, curb or fence: running
 ## into it dazes the swan, like the forest edge on the island (CourseRules).
 var daze_sides: Array[float] = []
+## Soft sand past the edges (the Egypt dunes): no fence; climbing a dune the
+## swan gets slower and slower, and past SINK_DEPTH it sinks and comes back
+## on the course, like drowning on the island (CourseRules).
+var soft_edges := false
+## How far up a soft edge (meters past the edge) the swan sinks.
+var sink_depth := 7.0
+
+## Emitted (by the race) each time the player completes a lap: the scenery
+## can react to it (the crowd at the Colosseum cheers).
+signal player_lap
 
 ## Distance between samples: SPACING, or a little more or less on a loop so
 ## that a whole number of samples closes it.
@@ -380,9 +390,17 @@ func edge_open(distance: float, side: float) -> bool:
 	if open_edges:
 		return true
 	for gap in breaks:
-		if gap.side == side and between(gap.from, distance) >= 0.0 and between(distance, gap.to) >= 0.0:
+		if gap.side != side:
+			continue
+		# A break as long as the whole course (the Colosseum pit) is open everywhere.
+		if gap.to - gap.from >= length or (between(gap.from, distance) >= 0.0 and between(distance, gap.to) >= 0.0):
 			return true
 	return false
+
+
+## What the HUD says when a swan sinks into a soft edge (a translation key).
+func sink_message() -> String:
+	return "CAREFUL_DUNES"
 
 
 ## What the HUD says when a swan falls (a translation key).

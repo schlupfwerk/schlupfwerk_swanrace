@@ -26,6 +26,8 @@ const FENCE_LOSS := 0.8
 const FENCE_DAZE_ANGLE := 0.08
 ## Top speed while splashing through a puddle (a share of the normal one).
 const PUDDLE_SPEED := 0.5
+## Top speed just before sinking into a soft edge (a share of the normal one).
+const SAND_SLOWEST := 0.2
 ## How far past an open edge the swan's center may go before it falls (m):
 ## a foot over the edge is fine.
 const FALL_MARGIN := 0.2
@@ -46,10 +48,12 @@ static func apply(swan: Swan, tracker: CourseTracker, track: CourseTrack) -> voi
 	swan.in_water = splashing
 	swan.motor.max_speed_scale = PUDDLE_SPEED if splashing else 1.0
 	_follow_ground(swan, track, i, ground)
+	if track.soft_edges and _sink_in_sand(swan, track, i, lateral, race_heading):
+		return
 	if track.open_edges or not track.breaks.is_empty() or not track.holes.is_empty():
 		if _fall_off(swan, track, i, distance, lateral, race_heading):
 			return
-	if not track.open_edges:
+	if not track.open_edges and not track.soft_edges:
 		_keep_inside(swan, track, i, distance, lateral, race_heading)
 	_collide(swan, track, i, distance)
 
@@ -77,6 +81,22 @@ static func _fall_off(swan: Swan, track: CourseTrack, i: int, distance: float, l
 	var p := track.edge(spot, back_lateral)
 	swan.fall(Vector3(p.x, 0.0, p.y), track.heading_at(spot) if not hole.is_empty() else race_heading)
 	return true
+
+
+## Soft sand past the edges: the higher up the dune, the slower; too far up,
+## the swan sinks (drowns in the sand) and comes back on the course.
+## Returns true when it sank.
+static func _sink_in_sand(swan: Swan, track: CourseTrack, i: int, lateral: float,
+		race_heading: float) -> bool:
+	var outside := maxf(lateral - track.right_edge(i), track.left_edge(i) - lateral)
+	if outside <= 0.0:
+		return false
+	if outside > track.sink_depth:
+		var back := track.edge(i, clampf(lateral, track.left_edge(i) + 1.5, track.right_edge(i) - 1.5))
+		swan.drown(Vector3(back.x, 0.0, back.y), race_heading)
+		return true
+	swan.motor.max_speed_scale *= lerpf(1.0, SAND_SLOWEST, clampf(outside / track.sink_depth, 0.0, 1.0))
+	return false
 
 
 ## Fences on the slope, guard rails on the road: slide along, losing speed.

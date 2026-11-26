@@ -141,6 +141,59 @@ static func meow() -> AudioStreamWAV:
 	return _cache["meow"]
 
 
+## A crowd going wild: a roar of many voices ("waaah") that swells and fades,
+## with hand claps and whistles scattered through it.
+static func crowd_cheer() -> AudioStreamWAV:
+	if not _cache.has("crowd_cheer"):
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 80
+		var claps := []
+		for n in 90:
+			claps.append(rng.randf_range(0.1, 3.2))
+		claps.sort()
+		var whistles := [0.5, 1.2, 1.9, 2.6]
+		_cache["crowd_cheer"] = _render(3.6, func(t: float, state: Dictionary) -> float:
+			var swell := smoothstep(0.0, 0.35, t) * (1.0 - smoothstep(2.4, 3.6, t))
+			# Voices: noise shaped around the "ah" vowel (two bands).
+			var noise := randf_range(-1.0, 1.0)
+			state.a = lerpf(state.get("a", 0.0), noise, 0.12)
+			state.b = lerpf(state.get("b", 0.0), noise, 0.3)
+			var voices: float = state.a * 1.6 + (state.b - state.a) * 0.9
+			# Claps, in time order: only the few around now can sound.
+			var clap := 0.0
+			var k: int = state.get("k", 0)
+			while k < claps.size() and claps[k] + 0.03 < t:
+				k += 1
+			state.k = k
+			for m in range(k, mini(k + 4, claps.size())):
+				var u: float = t - claps[m]
+				if u >= 0.0 and u < 0.03:
+					clap += randf_range(-1.0, 1.0) * (1.0 - u / 0.03)
+			var whistle := 0.0
+			for at: float in whistles:
+				var u := t - at
+				if u >= 0.0 and u < 0.45:
+					var pitch := 1800.0 + 900.0 * sin(u / 0.45 * PI)
+					whistle += sin(TAU * pitch * u) * sin(u / 0.45 * PI) * 0.25
+			return (voices * 0.55 + clap * 0.35 + whistle) * swell)
+	return _cache["crowd_cheer"]
+
+
+## The murmur of a crowd waiting, looped (soft, always on at the Colosseum).
+static func crowd_murmur() -> AudioStreamWAV:
+	if not _cache.has("crowd_murmur"):
+		var stream := _render(6.0, func(t: float, state: Dictionary) -> float:
+			var noise := randf_range(-1.0, 1.0)
+			state.a = lerpf(state.get("a", 0.0), noise, 0.08)
+			var wave := 0.8 + 0.2 * sin(TAU * t / 3.0) * sin(TAU * t / 2.0)
+			return state.a * 1.2 * wave)
+		stream.data = pad_loop(stream.data)
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		stream.loop_end = int(6.0 * RATE)
+		_cache["crowd_murmur"] = stream
+	return _cache["crowd_murmur"]
+
+
 ## Temple bell: a soft strike and a long, shimmering ring of inharmonic
 ## partials (a bronze bell), fading over a few seconds.
 static func temple_bell() -> AudioStreamWAV:

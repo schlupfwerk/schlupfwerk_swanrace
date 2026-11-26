@@ -35,3 +35,7 @@ testing the first versions: expect bugs and changes. Progress is saved in
 
 Source code (GPLv3): https://github.com/schlupfwerk/schlupfwerk_swanrace
 Found a bug? Open an issue on GitHub or write to contact@schlupfwerk.com
+
+--
+Versão / Version: {VERSION} (build {BUILD})
+Gerado em / Built on: {DATE}

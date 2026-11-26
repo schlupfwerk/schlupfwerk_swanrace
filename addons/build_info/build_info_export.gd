@@ -16,7 +16,8 @@ func _export_begin(_features: PackedStringArray, _is_debug: bool, _path: String,
 	var cfg := ConfigFile.new()
 	cfg.set_value("build", "number", _info.number)
 	cfg.set_value("build", "commit", _info.commit)
-	cfg.set_value("build", "date", Time.get_datetime_string_from_system(true))
+	# Local time, so the day matches the calendar where the build was made.
+	cfg.set_value("build", "date", Time.get_datetime_string_from_system(false))
 	add_file(GameVersion.BUILD_INFO_PATH, cfg.encode_to_text().to_utf8_buffer(), false)
 	print("Build info: %s-build%05d (%s)" % [GameVersion.base(), _info.number, _info.commit])
 
