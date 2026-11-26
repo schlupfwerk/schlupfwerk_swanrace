@@ -70,7 +70,7 @@ func _ready() -> void:
 
 	_hud.swan = _player.swan
 	_hud.course = _track
-	_hud.max_kmh = 90.0
+	_hud.max_kmh = _track.max_kmh()
 	_hud.terrain_name = tr(Maps.current().name)
 	for racer in _racers:
 		if not racer.player:

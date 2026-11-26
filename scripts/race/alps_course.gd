@@ -106,6 +106,10 @@ func _terrain_at(d: float) -> int:
 	return Terrain.SNOW if d < SNOW_END else Terrain.ROAD
 
 
+func max_kmh() -> float:
+	return 90.0
+
+
 func stretch_name(d: float) -> String:
 	return "STRETCH_SKI_SLOPE" if d < SNOW_END else "STRETCH_ALPINE_ROAD"
 

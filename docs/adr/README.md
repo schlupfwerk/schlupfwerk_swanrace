@@ -28,3 +28,4 @@ and what it costs. One file per decision, numbered in order.
 | [0016](0016-forward-plus-on-desktop.md) | Forward+ renderer on desktop, Mobile on phones | Accepted |
 | [0017](0017-touch-controls-auto-throttle.md) | Touch controls with automatic throttle | Accepted |
 | [0022](0022-point-to-point-courses-and-skiing.md) | Point-to-point courses, skiing, and the Swiss Alps | Accepted |
+| [0023](0023-rio-seafront.md) | Rio Seafront: an easy, flat point-to-point course | Accepted |

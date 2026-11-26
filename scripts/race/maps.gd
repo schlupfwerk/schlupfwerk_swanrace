@@ -10,6 +10,7 @@ const COURSE_SCENE := "res://scenes/course_race.tscn"
 const LIST := [
 	{"id": "desert_island", "name": "MAP_DESERT_ISLAND", "laps": true},
 	{"id": "swiss_alps", "name": "MAP_SWISS_ALPS", "laps": false},
+	{"id": "rio_beach", "name": "MAP_RIO_BEACH", "laps": false},
 ]
 
 
@@ -37,4 +38,6 @@ static func make_course(id: String) -> CourseTrack:
 	match id:
 		"swiss_alps":
 			return AlpsCourse.new()
+		"rio_beach":
+			return RioCourse.new()
 	return null

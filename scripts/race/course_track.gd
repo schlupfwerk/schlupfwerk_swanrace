@@ -7,7 +7,7 @@ extends RefCounted
 ## the course is and which terrain each stretch has. Geometry, positions and
 ## obstacles only: no visuals (each course has its own scenery script).
 
-enum Terrain { SNOW, ROAD }
+enum Terrain { SNOW, ROAD, SAND }
 
 ## Distance between samples of the center line (m).
 const SPACING := 1.0
@@ -34,6 +34,9 @@ var obstacles: Array[Dictionary] = []
 var movers: Array[CourseMover] = []
 ## Logs across the course: {"distance", "lateral", "length"}. Jump them or go around.
 var logs: Array[Dictionary] = []
+## Small puddles: {"distance", "lateral", "radius"}. Jump them, or splash
+## through and lose speed (CourseRules).
+var puddles: Array[Dictionary] = []
 
 var _height := PackedFloat32Array()
 var _left := PackedFloat32Array()
@@ -107,6 +110,11 @@ func _place_features() -> void:
 ## Builds the course's scenery (and the animals' bodies) under `parent`.
 func build_scenery(_parent: Node3D) -> void:
 	pass
+
+
+## Top of the speedometer scale (km/h): higher where swans ski.
+func max_kmh() -> float:
+	return 60.0
 
 
 ## Name of the stretch at a distance (for the HUD), a translation key.
@@ -248,10 +256,30 @@ func add_log(distance: float, lateral: float, log_length: float) -> void:
 		add_obstacle(distance, lateral + k * log_length / steps, 0.43, 0.56)
 
 
-## True when a log is right ahead in this lane, between `from` and `to` meters
-## ahead (for the "Jump!" alert and the bots).
+## True when a log or a puddle is right ahead in this lane, between `from`
+## and `to` meters ahead (for the "Jump!" alert and the bots).
 func obstacle_ahead(distance: float, lateral: float, from := 6.0, to := 22.0) -> bool:
-	return not log_ahead(distance, lateral, to, from).is_empty()
+	if not log_ahead(distance, lateral, to, from).is_empty():
+		return true
+	for puddle in puddles:
+		var gap: float = puddle.distance - puddle.radius - distance
+		if gap > from * 0.5 and gap < to and absf(lateral - puddle.lateral) < puddle.radius + 0.5:
+			return true
+	return false
+
+
+func add_puddle(distance: float, lateral: float, radius: float) -> void:
+	puddles.append({"distance": distance, "lateral": lateral, "radius": radius})
+
+
+## True when a point is in a puddle (on the ground it slows the swan down).
+func in_puddle(distance: float, lateral: float) -> bool:
+	for puddle in puddles:
+		var along: float = (distance - puddle.distance) / 1.6
+		var across: float = lateral - puddle.lateral
+		if along * along + across * across < puddle.radius * puddle.radius:
+			return true
+	return false
 
 
 ## The log right ahead in this lane (between `from` and `to` meters), or {}.

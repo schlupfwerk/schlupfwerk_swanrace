@@ -8,6 +8,7 @@ extends RefCounted
 ##   - Trees, rocks, logs and animals: running into one, the swan stops and
 ##     pops up right past it, blinking (like on the island). Brushing one from
 ##     the side only slides along it. Rocks and logs can be jumped.
+##   - Puddles: wet and slow (half the top speed) while running through.
 ##   - Never the wrong way.
 
 const SWAN_RADIUS := 0.45
@@ -15,6 +16,8 @@ const SWAN_RADIUS := 0.45
 const PAST_OBSTACLE := 1.2
 ## Speed kept when running straight into a fence (scaled by how straight).
 const FENCE_LOSS := 0.8
+## Top speed while splashing through a puddle (a share of the normal one).
+const PUDDLE_SPEED := 0.5
 
 
 static func apply(swan: Swan, tracker: CourseTracker, track: CourseTrack) -> void:
@@ -24,9 +27,11 @@ static func apply(swan: Swan, tracker: CourseTracker, track: CourseTrack) -> voi
 	var race_heading := track.heading_at(i)
 	var ground := track.ground_height_at(distance, lateral)
 	swan.ground_y = ground
-	swan.in_water = false
 	swan.motor.skiing = track.terrain(distance) == CourseTrack.Terrain.SNOW
-	swan.motor.max_speed_scale = 1.0
+	# Puddles: jump them, or splash through and slow down.
+	var splashing := swan.motor.on_ground and track.in_puddle(distance, lateral)
+	swan.in_water = splashing
+	swan.motor.max_speed_scale = PUDDLE_SPEED if splashing else 1.0
 	_follow_ground(swan, track, i, ground)
 	_keep_inside(swan, track, i, lateral, race_heading)
 	_collide(swan, track, i, distance)

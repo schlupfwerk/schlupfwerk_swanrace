@@ -351,7 +351,7 @@ static func _build_obstacles(parent: Node3D, course: AlpsCourse, rng: RandomNumb
 
 
 ## Logs across the road, with a red flag at each end (like on the island).
-static func _build_logs(parent: Node3D, course: AlpsCourse) -> void:
+static func _build_logs(parent: Node3D, course: CourseTrack) -> void:
 	var bark := MeshKit.vertex_color_material()
 	var radius := 0.38
 	for log: Dictionary in course.logs:
@@ -383,7 +383,7 @@ static func _build_logs(parent: Node3D, course: AlpsCourse) -> void:
 
 ## A checkered line across the course and a banner on two posts above it
 ## (`trim` colors the posts: red at the start, dark at the finish).
-static func _build_gate(parent: Node3D, course: AlpsCourse, distance: float, trim: Color) -> void:
+static func _build_gate(parent: Node3D, course: CourseTrack, distance: float, trim: Color) -> void:
 	var i := course.index_at(distance)
 	var left := course.left_edge(i) - 0.8
 	var right := course.right_edge(i) + 0.8

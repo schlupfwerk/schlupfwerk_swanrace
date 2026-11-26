@@ -328,6 +328,13 @@ vilinha de chalés. ~2:00 para um bom piloto:
 - Escolha do mapa na aba Correr (`Settings.map`, `Maps`); voltas ficam desativadas nos mapas ponta a
   ponta. O recorde é o **tempo total** por mapa. Música provisória: a da ilha (o dono escolhe).
 
+**Terceiro mapa: Orla do Rio** (`RioCourse`, `RioScenery`, id `rio_beach`, ADR 0023). Ponta a ponta,
+**fácil**, ~2:30, **toda plana**: 1,9 km pela curva da baía. Mar à direita (praia com guarda-sóis,
+quiosques e redes de vôlei), à esquerda o **calçadão de ondas preto e branco**, coqueiros, a avenida
+e uma fileira de prédios, com morros verdes atrás e um pico de granito no fim da baía. Corre-se no
+calçadão e na areia. Obstáculos: troncos, **poças pequenas** (pule; sem pular, metade da velocidade
+enquanto passa) e **pessoas** passeando no calçadão ou atravessando com prancha de surfe.
+
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
 descida:
 - **Suíça**: neve nos Alpes → vilarejo → lago alpino → voo pelos vales

@@ -10,8 +10,9 @@ extends Node3D
 ##   - WANDER: drifts back and forth across a band, slowly going up and down
 ##     the slope a little.
 ##   - CROSS: walks from one side to the other, waits a moment, walks back.
+##   - STROLL: walks along the course (`reach` meters each way), turns around.
 
-enum Pattern { WANDER, CROSS }
+enum Pattern { WANDER, CROSS, STROLL }
 
 var track: CourseTrack
 ## What animal it is ("goat", "cow", "deer"...): the scenery builds its body.
@@ -67,12 +68,22 @@ func advance(t: float) -> void:
 				across = 1.0 - (u - walk - pause) / walk
 			lateral = home_lateral - reach + 2.0 * reach * smoothstep(0.0, 1.0, across)
 			distance = home_distance
+		Pattern.STROLL:
+			var walk := 2.0 * reach / maxf(walk_speed, 0.1)
+			var u := fposmod(time, 2.0 * walk) / walk
+			var along := u if u < 1.0 else 2.0 - u
+			distance = home_distance - reach + 2.0 * reach * along
+			lateral = home_lateral + 0.4 * sin(time * 0.7)
 	var i := track.index_at(distance)
 	p = track.edge(i, lateral)
 	position = Vector3(p.x, track.ground_height_at(distance, lateral), p.y)
-	# Face the way it walks (across the course, or along it when standing).
-	var moved := lateral - _last_lateral
-	if absf(moved) > 0.0005:
-		var across_dir := track.right(i) * signf(moved)
-		_facing = atan2(-across_dir.x, -across_dir.y)
+	# Face the way it walks: across the course, or along it (STROLL).
+	if pattern == Pattern.STROLL:
+		var ahead := fposmod(time, 4.0 * reach / maxf(walk_speed, 0.1)) < 2.0 * reach / maxf(walk_speed, 0.1)
+		_facing = track.heading_at(i) + (0.0 if ahead else PI)
+	else:
+		var moved := lateral - _last_lateral
+		if absf(moved) > 0.0005:
+			var across_dir := track.right(i) * signf(moved)
+			_facing = atan2(-across_dir.x, -across_dir.y)
 	rotation.y = lerp_angle(rotation.y, _facing, 0.2)
