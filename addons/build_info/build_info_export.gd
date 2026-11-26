@@ -10,6 +10,13 @@ func _get_name() -> String:
 	return "BuildInfo"
 
 
+## Needed for _get_export_options_overrides to be used: without it the
+## Android versionCode stayed at 1 (the Play Store needs a higher one on every
+## upload) and the Windows file version was not set.
+func _supports_platform(_platform: EditorExportPlatform) -> bool:
+	return true
+
+
 func _export_begin(_features: PackedStringArray, _is_debug: bool, _path: String,
 		_flags: int) -> void:
 	_info = GameVersion.read_git()
