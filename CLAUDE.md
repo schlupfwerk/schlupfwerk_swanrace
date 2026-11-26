@@ -507,8 +507,10 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
   (o nome exibido, "Swan Race", pode mudar).
 
 ## Versionamento
-- **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
-- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.9**;
+- **Formato:** `1.0.0-build00142` = versão base + número do build. Na tela: `v1.0.0-build00142`
+  (até a 0.0.9 era `Alpha 0.0.9-build…`).
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **1.0.0** (primeira
+  versão sem "alpha", 2026-11-26; ainda testando as primeiras versões);
   só o dono do projeto decide quando ela sobe.
 - **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
   Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada
@@ -532,13 +534,14 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
   tipo novo com mais de ~5 MB, adicione a extensão ao LFS. Nenhum arquivo acima de 100 MB.
 - **Builds exportados** (APK, AAB, executáveis) vão para a pasta `builds/` (ignorada)
   e são publicados no GitHub Releases, nunca commitados.
-- **Alpha para Windows** (enquanto o jogo não está na Steam): preset "Windows Desktop" em
+- **Build para Windows** (enquanto o jogo não está na Steam): preset "Windows Desktop" em
   `export_presets.cfg` (x86_64, pck embutido, nome/empresa no .exe). Templates de exportação do
   Godot da mesma versão em `%APPDATA%\Godot\export_templates\<versão>.stable`. Exportar com
   `godot --headless --path . --export-release "Windows Desktop" builds/windows/SwanRace.exe`,
   testar o .exe e zipar com `LEIA-ME.txt` (PT/EN: como passar pelo SmartScreen) e os arquivos de
-  licença (a GPL pede a licença e o link do código junto do binário). Publicar como
-  **pré-lançamento** `v<versão>-alpha` com a tag no commit de onde saiu o build. O site aponta para
+  licença (a GPL pede a licença e o link do código junto do binário). Publicar com a tag
+  `v<versão>` (desde a 1.0.0; builds de teste usam `-alpha`/`-beta` e saem como pré-lançamento) no
+  commit de onde saiu o build. O site aponta para
   `releases/latest`.
   Automático: `.github/workflows/release-windows.yml` faz tudo isso num runner Windows a cada tag
   `v*` (alpha/beta viram pré-lançamento) e anexa o zip ao release; o LEIA-ME fica em
