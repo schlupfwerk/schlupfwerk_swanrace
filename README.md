@@ -42,7 +42,9 @@ whatever you use.
 
 ## Status
 
-🐣 **Alpha 0.0.8**: playable prototype on Windows; Android build in testing (touch controls). One track (the Desert Island, with ramps),
+🐣 **Alpha 0.0.9**: playable prototype on Windows; Android build in testing (touch controls). Nine maps (the
+Desert Island with ramps, Swiss Alps, Rio Seafront, Sidereal Circuit, São Paulo, German Forest, Tokyo,
+Great Wall of China and the Andes), each with its own cheerful music,
 AI racers, character customization, an easy mode that runs by itself. Expect rough edges
 and big changes.
 
