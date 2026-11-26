@@ -490,6 +490,22 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
   `%APPDATA%Godotpp_userdataSwan Raceogs`, para análise futura (ex.: Firebase).
   Cópia dos antigos em `logs_archive`.
 
+## Ícone e identificador do app
+- **Ícone:** variação do logo da Schlupfwerk (o ovo em pixel art com a rachadura dourada): o ovo
+  chocou e um cisne sai dele, com a parte de cima da casca na cabeça, sobre fundo azul-céu.
+  Gerado por código: `scripts/tools/make_app_icon.gd` (rodar com
+  `godot --headless --path . --script res://scripts/tools/make_app_icon.gd`), que grava os PNGs em
+  `assets/icon/`. Mudou o desenho? Edite o script e rode de novo; não edite os PNGs à mão.
+  - `icon_1024.png`: ícone do projeto (`application/config/icon`) e o da App Store no iOS.
+  - Android: `android_main_192.png` (ícone antigo) e o ícone adaptativo em camadas
+    (`android_foreground_432.png`, `android_background_432.png`, `android_monochrome_432.png`),
+    nos dois presets de Android (`launcher_icons/*`). O desenho da frente fica dentro da zona
+    segura de 66%, para nenhuma máscara cortar o cisne.
+  - iOS: ainda não há preset; ao criar, use `icon_1024.png` (a Godot gera os outros tamanhos).
+- **Identificador:** `com.schlupfwerk.swanrace` no Android (`package/unique_name`), no Firebase e
+  como Bundle ID no iOS. Formato de domínio invertido; **nunca muda** depois de publicado na loja
+  (o nome exibido, "Swan Race", pode mudar).
+
 ## Versionamento
 - **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
 - **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.9**;
