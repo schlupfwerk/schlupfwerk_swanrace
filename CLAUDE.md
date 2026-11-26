@@ -214,8 +214,19 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   o cache usa `Sfx.load_loop`. Sem a margem o mixer lê além do buffer no ponto de loop e o
   jogo fecha no Android (achado no emulador).
 - **Música:** cada país/pista terá a sua, **sem direitos autorais** (licença compatível,
-  com entrada em `assets/CREDITS.md`). A primeira pista, na praia, pede algo que lembre
-  praia. O dono do projeto escolhe as músicas; não adicione música por conta própria.
+  com entrada em `assets/CREDITS.md`, ou composta e sintetizada no código). A primeira pista, na
+  praia, pede algo que lembre praia. O dono do projeto escolhe o estilo de cada uma; não adicione
+  música por conta própria.
+- **Toda música do jogo é alegre e animada** (jogo infantil, para a família): tom maior, andamento
+  rápido, ritmo saltitante, nada triste, lento ou sombrio. Vale para pistas, menus, pódio e
+  qualquer música nova.
+- Músicas por mapa (originais, no código, `scripts/audio/`; `course_race.gd` escolhe pelo mapa e
+  as pistas novas não trocam de música na última volta): Rio = samba (`samba_music.gd`), Alpes =
+  ländler suíço animado (`alpine_music.gd`), Sideral = house eletrônico estilo francês
+  (`space_music.gd`), São Paulo = rock brasileiro (`rock_music.gd`), Floresta Alemã = polka de banda
+  de metais estilo Oktoberfest (`brass_music.gd`), Tóquio = estilo abertura de anime
+  (`anime_music.gd`), Muralha da China = música chinesa festiva, pentatônica (`chinese_music.gd`),
+  Cordilheira dos Andes = cueca chilena em 6/8 (`cueca_music.gd`).
 
 ## Pistas
 **Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
@@ -314,6 +325,34 @@ plana de 1.000 m, um bom jogador fazia **~1:15** e um ruim **~2:00**. Medido na 
   menos que o meio), com turbo nas subidas e aceleradores. Recorde do dono do projeto: 57,78 s.
   Decisão do dono: **manter assim**, a linha de corrida é uma habilidade que vale a pena.
 Se mudar velocidade, aceleração, largura da areia ou o traçado, recalcule (ver `IslandTrack`).
+
+**Segundo mapa: Alpes Suíços** (`AlpsCourse`, `AlpsScenery`, id `swiss_alps`, ADR 0022). **Ponta a
+ponta, sem voltas** (`CourseTrack`, `course_race.tscn`): largada no alto da montanha, chegada numa
+vilinha de chalés. ~2:00 para um bom piloto:
+- **Pista de esqui (~40 s):** 760 m descendo 120 m, 44 m de largura, poucas curvas. O cisne **esquia**
+  (`SwanMotor.skiing`): acelerar = agachar (até 72 km/h, curva mais aberta), frear = abrir as asas.
+  Pinheiros (não dá para pular), pedras (dá) e **cabras andando** pela pista (`CourseMover`). Redes
+  laranja nas laterais.
+- **Estrada alpina (~1:20):** 1 km de estrada de duas faixas (sem carros), muitas curvas para os dois
+  lados, guard-rail (o cisne desliza nele, sem atordoar), faixa tracejada e pinheiros dos dois lados.
+  Troncos atravessados e **vacas e veados cruzando**.
+- Escolha do mapa na aba Correr (`Settings.map`, `Maps`); voltas ficam desativadas nos mapas ponta a
+  ponta. O recorde é o **tempo total** por mapa. Cada mapa tem a sua música (ver Música, acima).
+
+**Terceiro mapa: Orla do Rio** (`RioCourse`, `RioScenery`, id `rio_beach`, ADR 0023). Ponta a ponta,
+**fácil**, ~2:30, **toda plana**: 1,9 km pela curva da baía. Mar à direita (praia com guarda-sóis,
+quiosques e redes de vôlei), à esquerda o **calçadão de ondas preto e branco**, coqueiros, a avenida
+e uma fileira de prédios, com morros verdes atrás e um pico de granito no fim da baía. Corre-se no
+calçadão e na areia. Obstáculos: troncos, **poças pequenas** (pule; sem pular, metade da velocidade
+enquanto passa) e **pessoas** passeando no calçadão ou atravessando com prancha de surfe.
+
+**Quarto mapa: Circuito Sideral** (`SiderealCircuit`, `SiderealScenery`, id `sidereal_circuit`,
+ADR 0024). **Circuito em 8 com voltas** no espaço (1.355 m, ~1:50 por volta), passando por cima dele
+mesmo: um cruzamento é um viaduto de 9 m. **Sem muretas**: saiu da borda ou pisou num dos **buracos**
+do piso, o cisne **grita e cai por 3 s** (`Swan.fall`) e volta piscando, como no afogamento
+("Cuidado para não cair no espaço!!"). **Asteroides** baixos na pista: pule ou contorne. Céu de
+estrelas e nebulosas, piso com bordas que brilham, planetas (um com anéis). Voltas valem aqui (é um
+`CourseTrack` em loop: `build_loop`, `looped`).
 
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
 descida:
@@ -451,9 +490,27 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
   `%APPDATA%Godotpp_userdataSwan Raceogs`, para análise futura (ex.: Firebase).
   Cópia dos antigos em `logs_archive`.
 
+## Ícone e identificador do app
+- **Ícone:** variação do logo da Schlupfwerk (o ovo em pixel art com a rachadura dourada): o ovo
+  chocou e um cisne sai dele, com a parte de cima da casca na cabeça, sobre fundo azul-céu.
+  Gerado por código: `scripts/tools/make_app_icon.gd` (rodar com
+  `godot --headless --path . --script res://scripts/tools/make_app_icon.gd`), que grava os PNGs em
+  `assets/icon/`. Mudou o desenho? Edite o script e rode de novo; não edite os PNGs à mão.
+  - `icon_1024.png`: ícone do projeto (`application/config/icon`) e o da App Store no iOS.
+  - Android: `android_main_192.png` (ícone antigo) e o ícone adaptativo em camadas
+    (`android_foreground_432.png`, `android_background_432.png`, `android_monochrome_432.png`),
+    nos dois presets de Android (`launcher_icons/*`). O desenho da frente fica dentro da zona
+    segura de 66%, para nenhuma máscara cortar o cisne.
+  - iOS: ainda não há preset; ao criar, use `icon_1024.png` (a Godot gera os outros tamanhos).
+- **Identificador:** `com.schlupfwerk.swanrace` no Android (`package/unique_name`), no Firebase e
+  como Bundle ID no iOS. Formato de domínio invertido; **nunca muda** depois de publicado na loja
+  (o nome exibido, "Swan Race", pode mudar).
+
 ## Versionamento
-- **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
-- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.8**;
+- **Formato:** `1.0.0-build00142` = versão base + número do build. Na tela: `v1.0.0-build00142`
+  (até a 0.0.9 era `Alpha 0.0.9-build…`).
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **1.0.0** (primeira
+  versão sem "alpha", 2026-11-26; ainda testando as primeiras versões);
   só o dono do projeto decide quando ela sobe.
 - **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
   Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada
@@ -477,13 +534,14 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
   tipo novo com mais de ~5 MB, adicione a extensão ao LFS. Nenhum arquivo acima de 100 MB.
 - **Builds exportados** (APK, AAB, executáveis) vão para a pasta `builds/` (ignorada)
   e são publicados no GitHub Releases, nunca commitados.
-- **Alpha para Windows** (enquanto o jogo não está na Steam): preset "Windows Desktop" em
+- **Build para Windows** (enquanto o jogo não está na Steam): preset "Windows Desktop" em
   `export_presets.cfg` (x86_64, pck embutido, nome/empresa no .exe). Templates de exportação do
   Godot da mesma versão em `%APPDATA%\Godot\export_templates\<versão>.stable`. Exportar com
   `godot --headless --path . --export-release "Windows Desktop" builds/windows/SwanRace.exe`,
   testar o .exe e zipar com `LEIA-ME.txt` (PT/EN: como passar pelo SmartScreen) e os arquivos de
-  licença (a GPL pede a licença e o link do código junto do binário). Publicar como
-  **pré-lançamento** `v<versão>-alpha` com a tag no commit de onde saiu o build. O site aponta para
+  licença (a GPL pede a licença e o link do código junto do binário). Publicar com a tag
+  `v<versão>` (desde a 1.0.0; builds de teste usam `-alpha`/`-beta` e saem como pré-lançamento) no
+  commit de onde saiu o build. O site aponta para
   `releases/latest`.
   Automático: `.github/workflows/release-windows.yml` faz tudo isso num runner Windows a cada tag
   `v*` (alpha/beta viram pré-lançamento) e anexa o zip ao release; o LEIA-ME fica em

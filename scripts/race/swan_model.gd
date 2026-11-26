@@ -62,6 +62,8 @@ var drowning := 0.0
 var boosting := false
 ## True while gliding down from a jump: wings wide open.
 var gliding := false
+## True on skis (snow courses): skis under the feet, no strides, a tuck.
+var skiing := false
 ## 0..1 how hard the swan is working (steep climbs): drops of sweat fly off.
 var effort := 0.0
 ## Face shown with the eyes and brows.
@@ -119,6 +121,8 @@ var _jaw := Node3D.new()
 var _sock_feet: Array[MeshInstance3D] = []
 ## Everything on the back hangs from here and swings with the stride.
 var _back := Node3D.new()
+## One ski under each foot (children of the knees), shown while skiing.
+var _skis: Array[Node3D] = []
 
 
 func _init() -> void:
@@ -129,6 +133,7 @@ func _init() -> void:
 	_build_head()
 	_build_wings()
 	_build_legs()
+	_build_skis()
 	_build_head_items()
 	_build_glasses()
 	_build_face_items()
@@ -192,10 +197,21 @@ func set_fade(alpha: float) -> void:
 func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 		brake: float, on_ground: bool) -> void:
 	var braking := brake > 0.05
-	var moving := clampf(speed_ratio * 2.0, 0.0, 1.0)
+	# On skis the legs don't stride: the swan glides, so nothing waddles.
+	var moving := 0.0 if skiing else clampf(speed_ratio * 2.0, 0.0, 1.0)
 	var smooth := 1.0 - exp(-10.0 * delta)
 	var legs := 1.0 - exp(-25.0 * delta)
-	if on_ground:
+	for ski in _skis:
+		ski.visible = skiing
+	if on_ground and skiing:
+		# Standing on the skis, feet a little apart; tucking lowers the body.
+		for side in 2:
+			_hips[side].rotation.x = lerpf(_hips[side].rotation.x, 0.04, legs)
+			_knees[side].rotation.x = lerpf(_knees[side].rotation.x, -0.12, legs)
+		_hips[0].rotation.z = -0.1
+		_hips[1].rotation.z = 0.1
+		_body_pivot.position.y = lerpf(_body_pivot.position.y, BODY_HEIGHT - 0.1 * accel, smooth)
+	elif on_ground:
 		var previous_phase := _phase
 		# Long, bouncy strides: few steps per second, big swing.
 		_phase += (3.2 + 5.5 * speed_ratio) * delta * moving
@@ -224,12 +240,16 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 
 	# Clumsy waddle: the body rolls and twists with each stride.
 	var lean := -0.25 * accel * moving + (0.15 if braking else 0.0)
+	if skiing:
+		# The tuck: body forward and low (accelerate).
+		lean = -0.4 * accel + (0.15 if braking else 0.0)
 	_body_pivot.rotation.x = lerpf(_body_pivot.rotation.x, lean, 1.0 - exp(-8.0 * delta))
 	_body_pivot.rotation.z = sin(_phase) * 0.13 * moving
 	# Turning: the body twists and leans into the curve.
 	_turn_look = lerpf(_turn_look, steer, 1.0 - exp(-6.0 * delta))
 	_body_pivot.rotation.y = sin(_phase + 0.6) * 0.09 * moving - _turn_look * 0.22
-	rotation.z = lerpf(rotation.z, -steer * 0.24 * maxf(moving, 0.3), 1.0 - exp(-8.0 * delta))
+	var carve := 0.45 if skiing else maxf(moving, 0.3)
+	rotation.z = lerpf(rotation.z, -steer * 0.24 * carve, 1.0 - exp(-8.0 * delta))
 
 	# The faster it runs, the lower the head goes, bobbing forward and back.
 	var neck_lean := -0.8 * speed_ratio - 0.1 * accel + sin(_phase * 2.0 + 0.8) * 0.14 * moving
@@ -280,6 +300,9 @@ func animate(delta: float, speed_ratio: float, steer: float, accel: float,
 	_body_pivot.scale = Vector3(1.0 + 0.16 * squash - 0.06 * stretch,
 			1.0 - 0.24 * squash + 0.12 * stretch, 1.0 + 0.16 * squash - 0.06 * stretch)
 	_body_pivot.position.y -= 0.14 * squash
+	for side in _skis.size():
+		_skis[side].rotation = Vector3(-(_hips[side].rotation.x + _knees[side].rotation.x), 0.0,
+				-_hips[side].rotation.z)
 	_feather_mat.set_shader_parameter("root_y", global_position.y)
 	if dancing:
 		_dance_pose()
@@ -459,6 +482,33 @@ func _build_legs() -> void:
 		var heel := _sphere(knee, 0.05, Vector3(1.0, 0.7, 1.0), Vector3(0, -0.4, 0.02), _leg_mat,
 				Vector3.ZERO, 8, 4)
 		_bare_feet.append_array([toe_big, toe_small, heel])
+
+
+## Skis: long, thin, tips curved up, under each foot. Children of the knees
+## (the foot is there), turned every frame so they stay flat (animate).
+func _build_skis() -> void:
+	var mat := _toon(Color("d8342c"))
+	_add_outline(mat)
+	for knee in _knees:
+		var ski := Node3D.new()
+		ski.position = Vector3(0, -0.44, -0.05)
+		ski.visible = false
+		knee.add_child(ski)
+		_skis.append(ski)
+		var board := BoxMesh.new()
+		board.size = Vector3(0.13, 0.03, 1.6)
+		var body := MeshInstance3D.new()
+		body.mesh = board
+		body.material_override = mat
+		ski.add_child(body)
+		var tip_mesh := BoxMesh.new()
+		tip_mesh.size = Vector3(0.13, 0.03, 0.25)
+		var tip := MeshInstance3D.new()
+		tip.mesh = tip_mesh
+		tip.material_override = mat
+		tip.position = Vector3(0, 0.05, -0.88)
+		tip.rotation.x = 0.45
+		ski.add_child(tip)
 
 
 # --- Things to wear -----------------------------------------------------------

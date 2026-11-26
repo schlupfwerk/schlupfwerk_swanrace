@@ -4,7 +4,8 @@ extends Control
 ## geometric painted border, a vine of leaves that grows with the speed and a
 ## feather as the needle. Nothing here should look like a car dashboard.
 
-const MAX_KMH := 60.0
+## Top of the scale (km/h). Courses with skiing raise it (Hud.max_kmh).
+var max_kmh := 60.0
 const START_ANGLE := deg_to_rad(150.0)
 const SWEEP := deg_to_rad(240.0)
 
@@ -27,7 +28,7 @@ var speed_kmh := 0.0:
 func _draw() -> void:
 	var center := size / 2.0
 	var radius := minf(size.x, size.y) / 2.0 - 4.0
-	var t := clampf(speed_kmh / MAX_KMH, 0.0, 1.0)
+	var t := clampf(speed_kmh / max_kmh, 0.0, 1.0)
 
 	_draw_disc(center, radius)
 	_draw_border(center, radius)
@@ -108,8 +109,8 @@ func _draw_leaf(base: Vector2, direction: Vector2, length: float, width: float, 
 
 func _draw_marks(center: Vector2, radius: float) -> void:
 	var font := get_theme_default_font()
-	for kmh in range(0, int(MAX_KMH) + 1, 10):
-		var dir := Vector2.from_angle(START_ANGLE + SWEEP * kmh / MAX_KMH)
+	for kmh in range(0, int(max_kmh) + 1, 10):
+		var dir := Vector2.from_angle(START_ANGLE + SWEEP * kmh / max_kmh)
 		# Carved notch.
 		draw_line(center + dir * (radius - 44.0), center + dir * (radius - 54.0), CREAM, 3.0, true)
 		var label_pos := center + dir * (radius - 68.0) + Vector2(-20, 5)

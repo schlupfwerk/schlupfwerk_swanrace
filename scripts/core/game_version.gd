@@ -5,7 +5,9 @@ extends RefCounted
 ## commits: written into build_info.cfg by the export plugin
 ## (addons/build_info), or read from git when running from the editor.
 
-const STAGE := "Alpha"
+## Shown before the version on screen ("v1.0.0-build00142"). It was "Alpha "
+## up to 0.0.9.
+const PREFIX := "v"
 const BUILD_INFO_PATH := "res://build_info.cfg"
 
 static var _build := -1
@@ -34,9 +36,9 @@ static func full() -> String:
 	return "%s-build%05d" % [base(), build()]
 
 
-## "Alpha 0.0.1-build00142", for the screen.
+## "v1.0.0-build00142", for the screen.
 static func label() -> String:
-	return "%s %s" % [STAGE, full()]
+	return PREFIX + full()
 
 
 static func _load() -> void:

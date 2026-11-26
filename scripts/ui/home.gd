@@ -180,11 +180,11 @@ func _build_race_panel() -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
 	_race_panel.add_child(column)
-	var map := Label.new()
-	map.text = tr("MAP_DESERT_ISLAND")
-	map.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	map.add_theme_font_size_override("font_size", 26)
-	column.add_child(map)
+	var map_names := PackedStringArray()
+	for entry: Dictionary in Maps.LIST:
+		map_names.append(tr(entry.name))
+	var map_row := OptionRow.new().setup(tr("MAP"), map_names, Maps.index_of(Settings.map)).compact()
+	column.add_child(map_row)
 
 	var lap_names := PackedStringArray()
 	for value in Settings.LAP_OPTIONS:
@@ -195,7 +195,8 @@ func _build_race_panel() -> void:
 	var difficulty_names := PackedStringArray()
 	for key in ["DIFFICULTY_EASY", "DIFFICULTY_MEDIUM", "DIFFICULTY_HARD"]:
 		difficulty_names.append(tr(key))
-	var rows: Array[Control] = []
+	var rows: Array[Control] = [map_row]
+	var lap_row: OptionRow
 	for entry in [["LAPS", lap_names, maxi(Settings.LAP_OPTIONS.find(Settings.laps), 0)],
 			["RACERS", racer_names, Settings.racers - 1],
 			["DIFFICULTY", difficulty_names, Settings.difficulty]]:
@@ -212,6 +213,14 @@ func _build_race_panel() -> void:
 			Settings.save_settings())
 		column.add_child(row)
 		rows.append(row)
+		if key == "LAPS":
+			lap_row = row
+	# Courses go from a start to a finish: no laps to pick.
+	lap_row.set_enabled(Maps.has_laps(Settings.map))
+	map_row.value_changed.connect(func(i: int) -> void:
+		Settings.map = Maps.LIST[i].id
+		lap_row.set_enabled(Maps.has_laps(Settings.map))
+		Settings.save_settings())
 	_race_button.text = tr("RACE_BUTTON")
 	_race_button.custom_minimum_size = Vector2(0, 64)
 	_race_button.add_theme_font_size_override("font_size", 32)
@@ -415,7 +424,7 @@ func _close_selector(back_to_race := true) -> void:
 
 func _race_now() -> void:
 	Profile.save_profile()
-	get_tree().change_scene_to_file(RACE_SCENE)
+	get_tree().change_scene_to_file(Maps.scene(Settings.map))
 
 
 func _update_hint() -> void:

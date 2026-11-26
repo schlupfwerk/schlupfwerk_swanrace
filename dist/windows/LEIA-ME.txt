@@ -12,8 +12,8 @@ clique em "Mais informações" e depois em "Executar assim mesmo".
 Controles: teclado (WASD ou setas, Espaço pula, Shift turbo, H buzina,
 M liga/desliga o som) ou controle de Xbox/PlayStation.
 
-O jogo é totalmente gratuito, sem anúncios e sem compras. É uma alpha:
-espere bugs e mudanças. O progresso fica salvo em
+O jogo é totalmente gratuito, sem anúncios e sem compras. Ainda estamos
+testando as primeiras versões: espere bugs e mudanças. O progresso fica salvo em
 %APPDATA%\Godot\app_userdata\Swan Race
 
 Código-fonte (GPLv3): https://github.com/schlupfwerk/schlupfwerk_swanrace
@@ -29,8 +29,8 @@ is not digitally signed yet. To open it: click "More info", then "Run anyway".
 Controls: keyboard (WASD or arrows, Space jumps, Shift turbo, H horn,
 M sound on/off) or an Xbox/PlayStation controller.
 
-The game is completely free, with no ads and no purchases. It is an alpha:
-expect bugs and changes. Progress is saved in
+The game is completely free, with no ads and no purchases. We are still
+testing the first versions: expect bugs and changes. Progress is saved in
 %APPDATA%\Godot\app_userdata\Swan Race
 
 Source code (GPLv3): https://github.com/schlupfwerk/schlupfwerk_swanrace

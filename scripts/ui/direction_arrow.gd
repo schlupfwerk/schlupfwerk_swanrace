@@ -5,7 +5,9 @@ extends Control
 
 const LOOK_AHEAD := 12 # track samples (~2 m each)
 
-var track: IslandTrack
+## An IslandTrack (a circuit) or a CourseTrack (point to point): both have
+## points and locate().
+var track: RefCounted
 var swan: Swan
 
 var _hint := -1
@@ -21,8 +23,14 @@ func _process(delta: float) -> void:
 	if not visible or swan == null:
 		return
 	var p := Vector2(swan.position.x, swan.position.z)
-	_hint = track.locate(p, _hint)["index"]
-	var ahead := track.points[(_hint + LOOK_AHEAD) % IslandTrack.SAMPLES]
+	var info: Dictionary = track.call("locate", p, _hint)
+	_hint = info["index"]
+	var points: PackedVector2Array = track.get("points")
+	# Circuits wrap around; courses stop at their end.
+	var loops: bool = track is IslandTrack or track.get("looped")
+	var next := (_hint + LOOK_AHEAD) % points.size() if loops \
+			else mini(_hint + LOOK_AHEAD, points.size() - 1)
+	var ahead := points[next]
 	var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)
 	# Screen angle: 0 = straight up, positive = to the right.
 	var target := forward.angle_to(ahead - p)

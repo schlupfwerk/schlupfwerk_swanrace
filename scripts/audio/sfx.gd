@@ -141,6 +141,41 @@ static func meow() -> AudioStreamWAV:
 	return _cache["meow"]
 
 
+## Temple bell: a soft strike and a long, shimmering ring of inharmonic
+## partials (a bronze bell), fading over a few seconds.
+static func temple_bell() -> AudioStreamWAV:
+	if not _cache.has("temple_bell"):
+		_cache["temple_bell"] = _render(4.0, func(t: float, _state: Dictionary) -> float:
+			var base := 220.0
+			var ring := 0.0
+			for partial: Array in [[0.5, 1.0, 0.8], [1.0, 0.9, 1.0], [1.19, 0.6, 1.6], [1.56, 0.5, 2.2],
+					[2.0, 0.4, 2.6], [2.74, 0.3, 3.4], [3.6, 0.2, 4.5]]:
+				# Each partial beats slowly against a twin (the shimmer).
+				var f: float = base * partial[0]
+				ring += partial[1] * (sin(TAU * f * t) + 0.5 * sin(TAU * (f + 1.3) * t)) * exp(-t * partial[2] * 0.6)
+			var strike := minf(t / 0.004, 1.0)
+			return ring * 0.16 * strike)
+	return _cache["temple_bell"]
+
+
+## Cow: a long, low "mmmooo" that opens up and sinks at the end.
+static func moo() -> AudioStreamWAV:
+	if not _cache.has("moo"):
+		_cache["moo"] = _render(1.6, func(t: float, state: Dictionary) -> float:
+			var u := t / 1.6
+			var pitch := lerpf(118.0, 96.0, u * u) * (1.0 + 0.06 * sin(u * PI)) * (1.0 + 0.01 * sin(TAU * 5.0 * t))
+			state.phase = state.get("phase", 0.0) + TAU * pitch / RATE
+			var p: float = state.phase
+			# Closed mouth ("mm") at first, then open ("ooo").
+			var open := smoothstep(0.05, 0.35, u)
+			var tone := sin(p) + (0.3 + 0.5 * open) * sin(2.0 * p) + 0.45 * open * sin(3.0 * p) \
+					+ 0.3 * open * sin(4.0 * p) + 0.15 * open * sin(5.0 * p)
+			state.breath = lerpf(state.get("breath", 0.0), randf_range(-1.0, 1.0), 0.15)
+			var envelope := minf(t / 0.12, 1.0) * clampf((1.6 - t) / 0.4, 0.0, 1.0)
+			return (tone * 0.3 + state.breath * 0.05) * envelope)
+	return _cache["moo"]
+
+
 ## Start light beep: a short "tu" (ready) or the long, higher "tuuuu" (go).
 static func start_beep(go: bool) -> AudioStreamWAV:
 	var key := "beep_go" if go else "beep"
@@ -220,6 +255,20 @@ static func honk() -> AudioStreamWAV:
 			var envelope := minf(local / 0.012, 1.0) * clampf((0.2 - local) / 0.04, 0.0, 1.0)
 			return tone * 0.22 * envelope)
 	return _cache["honk"]
+
+
+## A long, falling scream: the honk's reedy voice sliding down in pitch,
+## wobbling, fading away as the swan drops into space.
+static func scream() -> AudioStreamWAV:
+	if not _cache.has("scream"):
+		_cache["scream"] = _render(2.4, func(t: float, state: Dictionary) -> float:
+			var pitch := lerpf(780.0, 230.0, pow(t / 2.4, 0.7)) * (1.0 + 0.04 * sin(t * 38.0))
+			state.phase = state.get("phase", 0.0) + TAU * pitch / RATE
+			var p: float = state.phase
+			var tone := sin(p) + 0.7 * sin(2.0 * p) + 0.45 * sin(3.0 * p) + 0.25 * sin(4.0 * p)
+			var envelope := minf(t / 0.03, 1.0) * clampf((2.4 - t) / 1.2, 0.0, 1.0)
+			return tone * 0.2 * envelope)
+	return _cache["scream"]
 
 
 ## Gentle waves on the beach: a slow swell of soft noise, looped.

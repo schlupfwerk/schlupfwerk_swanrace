@@ -12,6 +12,10 @@ var swan: Swan
 var others: Array[Swan] = []
 ## Track for the minimap (optional).
 var track: IslandTrack
+## Or a point-to-point course (no laps): its own map, distance to the finish.
+var course: CourseTrack
+## Top of the speedometer scale (km/h): higher on courses where swans ski.
+var max_kmh := 60.0
 var terrain_name := ""
 
 var _speedometer := Speedometer.new()
@@ -30,6 +34,7 @@ var _info: VBoxContainer
 var _stamina: StaminaBar
 var _pedals: PedalBars
 var _controls: InputDisplay
+var _terrain_label: Label
 
 
 func _ready() -> void:
@@ -41,7 +46,7 @@ func _ready() -> void:
 
 	var info := VBoxContainer.new()
 	_info = info
-	info.position = Vector2(24, 286 if track else 18)
+	info.position = Vector2(24, 286 if _has_map() else 18)
 	root.add_child(info)
 	var nickname := Label.new()
 	nickname.text = swan.look.nickname if swan else ""
@@ -50,6 +55,7 @@ func _ready() -> void:
 	var terrain := Label.new()
 	terrain.text = terrain_name
 	info.add_child(terrain)
+	_terrain_label = terrain
 
 	var times := VBoxContainer.new()
 	times.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -130,7 +136,24 @@ func _ready() -> void:
 		arrow.size = Vector2(120, 120)
 		root.add_child(arrow)
 		arrow.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_KEEP_SIZE, 14)
+	elif course:
+		var map := CourseMap.new()
+		map.track = course
+		map.swans = [swan] as Array[Swan]
+		map.swans.append_array(others)
+		map.size = Vector2(250, 250)
+		root.add_child(map)
+		map.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_KEEP_SIZE, 20)
 
+		var course_arrow := DirectionArrow.new()
+		course_arrow.track = course
+		course_arrow.swan = swan
+		course_arrow.size = Vector2(120, 120)
+		root.add_child(course_arrow)
+		course_arrow.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP,
+				Control.PRESET_MODE_KEEP_SIZE, 14)
+
+	_speedometer.max_kmh = max_kmh
 	_speedometer.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	_speedometer.custom_minimum_size = Vector2(230, 230)
 	_speedometer.size = Vector2(230, 230)
@@ -187,7 +210,7 @@ func _apply_layout() -> void:
 		_place_box(_speedometer, Vector2(0.5, 1.0), Rect2(-90, -200, 180, 180))
 		_place_box(_stamina, Vector2(0.5, 1.0), Rect2(-150, -250, 300, 36))
 	else:
-		_info.position = Vector2(24, 286 if track else 18)
+		_info.position = Vector2(24, 286 if _has_map() else 18)
 		_place.offset_left = -300
 		_place.offset_right = -24
 		_place_box(_speedometer, Vector2(1.0, 1.0), Rect2(-254, -254, 230, 230))
@@ -219,6 +242,24 @@ func set_lap(lap: int, total: int, lap_time: float, last_lap: float, race_time: 
 	_time_label.text = format_time(lap_time)
 	_total_label.text = tr("HUD_TOTAL") % format_time(race_time)
 	_last_label.text = tr("HUD_LAST") % format_time(last_lap) if last_lap > 0.0 else ""
+
+
+## Courses (no laps): meters left to the finish line and the race time.
+func set_progress(to_finish: float, race_time: float) -> void:
+	_lap_label.text = tr("HUD_TO_FINISH") % roundi(to_finish)
+	_time_label.text = format_time(race_time)
+	_total_label.text = ""
+	_last_label.text = ""
+
+
+## The terrain line under the nickname (it changes along a course).
+func set_terrain(text: String) -> void:
+	if _terrain_label:
+		_terrain_label.text = text
+
+
+func _has_map() -> bool:
+	return track != null or course != null
 
 
 func set_best(best: float) -> void:
@@ -276,8 +317,10 @@ func show_results(standings: Array[Dictionary]) -> void:
 			columns.add_child(label)
 		var entry: Dictionary = standings[n]
 		var best: float = entry.get("best", 0.0)
-		var line := "%d.  %s   %s   (%s)" % [n + 1, entry.name, format_time(entry.time),
-				format_time(best) if best > 0.0 else "--"]
+		var line := "%d.  %s   %s" % [n + 1, entry.name, format_time(entry.time)]
+		# Laps only: each swan's best lap.
+		if entry.has("best"):
+			line += "   (%s)" % (format_time(best) if best > 0.0 else "--")
 		# The player stands out in yellow.
 		label.text += ("» [color=#ffd23f]%s[/color]" % line if entry.player else line) + "\n"
 		if best > 0.0 and (fastest.is_empty() or best < fastest.best):

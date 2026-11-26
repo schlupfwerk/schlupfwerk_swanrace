@@ -42,13 +42,16 @@ whatever you use.
 
 ## Status
 
-🐣 **Alpha 0.0.8**: playable prototype on Windows; Android build in testing (touch controls). One track (the Desert Island, with ramps),
+🐣 **Version 1.0.0**: playable on Windows; Android build in testing (touch controls). We are still testing the
+first versions. Nine maps (the
+Desert Island with ramps, Swiss Alps, Rio Seafront, Sidereal Circuit, São Paulo, German Forest, Tokyo,
+Great Wall of China and the Andes), each with its own cheerful music,
 AI racers, character customization, an easy mode that runs by itself. Expect rough edges
 and big changes.
 
 ## Download
 
-**[Download the alpha for Windows](https://github.com/schlupfwerk/schlupfwerk_swanrace/releases/latest)**:
+**[Download for Windows](https://github.com/schlupfwerk/schlupfwerk_swanrace/releases/latest)**:
 free, no installation. Unzip it and open `SwanRace.exe`. Windows may show "Windows protected
 your PC" (SmartScreen): click **More info**, then **Run anyway**. Android, iOS and Steam: coming soon.
 
