@@ -27,7 +27,8 @@ func _process(delta: float) -> void:
 	_hint = info["index"]
 	var points: PackedVector2Array = track.get("points")
 	# Circuits wrap around; courses stop at their end.
-	var next := (_hint + LOOK_AHEAD) % points.size() if track is IslandTrack \
+	var loops: bool = track is IslandTrack or track.get("looped")
+	var next := (_hint + LOOK_AHEAD) % points.size() if loops \
 			else mini(_hint + LOOK_AHEAD, points.size() - 1)
 	var ahead := points[next]
 	var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)

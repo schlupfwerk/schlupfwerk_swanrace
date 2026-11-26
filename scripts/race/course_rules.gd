@@ -9,6 +9,9 @@ extends RefCounted
 ##     pops up right past it, blinking (like on the island). Brushing one from
 ##     the side only slides along it. Rocks and logs can be jumped.
 ##   - Puddles: wet and slow (half the top speed) while running through.
+##   - Open edges and holes (space, ADR 0024): no fences. Off an edge, or on
+##     the ground over a hole, the swan falls, screaming, and comes back on
+##     the course a few seconds later, blinking (like drowning on the island).
 ##   - Never the wrong way.
 
 const SWAN_RADIUS := 0.45
@@ -18,9 +21,14 @@ const PAST_OBSTACLE := 1.2
 const FENCE_LOSS := 0.8
 ## Top speed while splashing through a puddle (a share of the normal one).
 const PUDDLE_SPEED := 0.5
+## How far past an open edge the swan's center may go before it falls (m):
+## a foot over the edge is fine.
+const FALL_MARGIN := 0.2
 
 
 static func apply(swan: Swan, tracker: CourseTracker, track: CourseTrack) -> void:
+	if swan.is_drowning():
+		return
 	var i := tracker.hint
 	var distance := tracker.distance
 	var lateral := tracker.lateral
@@ -33,12 +41,37 @@ static func apply(swan: Swan, tracker: CourseTracker, track: CourseTrack) -> voi
 	swan.in_water = splashing
 	swan.motor.max_speed_scale = PUDDLE_SPEED if splashing else 1.0
 	_follow_ground(swan, track, i, ground)
-	_keep_inside(swan, track, i, lateral, race_heading)
+	if track.open_edges:
+		if _fall_off(swan, track, i, distance, lateral, race_heading):
+			return
+	else:
+		_keep_inside(swan, track, i, lateral, race_heading)
 	_collide(swan, track, i, distance)
 
 	var off := wrapf(swan.motor.heading - race_heading, -PI, PI)
 	if absf(off) > CourseTrack.MAX_WRONG_ANGLE:
 		swan.motor.heading = race_heading + signf(off) * CourseTrack.MAX_WRONG_ANGLE
+
+
+## No fences: past an edge, or on the ground over a hole, the swan falls.
+## It comes back on the center line (off an edge) or just past the hole.
+## Returns true when it fell.
+static func _fall_off(swan: Swan, track: CourseTrack, i: int, distance: float, lateral: float,
+		race_heading: float) -> bool:
+	var off_edge := lateral < track.left_edge(i) - FALL_MARGIN \
+			or lateral > track.right_edge(i) + FALL_MARGIN
+	var hole := {} if off_edge or not swan.motor.on_ground else track.hole_at(distance, lateral)
+	if not off_edge and hole.is_empty():
+		return false
+	var at := distance
+	var back_lateral := 0.0
+	if not hole.is_empty():
+		at = hole.distance + hole.length * 0.5 + 2.0
+		back_lateral = clampf(lateral, track.left_edge(i) + 1.5, track.right_edge(i) - 1.5)
+	var spot := track.index_at(at)
+	var p := track.edge(spot, back_lateral)
+	swan.fall(Vector3(p.x, 0.0, p.y), track.heading_at(spot) if not hole.is_empty() else race_heading)
+	return true
 
 
 ## Fences on the slope, guard rails on the road: slide along, losing speed.

@@ -40,6 +40,11 @@ func _ready() -> void:
 		var current: PackedVector2Array = _lines[-1][1]
 		current.append(dot)
 		_lines[-1][1] = current
+	# A loop closes on itself.
+	if track.looped and not _lines.is_empty():
+		var closing: PackedVector2Array = _lines[-1][1]
+		closing.append(_to_map(track.points[0]))
+		_lines[-1][1] = closing
 
 
 static func _color(terrain: int) -> Color:

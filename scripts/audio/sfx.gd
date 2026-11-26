@@ -222,6 +222,20 @@ static func honk() -> AudioStreamWAV:
 	return _cache["honk"]
 
 
+## A long, falling scream: the honk's reedy voice sliding down in pitch,
+## wobbling, fading away as the swan drops into space.
+static func scream() -> AudioStreamWAV:
+	if not _cache.has("scream"):
+		_cache["scream"] = _render(2.4, func(t: float, state: Dictionary) -> float:
+			var pitch := lerpf(780.0, 230.0, pow(t / 2.4, 0.7)) * (1.0 + 0.04 * sin(t * 38.0))
+			state.phase = state.get("phase", 0.0) + TAU * pitch / RATE
+			var p: float = state.phase
+			var tone := sin(p) + 0.7 * sin(2.0 * p) + 0.45 * sin(3.0 * p) + 0.25 * sin(4.0 * p)
+			var envelope := minf(t / 0.03, 1.0) * clampf((2.4 - t) / 1.2, 0.0, 1.0)
+			return tone * 0.2 * envelope)
+	return _cache["scream"]
+
+
 ## Gentle waves on the beach: a slow swell of soft noise, looped.
 static func waves() -> AudioStreamWAV:
 	if not _cache.has("waves"):

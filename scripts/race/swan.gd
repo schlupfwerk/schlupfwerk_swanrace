@@ -13,9 +13,15 @@ const DROWN_TIME := 1.8
 const BLINK_TIME := 5.0
 ## Blinking after being put past an obstacle it ran into.
 const OBSTACLE_BLINK_TIME := 2.0
+## Seconds of falling into space (off an edge or through a hole) before the
+## swan is put back on the course, and how fast it drops.
+const FALL_TIME := 3.0
+const FALL_GRAVITY := 9.8
 
 ## Fell too deep into the sea (to show a warning).
 signal drowned
+## Fell off the course into space (to show a warning).
+signal fell
 
 var brain: SwanBrain
 var look := SwanLook.new()
@@ -60,6 +66,10 @@ var _horn_player := _make_player(-2.0)
 var _horn_cooldown := 0.0
 var _lose_player := AudioStreamPlayer.new()
 var _drown_bubbles := DrownBubbles.new()
+## Falling into space instead of drowning (same timer and comeback).
+var _falling := false
+var _drown_length := DROWN_TIME
+var _scream_player := _make_player(0.0)
 
 
 func _ready() -> void:
@@ -76,7 +86,10 @@ func _ready() -> void:
 	_land_player.stream = Sfx.land()
 	_bump_player.stream = Sfx.land()
 	_bump_player.pitch_scale = 0.6
-	for player in [_step_player, _jump_player, _land_player, _bump_player, _pet_player, _horn_player]:
+	_scream_player.stream = Sfx.scream()
+	_scream_player.unit_size = 14.0
+	for player in [_step_player, _jump_player, _land_player, _bump_player, _pet_player, _horn_player,
+			_scream_player]:
 		if quiet:
 			player.volume_db = -80.0
 		add_child(player)
@@ -135,8 +148,13 @@ func _process(delta: float) -> void:
 	# Follow the ground closely (it is smooth now); only soften real steps.
 	_render_ground = lerpf(_render_ground, ground_y, 1.0 - exp(-40.0 * delta))
 	position.y += _render_ground
-	var sinking := 1.0 - _drown / DROWN_TIME if _drown > 0.0 else 0.0
-	position.y -= sinking * 1.2
+	var sinking := 1.0 - _drown / _drown_length if _drown > 0.0 else 0.0
+	if _falling and _drown > 0.0:
+		# Down into space, faster and faster.
+		var fallen := _drown_length - _drown
+		position.y -= 0.5 * FALL_GRAVITY * fallen * fallen
+	else:
+		position.y -= sinking * 1.2
 	model.drowning = sinking if _drown > 0.0 else 0.0
 	if _blink > 0.0:
 		_blink = maxf(_blink - delta, 0.0)
@@ -145,6 +163,9 @@ func _process(delta: float) -> void:
 		var on := fmod(_blink, 0.25) > 0.1
 		model.set_fade(maxf(shown, 0.15) * (1.0 if on else 0.4) if _blink > 0.0 else 1.0)
 	rotation.y = lerp_angle(_previous_heading, motor.heading, alpha)
+	if _falling and _drown > 0.0:
+		# Tumbling while it falls.
+		rotation.y += (_drown_length - _drown) * 7.0
 	# Lean with the ground: nose up on climbs, tilted on banked curves.
 	var tilt := 1.0 - exp(-8.0 * delta)
 	rotation.x = lerpf(rotation.x, ground_pitch, tilt)
@@ -205,6 +226,8 @@ func is_drowning() -> bool:
 ## Too deep in the sea: sink and flap for a moment, then come back at
 ## `at` (on the racing line), stopped and facing `heading`.
 func drown(at: Vector3, heading: float) -> void:
+	_falling = false
+	_drown_length = DROWN_TIME
 	_drown = DROWN_TIME
 	_respawn_position = at
 	_respawn_heading = heading
@@ -216,7 +239,22 @@ func drown(at: Vector3, heading: float) -> void:
 	_drown_bubbles.release(global_position + Vector3(0, 1.6, 0))
 
 
+## Off the edge of a space course (or through a hole): screams and falls,
+## tumbling, then comes back at `at`, stopped and facing `heading`, blinking.
+func fall(at: Vector3, heading: float) -> void:
+	_falling = true
+	_drown_length = FALL_TIME
+	_drown = FALL_TIME
+	_respawn_position = at
+	_respawn_heading = heading
+	motor.speed = 0.0
+	fell.emit()
+	_scream_player.pitch_scale = randf_range(0.92, 1.08)
+	_scream_player.play()
+
+
 func _respawn() -> void:
+	_falling = false
 	motor.position = _respawn_position
 	motor.heading = _respawn_heading
 	motor.speed = 0.0

@@ -1,9 +1,10 @@
 extends Node3D
-## Race on a point-to-point course (ADR 0022): the player and up to 11 AI
-## swans, start lights, one run from the start line to the finish line (no
-## laps), positions, timing in simulation time, best time saved per course.
-## When the player crosses the finish line: whistle, camera pulls away, then
-## the podium. The course comes from the map picked in the menu (Maps).
+## Race on a course (ADR 0022): the player and up to 11 AI swans, start
+## lights, positions, timing in simulation time. On a run, one go from the
+## start line to the finish line and the best total time saved; on a loop
+## (ADR 0024), laps from the settings and the best lap saved, like the island.
+## When the player finishes: whistle, camera pulls away, then the podium. The
+## course comes from the map picked in the menu (Maps).
 
 const MENU_SCENE := "res://scenes/home.tscn"
 const COUNTDOWN := 3.0
@@ -43,6 +44,10 @@ var _lights_lit := 0
 var _go_time := 0.0
 var _stretch := ""
 var _player_skiing := true
+## Loops: laps from the settings.
+var _laps := false
+var _total_laps := 1
+var _last_lap := 0.0
 
 # TODO(music): the owner picks each map's music. Until then the courses reuse
 # the island's race music and its final-lap version.
@@ -59,6 +64,8 @@ func _ready() -> void:
 	if _track == null:
 		get_tree().change_scene_to_file.call_deferred(Maps.CIRCUIT_SCENE)
 		return
+	_laps = _track.looped
+	_total_laps = Settings.laps if _laps else 1
 	_track.build_scenery(self)
 	_spawn_racers()
 
@@ -114,7 +121,8 @@ func _spawn_racers() -> void:
 		var row := slot / 2
 		var side := -1.0 if slot % 2 == 0 else 1.0
 		var back := GRID_FIRST + row * GRID_ROW
-		var at := maxf(_track.start_distance - back, 1.0)
+		# Behind the start line (on a loop it is at 0: the grid wraps around).
+		var at := fposmod(-back, _track.length) if _laps else maxf(_track.start_distance - back, 1.0)
 		var start := _track.index_at(at)
 		var spot := _track.edge(start, side * GRID_SIDE if count > 1 else 0.0)
 		var swan := Swan.new()
@@ -149,14 +157,19 @@ func _spawn_racers() -> void:
 			bot.rubber_band = Settings.difficulty == 0
 			swan.brain = bot
 		racer.name = swan.look.nickname
+		racer.best = 0.0
 		swan.field_size = count
 		swan.on_tick = _on_swan_tick.bind(racer)
-		tracker.finished_course.connect(_on_finished_course.bind(racer))
+		if _laps:
+			tracker.lap_completed.connect(_on_lap_completed.bind(racer))
+		else:
+			tracker.finished_course.connect(_on_finished_course.bind(racer))
 		add_child(swan)
 		_racers.append(racer)
 	for racer in _racers:
 		if racer.swan.brain is CourseBotBrain:
 			(racer.swan.brain as CourseBotBrain).player_tracker = player_tracker
+	(_player.swan as Swan).fell.connect(func() -> void: _hud.show_message(tr("CAREFUL_SPACE"), 3.0))
 
 
 func _process(delta: float) -> void:
@@ -193,9 +206,13 @@ func _process(delta: float) -> void:
 	_hud.show_jump_alert(Settings.obstacle_alert and _racing and not _finished
 			and _track.obstacle_ahead(tracker.distance, tracker.lateral))
 	if not _finished:
-		_hud.set_progress(tracker.to_finish(), _race_time)
+		if _laps:
+			_hud.set_lap(mini(tracker.lap, _total_laps), _total_laps, tracker.lap_time, _last_lap,
+					_race_time)
+		else:
+			_hud.set_progress(tracker.to_finish(), _race_time)
 		_hud.set_place(_place_of(_player), _racers.size())
-		if not _final_stretch and tracker.progress() > FINAL_STRETCH \
+		if not _laps and not _final_stretch and tracker.progress() > FINAL_STRETCH \
 				* (_track.finish_distance - _track.start_distance):
 			_final_stretch = true
 			_hud.show_message(tr("FINAL_STRETCH"), 2.5)
@@ -210,7 +227,8 @@ func _update_stretch(tracker: CourseTracker) -> void:
 	var name_key := _track.stretch_name(tracker.distance)
 	if name_key != _stretch:
 		_stretch = name_key
-		_hud.set_terrain("%s · %s" % [tr(Maps.current().name), tr(name_key)])
+		var map_name := tr(Maps.current().name)
+		_hud.set_terrain(map_name if name_key == "" else "%s · %s" % [map_name, tr(name_key)])
 	var skiing: bool = (_player.swan as Swan).motor.skiing
 	if _player_skiing and not skiing and _racing:
 		_hud.show_message(tr("SKIS_OFF"), 2.0)
@@ -243,8 +261,38 @@ func _on_swan_tick(swan: Swan, racer: Dictionary) -> void:
 		# After the line a swan slows down by itself.
 		swan.motor.speed = move_toward(swan.motor.speed, 0.0, 6.0 * Swan.TICK)
 	var tracker: CourseTracker = racer.tracker
-	tracker.update(swan.motor.position, _racing)
+	tracker.update(swan.motor.position, _racing and not racer.finished, Swan.TICK)
 	CourseRules.apply(swan, tracker, _track)
+
+
+## Loops: a lap done. After the last one the swan has finished.
+func _on_lap_completed(lap_time: float, racer: Dictionary) -> void:
+	var tracker: CourseTracker = racer.tracker
+	if racer.best <= 0.0 or lap_time < racer.best:
+		racer.best = lap_time
+	if tracker.laps_done >= _total_laps:
+		racer.finished = true
+		racer.time = _race_time
+		_finish_order += 1
+		var swan: Swan = racer.swan
+		swan.controls_enabled = false
+		swan.finish_place = _finish_order
+	if not racer.player:
+		return
+	_last_lap = lap_time
+	var record := Profile.submit_lap(_map_id, lap_time)
+	if record:
+		_hud.set_best(lap_time)
+	if racer.finished:
+		_finish(record)
+		return
+	var left := _total_laps - tracker.laps_done
+	var lap_text := (tr("MSG_BEST_LAP") if record else tr("MSG_LAP")) % Hud.format_time(lap_time)
+	if left == 1:
+		_final_stretch = true
+		_hud.show_message("%s\n%s" % [tr("FINAL_LAP"), lap_text], 3.0)
+	else:
+		_hud.show_message("%s\n%s" % [tr("LAPS_LEFT") % left, lap_text], 3.0)
 
 
 func _on_finished_course(racer: Dictionary) -> void:
@@ -269,9 +317,14 @@ func _finish(record: bool) -> void:
 	_touch.queue_free()
 	_whistle.play()
 	_camera.finish = true
-	_hud.set_progress(0.0, _race_time)
-	var time := Hud.format_time(_race_time)
-	_hud.show_message("%s\n%s" % [tr("FINISHED"), (tr("MSG_BEST_TIME") if record else tr("MSG_TIME")) % time], 3.0)
+	if _laps:
+		_hud.set_lap(_total_laps, _total_laps, _last_lap, _last_lap, _race_time)
+		var lap := Hud.format_time(_last_lap)
+		_hud.show_message("%s\n%s" % [tr("FINISHED"), (tr("MSG_BEST_LAP") if record else tr("MSG_LAP")) % lap], 3.0)
+	else:
+		_hud.set_progress(0.0, _race_time)
+		var time := Hud.format_time(_race_time)
+		_hud.show_message("%s\n%s" % [tr("FINISHED"), (tr("MSG_BEST_TIME") if record else tr("MSG_TIME")) % time], 3.0)
 	_podium_time = 4.0
 
 
@@ -283,9 +336,14 @@ func _standings() -> Array[Dictionary]:
 		var time: float = racer.time
 		if not racer.finished:
 			var tracker: CourseTracker = racer.tracker
-			time = _race_time + tracker.to_finish() / (SwanMotor.MAX_SPEED * 0.8)
-		list.append({"name": racer.name, "look": racer.swan.look, "time": time,
-				"player": racer.player})
+			var left := _total_laps * _track.length - tracker.progress() if _laps else tracker.to_finish()
+			time = _race_time + maxf(left, 0.0) / (SwanMotor.MAX_SPEED * 0.8)
+		var entry := {"name": racer.name, "look": racer.swan.look, "time": time,
+				"player": racer.player}
+		# Loops: each swan's best lap on the board too.
+		if _laps:
+			entry.best = racer.best
+		list.append(entry)
 	list.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.time < b.time)
 	return list
 

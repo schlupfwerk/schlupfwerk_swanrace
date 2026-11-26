@@ -335,6 +335,14 @@ e uma fileira de prédios, com morros verdes atrás e um pico de granito no fim 
 calçadão e na areia. Obstáculos: troncos, **poças pequenas** (pule; sem pular, metade da velocidade
 enquanto passa) e **pessoas** passeando no calçadão ou atravessando com prancha de surfe.
 
+**Quarto mapa: Circuito Sideral** (`SiderealCircuit`, `SiderealScenery`, id `sidereal_circuit`,
+ADR 0024). **Circuito em 8 com voltas** no espaço (1.355 m, ~1:50 por volta), passando por cima dele
+mesmo: um cruzamento é um viaduto de 9 m. **Sem muretas**: saiu da borda ou pisou num dos **buracos**
+do piso, o cisne **grita e cai por 3 s** (`Swan.fall`) e volta piscando, como no afogamento
+("Cuidado para não cair no espaço!!"). **Asteroides** baixos na pista: pule ou contorne. Céu de
+estrelas e nebulosas, piso com bordas que brilham, planetas (um com anéis). Voltas valem aqui (é um
+`CourseTrack` em loop: `build_loop`, `looped`).
+
 Pistas com os 4 terrenos, inspiradas em lugares reais. Cada país pode trocar o tipo de
 descida:
 - **Suíça**: neve nos Alpes → vilarejo → lago alpino → voo pelos vales
