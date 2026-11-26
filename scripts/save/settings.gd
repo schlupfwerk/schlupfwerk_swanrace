@@ -33,6 +33,8 @@ const SHADOW_DISTANCES := [0.0, 40.0, 60.0, 90.0]
 const LANGUAGES := ["", "pt", "en"]
 ## Choices for the number of laps.
 const LAP_OPTIONS := [1, 2, 3, 4, 5, 7, 10]
+## How much bigger menus are on phones (see apply_menu_scale).
+const MOBILE_MENU_SCALE := 1.5
 
 const PRESETS := {
 	Quality.LOW: {"render_scale": 0.75, "msaa": 0, "smoothing": Smoothing.OFF, "shadows": 0,
@@ -82,6 +84,8 @@ var sfx_volume := 100
 var mute_in_background := true
 ## All sound on or off (shortcut M / Back-View-Share on the controller).
 var sound_on := true
+## Tests only: behave like a phone on a PC.
+var pretend_mobile := false
 
 ## GPU names learned by running with an explicit --gpu-index: index -> name.
 var _known_gpus := {}
@@ -125,6 +129,19 @@ func apply_all() -> void:
 
 func is_desktop() -> bool:
 	return not OS.has_feature("mobile")
+
+
+## Phones and tablets. Tests can pretend (`pretend_mobile`) to check the
+## phone layout on a PC.
+func is_mobile() -> bool:
+	return pretend_mobile or OS.has_feature("mobile")
+
+
+## Menus are drawn for a 1280×720 screen; on a phone that makes rows a few
+## millimeters tall. Menu scenes scale everything up there; the race keeps
+## 1.0 (its touch buttons are sized for thumbs already).
+func apply_menu_scale(in_menu: bool) -> void:
+	get_tree().root.content_scale_factor = MOBILE_MENU_SCALE if in_menu and is_mobile() else 1.0
 
 
 ## Picks a preset (or CUSTOM, which keeps the current advanced values).

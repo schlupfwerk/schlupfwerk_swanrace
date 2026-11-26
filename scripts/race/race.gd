@@ -19,6 +19,8 @@ const SKILL := [Vector2(0.3, 0.55), Vector2(0.5, 0.8), Vector2(0.75, 0.98)]
 
 var _track := IslandTrack.new()
 var _hud := Hud.new()
+## On-screen buttons for phones (hidden while a keyboard or controller is used).
+var _touch := TouchControls.new()
 var _camera := ChaseCamera.new()
 ## One entry per swan: {"swan", "laps", "name", "player", "finished", "time"}.
 var _racers: Array[Dictionary] = []
@@ -50,6 +52,7 @@ static var _music_rendering := false
 
 
 func _ready() -> void:
+	Settings.apply_menu_scale(false)
 	_total_laps = Settings.laps
 	Scenery.add_environment(self)
 	IslandScenery.build(self, _track, 1234)
@@ -73,6 +76,13 @@ func _ready() -> void:
 			_hud.others.append(racer.swan)
 	add_child(_hud)
 	_hud.set_best(Profile.best_lap(TRACK_ID))
+	_hud.race_again_pressed.connect(func() -> void: get_tree().change_scene_to_file(RACE_SCENE))
+	_hud.menu_pressed.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
+	var touch_layer := CanvasLayer.new()
+	touch_layer.layer = 3
+	add_child(touch_layer)
+	touch_layer.add_child(_touch)
+	_touch.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 
 	for player: AudioStreamPlayer in [_beep, _whistle]:
 		player.bus = &"SFX"
@@ -126,10 +136,11 @@ func _spawn_racers() -> void:
 				"time": 0.0, "name": "", "best": 0.0}
 		if is_player:
 			var player_input := PlayerInput.new()
+			# Eases off in sharp turns (automatic throttle on easy and on touch).
+			player_input.motor = swan.motor
 			# Easy: automatic throttle, the buttons take over when used.
 			if Settings.difficulty == 0:
 				player_input.auto_throttle = true
-				player_input.motor = swan.motor
 				player_input.auto_changed.connect(func(on: bool) -> void:
 					_hud.show_message(tr("AUTO_THROTTLE_ON" if on else "AUTO_THROTTLE_OFF"), 2.0))
 			swan.brain = player_input
@@ -270,6 +281,9 @@ func _racer_finished(racer: Dictionary) -> void:
 ## The player crossed the line after the last lap: whistle, camera, podium.
 func _finish() -> void:
 	_finished = true
+	# The race is over: the result buttons take over from the controls.
+	_touch.release_all()
+	_touch.queue_free()
 	_whistle.play()
 	_camera.finish = true
 	_hud.set_lap(_total_laps, _total_laps, _last_lap, _last_lap, _race_time)

@@ -1,6 +1,8 @@
 extends Node
 ## Autoload "InputGlyphs": remembers the last input device used, so the UI
-## can show matching button names (keyboard, Xbox or PlayStation).
+## can show matching button names (keyboard, Xbox or PlayStation) or the
+## touch controls. Phones start on touch. Also turns the Android back button
+## into "ui_cancel", so it goes back in the game instead of closing it.
 
 signal changed
 
@@ -11,6 +13,11 @@ const PLAYSTATION_TAGS := ["ps3", "ps4", "ps5", "dualsense", "dualshock", "plays
 var kind := Kind.KEYBOARD
 ## On the keyboard, true when the player steers with the arrows (not WASD).
 var arrows := false
+
+
+func _ready() -> void:
+	if OS.has_feature("mobile"):
+		kind = Kind.TOUCH
 
 
 func _input(event: InputEvent) -> void:
@@ -25,7 +32,9 @@ func _input(event: InputEvent) -> void:
 			arrows = false
 			changed.emit()
 	elif event is InputEventMouseButton and event.pressed:
-		new_kind = Kind.KEYBOARD
+		# A touch also arrives as an emulated mouse click: that one is still touch.
+		if event.device != InputEvent.DEVICE_ID_EMULATION:
+			new_kind = Kind.KEYBOARD
 	elif event is InputEventScreenTouch:
 		new_kind = Kind.TOUCH
 	elif event is InputEventJoypadButton and event.pressed:
@@ -55,8 +64,27 @@ func _suffix() -> String:
 			return "XBOX"
 		Kind.PLAYSTATION:
 			return "PLAYSTATION"
+		Kind.TOUCH:
+			return "TOUCH"
 		_:
 			return "KEYBOARD"
+
+
+## Android back button: the same as Esc / B / Circle.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		var back := InputEventAction.new()
+		back.action = &"ui_cancel"
+		back.pressed = true
+		Input.parse_input_event(back)
+		var release := InputEventAction.new()
+		release.action = &"ui_cancel"
+		Input.parse_input_event(release)
+
+
+## True when the on-screen controls should show.
+func touch() -> bool:
+	return kind == Kind.TOUCH
 
 
 static func _pad_kind(device: int) -> Kind:

@@ -45,6 +45,7 @@ var _honk := AudioStreamPlayer.new()
 
 
 func _ready() -> void:
+	Settings.apply_menu_scale(true)
 	_build_stage()
 	_build_ui()
 	_pop.stream = Sfx.pop()

@@ -45,9 +45,12 @@ Inspiração de formato: corridas no estilo Chocobo Racing, mas com identidade p
 e os menus têm que ser **100% usáveis sem mouse**. O mouse (e o toque, no celular) é só
 uma opção extra nos menus; na corrida ele não faz nada.
 
-No celular: esquerda/direita (botões no lado esquerdo da tela, ou **inclinação do celular**,
-opcional e com calibração) e três botões no lado direito. Os botões mudam de função
-conforme o terreno:
+No celular (ADR 0017): ◀ ▶ na mão esquerda; PULAR (maior), TURBO, FREAR e BUZINA na
+direita; menu (II, dois toques) ao lado do minimapa (`scripts/ui/touch_controls.gd`).
+**Sem botão de acelerar:** no toque o cisne acelera sozinho e FREAR só segura enquanto
+apertado. Os botões só aparecem quando o toque é a última entrada usada. Menus ficam
+1,5× maiores no celular e o botão Voltar do Android volta no jogo. Inclinação do celular
+fica para depois. As funções por terreno (plano antigo):
 
 | Terreno | Acelerar | Frear | Pular |
 |---|---|---|---|
@@ -207,6 +210,9 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
 
 ## Áudio
 - Barramentos: `Master`, `Music` e `SFX` (`default_bus_layout.tres`).
+- **Sons em loop gerados por código** usam `Sfx.pad_loop` (margem depois do fim do loop) e
+  o cache usa `Sfx.load_loop`. Sem a margem o mixer lê além do buffer no ponto de loop e o
+  jogo fecha no Android (achado no emulador).
 - **Música:** cada país/pista terá a sua, **sem direitos autorais** (licença compatível,
   com entrada em `assets/CREDITS.md`). A primeira pista, na praia, pede algo que lembre
   praia. O dono do projeto escolhe as músicas; não adicione música por conta própria.
@@ -419,6 +425,19 @@ do projeto vai explicar antes); novos mapas (e trocar o mapa da corrida demo da 
 Siga sempre a página "Exporting for Android" da documentação da versão instalada da
 Godot: as versões exatas do SDK e do JDK podem mudar.
 
+**Teste no Android (já configurado nesta máquina):**
+- Presets: **Android** (arm64, Vulkan, para celulares) e **Android (emulador)** (x86_64,
+  feature `emulator`, renderizador OpenGL: o Vulkan não desenha no emulador).
+  `godot --headless --path . --export-debug "Android" builds/android/SwanRace.apk`.
+- Celular (S23 do dono) por USB ou Wi-Fi: `adb install -r`, abrir com
+  `adb shell am start -n com.schlupfwerk.swanrace/com.godot.game.GodotAppLauncher`
+  (não use `monkey`: ele injeta um evento aleatório). Não mexa no celular enquanto o dono
+  joga.
+- Emulador: AVD `swanrace` (Android 15 x86_64), `emulator -avd swanrace -gpu host`. É
+  mais lento: espere a abertura antes de tocar. Se `adb screencap` travar, use
+  `adb emu screenrecord screenshot <arquivo>` (sai em retrato).
+- O APK não pede nenhuma permissão (nem internet); confira com `aapt2 dump xmltree`.
+
 **iOS (depois):** num Mac com Xcode, a Godot exporta um projeto do Xcode, que é
 compilado e enviado ao TestFlight. No futuro, isso pode rodar no GitHub Actions
 (runners macOS são gratuitos para repositórios públicos).
@@ -434,7 +453,7 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
 ## Versionamento
 - **Formato:** `0.0.1-build00142` = versão base + número do build. Na tela: `Alpha 0.0.1-build00142`.
-- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.7**;
+- **Versão base** em `project.godot` (`application/config/version`). Estamos na **alpha 0.0.8**;
   só o dono do projeto decide quando ela sobe.
 - **Número do build automático** = quantidade de commits do git (`git rev-list --count HEAD`).
   Nunca edite à mão. O plugin `addons/build_info` grava `build_info.cfg` dentro de cada

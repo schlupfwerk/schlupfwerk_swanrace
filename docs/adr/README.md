@@ -26,3 +26,4 @@ and what it costs. One file per decision, numbered in order.
 | [0014](0014-unified-account-deferred.md) | Unified account across platforms | Deferred |
 | [0015](0015-swan-customization-and-equal-abilities.md) | Swan customization by colors and accessories; equal abilities | Accepted |
 | [0016](0016-forward-plus-on-desktop.md) | Forward+ renderer on desktop, Mobile on phones | Accepted |
+| [0017](0017-touch-controls-auto-throttle.md) | Touch controls with automatic throttle | Accepted |

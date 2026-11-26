@@ -39,6 +39,7 @@ static var _music_rendering := false
 
 
 func _ready() -> void:
+	Settings.apply_menu_scale(true)
 	Scenery.add_environment(self)
 	add_child(_demo)
 	_editor.position = EDITOR_SPOT
