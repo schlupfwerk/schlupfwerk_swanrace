@@ -4,7 +4,7 @@ Swan Race promises **no ads and no data collection** ([ADR 0009](adr/0009-offlin
 This file checks that promise against the code. Update it whenever a package,
 SDK or network feature is added, and before filling in any store privacy form.
 
-- **Last checked:** 2026-11-25, version 0.0.7 (Windows alpha)
+- **Last checked:** 2026-11-25, version 0.0.8 (Windows alpha and Android test build)
 - **Result:** the game sends nothing. Nothing calls home.
 
 ## What calls home
@@ -40,6 +40,8 @@ None of these are uploaded. Nicknames are typed by the player and stay local.
 ## Store privacy forms (current answers)
 
 - **Google Play, Data safety:** no data collected, no data shared.
+- **Android APK:** requests no permissions at all (not even internet); checked with
+  `aapt2 dump xmltree` on the 0.0.8 build.
 - **Apple, App Privacy:** Data Not Collected.
 - **Steam:** no third-party accounts or data collection to disclose.
 

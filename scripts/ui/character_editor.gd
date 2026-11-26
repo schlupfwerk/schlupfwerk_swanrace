@@ -119,12 +119,20 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Drag on the swan (outside the menu) to turn it.
-	if _camera.current and event is InputEventMouseMotion \
-			and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+	# Drag on the swan (outside the menu) to turn it: a finger or the mouse.
+	# A finger also sends an emulated mouse drag; that copy is skipped.
+	if not _camera.current:
+		return
+	var drag := 0.0
+	if event is InputEventScreenDrag:
+		drag = (event as InputEventScreenDrag).relative.x
+	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT \
+			and event.device != InputEvent.DEVICE_ID_EMULATION:
+		drag = (event as InputEventMouseMotion).relative.x
+	if drag != 0.0:
 		_auto_turn = false
 		_manual_turn = true
-		_model.rotation.y += event.relative.x * 0.01
+		_model.rotation.y += drag * 0.01
 
 
 func _build_stage() -> void:
@@ -265,7 +273,14 @@ func _build_menu() -> void:
 	var columns := HBoxContainer.new()
 	columns.add_theme_constant_override("separation", 10)
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(columns)
+	# Scrolls when the options do not fit (phones show the menu bigger).
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.follow_focus = true
+	column.add_child(scroll)
+	columns.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(columns)
 	var left := VBoxContainer.new()
 	var right := VBoxContainer.new()
 	for side: VBoxContainer in [left, right]:

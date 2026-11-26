@@ -6,7 +6,7 @@ extends RefCounted
 
 const RATE := IslandMusic.RATE
 const BPM := 72.0
-const CACHE_PATH := "user://music_menu_v1.wav"
+const CACHE_PATH := "user://music_menu_v2.wav"
 ## Chords (MIDI notes): Cmaj7, Am7, Fmaj7, G6, two times with a turn at the end.
 const CHORDS := [
 	[60, 64, 67, 71], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 62, 64],
@@ -16,10 +16,8 @@ const CHORDS := [
 
 static func load_or_render() -> AudioStreamWAV:
 	if FileAccess.file_exists(CACHE_PATH):
-		var cached := AudioStreamWAV.load_from_file(CACHE_PATH)
+		var cached := Sfx.load_loop(CACHE_PATH)
 		if cached:
-			cached.loop_mode = AudioStreamWAV.LOOP_FORWARD
-			cached.loop_end = cached.data.size() / 2
 			return cached
 	var stream := render()
 	stream.save_to_wav(CACHE_PATH)
@@ -60,7 +58,7 @@ static func render() -> AudioStreamWAV:
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = RATE
 	stream.stereo = false
-	stream.data = data
+	stream.data = Sfx.pad_loop(data)
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_end = total
 	return stream

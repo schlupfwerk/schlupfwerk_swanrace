@@ -26,6 +26,9 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	# Touch has its own on-screen buttons (TouchControls).
+	if InputGlyphs.touch():
+		return
 	match InputGlyphs.kind:
 		InputGlyphs.Kind.XBOX:
 			_draw_pad(false)

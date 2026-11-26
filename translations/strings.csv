@@ -235,3 +235,17 @@ ABOUT_SITE,Schlupfwerk website,Site da Schlupfwerk
 GATE_QUESTION,"Ask an adult: how much is %d × %d?","Peça ajuda a um adulto: quanto é %d × %d?"
 GATE_RETRY,"Not quite. Try this one: how much is %d × %d?","Não foi dessa vez. Tente esta: quanto é %d × %d?"
 GATE_CANCEL,Cancel,Cancelar
+HINT_MENU_TOUCH,Tap to choose   ‹ ›: change,Toque para escolher   ‹ ›: mudar
+HINT_TABS_TOUCH,Tap a tab   Back: return,Toque numa aba   Voltar: retornar
+HINT_WARDROBE_TOUCH,Tap ‹ › to change   Drag the swan to turn it,Toque em ‹ › para mudar   Arraste o cisne para girar
+HOME_HINT_TOUCH,Tap the tabs and buttons   Back: return,Toque nas abas e nos botões   Voltar: retornar
+HINT_SETTINGS_TOUCH,Tap ‹ › to change   Back: cancel,Toque em ‹ › para mudar   Voltar: cancelar
+RESULTS_HINT_TOUCH,,
+PRESS_START_TOUCH,Tap to race,Toque para correr
+RACE_AGAIN,Race again,Correr de novo
+TO_MENU,Menu,Menu
+TOUCH_MENU_CONFIRM,Tap again for the menu,Toque de novo para ir ao menu
+TOUCH_BRAKE,BRAKE,FREAR
+TOUCH_JUMP,JUMP,PULAR
+TOUCH_TURBO,TURBO,TURBO
+TOUCH_HORN,HORN,BUZINA

@@ -9,7 +9,7 @@ extends RefCounted
 
 const RATE := 22050
 const BPM := 92.0
-const CACHE_PATH := "user://music_desert_island_v1.wav"
+const CACHE_PATH := "user://music_desert_island_v2.wav"
 
 ## One chord per bar (16 bars).
 const PROGRESSION := ["C", "C", "A7", "A7", "D7", "D7", "G7", "G7",
@@ -41,10 +41,8 @@ const MELODY := [
 ## Loads the cached loop, or renders it (slow: call from a thread).
 static func load_or_render() -> AudioStreamWAV:
 	if FileAccess.file_exists(CACHE_PATH):
-		var cached := AudioStreamWAV.load_from_file(CACHE_PATH)
+		var cached := Sfx.load_loop(CACHE_PATH)
 		if cached:
-			cached.loop_mode = AudioStreamWAV.LOOP_FORWARD
-			cached.loop_end = cached.data.size() / 2
 			return cached
 	var stream := render()
 	stream.save_to_wav(CACHE_PATH)
@@ -103,7 +101,7 @@ static func render() -> AudioStreamWAV:
 	stream.format = AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate = RATE
 	stream.stereo = false
-	stream.data = data
+	stream.data = Sfx.pad_loop(data)
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_end = total
 	return stream

@@ -61,7 +61,9 @@ func _build() -> void:
 	add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(820, 640)
+	# Fits the screen (phones show menus bigger, so less fits); the pages scroll.
+	var view := get_viewport_rect().size
+	panel.custom_minimum_size = Vector2(minf(820.0, view.x - 40.0), minf(640.0, view.y - 100.0))
 	center.add_child(panel)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)

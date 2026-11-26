@@ -1,7 +1,11 @@
 class_name Hud
 extends CanvasLayer
 ## Race HUD: nickname, terrain, laps and times, countdown, messages,
-## speedometer and control hints.
+## speedometer and control hints. With touch controls on screen, the gauges
+## move to the bottom center and the pedal and button drawings go away.
+
+signal race_again_pressed
+signal menu_pressed
 
 var swan: Swan
 ## The other swans (bots), shown in gray on the minimap.
@@ -22,6 +26,10 @@ var _message_time := 0.0
 var _lights := StartLights.new()
 var _alert := Label.new()
 var _place := Label.new()
+var _info: VBoxContainer
+var _stamina: StaminaBar
+var _pedals: PedalBars
+var _controls: InputDisplay
 
 
 func _ready() -> void:
@@ -32,6 +40,7 @@ func _ready() -> void:
 	add_child(root)
 
 	var info := VBoxContainer.new()
+	_info = info
 	info.position = Vector2(24, 286 if track else 18)
 	root.add_child(info)
 	var nickname := Label.new()
@@ -129,6 +138,7 @@ func _ready() -> void:
 	root.add_child(_speedometer)
 
 	var stamina := StaminaBar.new()
+	_stamina = stamina
 	stamina.swan = swan
 	root.add_child(stamina)
 	stamina.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -138,6 +148,7 @@ func _ready() -> void:
 	stamina.offset_bottom = -262
 
 	var pedals := PedalBars.new()
+	_pedals = pedals
 	pedals.swan = swan
 	root.add_child(pedals)
 	# Just left of the speedometer, bottom right.
@@ -149,13 +160,50 @@ func _ready() -> void:
 
 	# Drawing of the controls in use, lit up while pressed.
 	var controls := InputDisplay.new()
+	_controls = controls
 	root.add_child(controls)
 	controls.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	controls.offset_left = 20
 	controls.offset_right = 380
 	controls.offset_top = -190
 	controls.offset_bottom = -16
+	InputGlyphs.changed.connect(_apply_layout)
+	_apply_layout()
 
+
+## Touch: the on-screen buttons take both bottom corners, so the speedometer
+## and the turbo bar move to the bottom center (smaller), and the pedal and
+## button drawings hide (the lit buttons already show what is pressed).
+func _apply_layout() -> void:
+	var touch := InputGlyphs.touch()
+	_pedals.visible = not touch
+	_controls.visible = not touch
+	if touch:
+		# Nickname and terrain right of the minimap (accelerate sits below it);
+		# the race position moves left of the turbo button.
+		_info.position = Vector2(300, 140)
+		_place.offset_left = -560
+		_place.offset_right = -230
+		_place_box(_speedometer, Vector2(0.5, 1.0), Rect2(-90, -200, 180, 180))
+		_place_box(_stamina, Vector2(0.5, 1.0), Rect2(-150, -250, 300, 36))
+	else:
+		_info.position = Vector2(24, 286 if track else 18)
+		_place.offset_left = -300
+		_place.offset_right = -24
+		_place_box(_speedometer, Vector2(1.0, 1.0), Rect2(-254, -254, 230, 230))
+		_place_box(_stamina, Vector2(1.0, 1.0), Rect2(-340, -300, 316, 38))
+
+
+static func _place_box(control: Control, anchor: Vector2, box: Rect2) -> void:
+	control.anchor_left = anchor.x
+	control.anchor_right = anchor.x
+	control.anchor_top = anchor.y
+	control.anchor_bottom = anchor.y
+	control.custom_minimum_size = Vector2.ZERO
+	control.offset_left = box.position.x
+	control.offset_top = box.position.y
+	control.offset_right = box.end.x
+	control.offset_bottom = box.end.y
 
 func _process(delta: float) -> void:
 	if swan:
@@ -239,6 +287,20 @@ func show_results(standings: Array[Dictionary]) -> void:
 		footer.text = tr("PODIUM_BEST_LAP") % [format_time(fastest.best), fastest.name] + "      "
 	footer.text += tr("RESULTS_HINT_" + InputGlyphs._suffix())
 	column.add_child(footer)
+	# Buttons for touch and mouse (Enter / A and Esc / B still work too).
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons.add_theme_constant_override("separation", 20)
+	column.add_child(buttons)
+	for entry in [["RACE_AGAIN", race_again_pressed], ["TO_MENU", menu_pressed]]:
+		var button := Button.new()
+		button.text = tr(entry[0])
+		button.custom_minimum_size = Vector2(240, 60)
+		button.add_theme_font_size_override("font_size", 24)
+		button.focus_mode = Control.FOCUS_NONE
+		var signal_to_emit: Signal = entry[1]
+		button.pressed.connect(func() -> void: signal_to_emit.emit())
+		buttons.add_child(button)
 
 
 static func _board_label(font_size: int) -> RichTextLabel:

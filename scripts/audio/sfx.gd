@@ -4,8 +4,33 @@ extends RefCounted
 ## files. Final sounds can replace these later (credit them in assets/CREDITS.md).
 
 const RATE := 22050
+## Frames copied from the start of a looping sound to just after its loop end.
+## The resampler reads a few frames ahead of the play position; without this
+## margin it reads past the end of the buffer at the loop point, which crashed
+## the game on Android (seen in the emulator about a minute in).
+const LOOP_PAD := 64
 
 static var _cache := {}
+
+
+## 16-bit mono PCM of a looping sound, with LOOP_PAD frames of its start added
+## after the end (set loop_end to the original frame count).
+static func pad_loop(data: PackedByteArray) -> PackedByteArray:
+	var out := data.duplicate()
+	out.append_array(data.slice(0, LOOP_PAD * 2))
+	return out
+
+
+## A cached loop saved by `save_to_wav`, loaded as plain 16-bit PCM (no
+## compression), looping over everything but the LOOP_PAD margin.
+static func load_loop(path: String) -> AudioStreamWAV:
+	var stream := AudioStreamWAV.load_from_file(path, {"compress/mode": 0})
+	if stream == null or stream.format != AudioStreamWAV.FORMAT_16_BITS or stream.stereo:
+		return null
+	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	stream.loop_begin = 0
+	stream.loop_end = stream.data.size() / 2 - LOOP_PAD
+	return stream
 
 
 ## Steps on sand: a crunch of tiny grains over a soft thud. Four takes,
@@ -206,6 +231,7 @@ static func waves() -> AudioStreamWAV:
 			state.low = lerpf(state.get("low", 0.0), randf_range(-1.0, 1.0), 0.06)
 			state.lower = lerpf(state.get("lower", 0.0), state.low, 0.2)
 			return state.lower * 2.2 * swell)
+		stream.data = pad_loop(stream.data)
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		stream.loop_end = int(8.0 * RATE)
 		_cache["waves"] = stream
