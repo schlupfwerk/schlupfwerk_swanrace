@@ -27,3 +27,6 @@ and what it costs. One file per decision, numbered in order.
 | [0015](0015-swan-customization-and-equal-abilities.md) | Swan customization by colors and accessories; equal abilities | Accepted |
 | [0016](0016-forward-plus-on-desktop.md) | Forward+ renderer on desktop, Mobile on phones | Accepted |
 | [0017](0017-touch-controls-auto-throttle.md) | Touch controls with automatic throttle | Accepted |
+| [0018](0018-crash-reports-without-sdk-no-push.md) | Crash reports from Google Play first; no push notifications | Accepted |
+| [0019](0019-local-split-screen-pc-only.md) | Local split-screen multiplayer, PC only | Proposed |
+| [0020](0020-optional-updates-through-google-play.md) | Optional updates through Google Play | Accepted |

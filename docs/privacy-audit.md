@@ -50,7 +50,10 @@ These answers change as soon as any service in the next section ships.
 ## Before adding a service
 
 Firebase, Google Play Games, Game Center, Steam, cloud saves or crash reporting
-all send data. Before any of them ships:
+all send data. Crash reports come from the Play Console (Android vitals and
+pre-launch reports), and there are no push notifications
+([ADR 0018](adr/0018-crash-reports-without-sdk-no-push.md)). Before any of
+them ships:
 
 1. Write an ADR, and update the privacy page on schlupfwerk.com (site ADR 0007).
 2. Make it opt-in where the store allows, with analytics and crash reporting off
