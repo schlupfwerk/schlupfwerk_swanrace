@@ -23,6 +23,8 @@ const CROSSINGS := 4
 
 
 func _init() -> void:
+	# The fences at both edges are solid: running into them dazes.
+	daze_sides = [-1.0, 1.0]
 	# Shape the loop, then scale it to the lap length.
 	var raw := PackedVector2Array()
 	for n in OUTLINE_POINTS:
