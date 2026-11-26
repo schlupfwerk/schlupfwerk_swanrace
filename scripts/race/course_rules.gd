@@ -5,7 +5,7 @@ extends RefCounted
 ##   - Snow: the swan skis (SwanMotor.skiing); on the road it runs.
 ##   - Side fences and guard rails: the swan slides along them and loses the
 ##     part of its speed going into them (no daze: the road has many curves;
-##     except stone walls, CourseTrack.fence_dazes: running into one dazes).
+##     except solid walls, CourseTrack.daze_sides: running into one dazes).
 ##   - Trees, rocks, logs and animals: running into one, the swan stops and
 ##     pops up right past it, blinking (like on the island). Brushing one from
 ##     the side only slides along it. Rocks and logs can be jumped.
@@ -21,9 +21,9 @@ const SWAN_RADIUS := 0.45
 const PAST_OBSTACLE := 1.2
 ## Speed kept when running straight into a fence (scaled by how straight).
 const FENCE_LOSS := 0.8
-## Walls that daze (CourseTrack.fence_dazes): how straight into the wall
-## (sine of the angle) a swan must run to be dazed; less only slides.
-const FENCE_DAZE_ANGLE := 0.25
+## Walls that daze (CourseTrack.daze_sides): how straight into the wall
+## (sine of the angle, ~5°) a swan must run to be dazed; less only slides.
+const FENCE_DAZE_ANGLE := 0.08
 ## Top speed while splashing through a puddle (a share of the normal one).
 const PUDDLE_SPEED := 0.5
 ## How far past an open edge the swan's center may go before it falls (m):
@@ -96,9 +96,9 @@ static func _keep_inside(swan: Swan, track: CourseTrack, i: int, distance: float
 	var outward := track.right(i) * side
 	var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)
 	var into := forward.dot(outward)
-	# Solid stone walls (the Great Wall's parapets): running into one dazes
+	# Solid walls, curbs and fences (CourseTrack.daze_sides): running into one dazes
 	# the swan, like the forest edge on the island. Brushing it only slides.
-	if track.fence_dazes and into > FENCE_DAZE_ANGLE and not swan.is_stunned():
+	if side in track.daze_sides and into > FENCE_DAZE_ANGLE and not swan.is_stunned():
 		var inside := track.edge(i, clampf(lateral, low + 0.4, high - 0.4))
 		swan.motor.position.x = inside.x
 		swan.motor.position.z = inside.y

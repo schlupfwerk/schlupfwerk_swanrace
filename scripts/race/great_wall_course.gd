@@ -28,7 +28,7 @@ const HOLES := 8
 
 
 func _init() -> void:
-	fence_dazes = true
+	daze_sides = [-1.0, 1.0]
 	start_distance = 40.0
 	finish_distance = start_distance + LENGTH
 	build()

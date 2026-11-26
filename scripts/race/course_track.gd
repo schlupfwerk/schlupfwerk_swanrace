@@ -55,8 +55,9 @@ var open_edges := false
 ## {"from", "to", "side"} (side -1 = left, 1 = right). Off the edge there,
 ## the swan falls (CourseRules).
 var breaks: Array[Dictionary] = []
-## Fences are solid stone walls: running into one dazes the swan (CourseRules).
-var fence_dazes := false
+## Sides (-1 left, 1 right) whose edge is a solid wall, curb or fence: running
+## into it dazes the swan, like the forest edge on the island (CourseRules).
+var daze_sides: Array[float] = []
 
 ## Distance between samples: SPACING, or a little more or less on a loop so
 ## that a whole number of samples closes it.
