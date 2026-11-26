@@ -30,10 +30,12 @@ Inspiração de formato: corridas no estilo Chocobo Racing, mas com identidade p
   o celular. **Foco atual: Android, Windows e Linux.** iOS e macOS ficam para
   quando houver um Mac; não gaste esforço neles por enquanto.
 - **Offline primeiro:** o jogo inteiro funciona sem internet, contra bots.
-- **Sem anúncios e sem coleta de dados.** Placares e conquistas (Game Center,
+- **Sem anúncios e sem venda de dados.** O único envio de dados será o **Google
+  Analytics anônimo**, por HTTP direto do GDScript, sem Firebase, sem plugin e sem SDK,
+  só para erros e uso básico (ADR 0018). Placares e conquistas (Game Center,
   Google Play Games e Steam) e o multiplayer são **opcionais** e vêm depois.
-- **Sem itens pagos.** Skins e cosméticos são **ganhos jogando**. A única compra é
-  uma **gorjeta** opcional, que não libera nada.
+- **Grátis para sempre, sem compras** (ADR 0021): nem gorjeta. Skins e cosméticos são
+  **ganhos jogando**. Apoio ao estúdio só pelo site (página do café).
 - **Save na nuvem pela conta da própria plataforma** (sem servidor nosso): Google
   Play Games no Android, iCloud/Game Center no iOS/macOS, Steam Cloud no Steam.
   Trocar de aparelho dentro do mesmo ecossistema mantém o progresso; entre
@@ -351,7 +353,7 @@ descida:
 - **Serviços das plataformas por trás de uma camada intermediária**, com
   implementações para iOS, Android, Steam e uma falsa para testes no PC:
   - `Services`: placar, conquistas e save na nuvem (Game Center / Play Games / Steamworks)
-  - `Store`: só a gorjeta (StoreKit / Google Play Billing / Steam)
+  - sem `Store`: o jogo não vende nada (ADR 0021)
   - Steam via plugin **GodotSteam** (GDExtension). Sem DRM obrigatório do Steam.
 - **Personalização por dados (ADR 0015):** `SwanLook` guarda apelido, estilo e cores
   das penas, cor das patas e acessórios usados (`id → cor`). As penas usam um shader
@@ -436,7 +438,8 @@ Godot: as versões exatas do SDK e do JDK podem mudar.
 - Emulador: AVD `swanrace` (Android 15 x86_64), `emulator -avd swanrace -gpu host`. É
   mais lento: espere a abertura antes de tocar. Se `adb screencap` travar, use
   `adb emu screenrecord screenshot <arquivo>` (sai em retrato).
-- O APK não pede nenhuma permissão (nem internet); confira com `aapt2 dump xmltree`.
+- O APK não pede nenhuma permissão (nem internet); confira com `aapt2 dump xmltree`. Quando o
+  Google Analytics entrar, a internet passa a ser a única permissão (ADR 0018).
 
 **iOS (depois):** num Mac com Xcode, a Godot exporta um projeto do Xcode, que é
 compilado e enviado ao TestFlight. No futuro, isso pode rodar no GitHub Actions
@@ -448,7 +451,7 @@ O `LICENSE-EXCEPTION.md` cobre o Steam ("similar distribution platforms").
 
 ## Logs
 - O jogo guarda até **1000** arquivos de log (`debug/file_logging/max_log_files`), em
-  `%APPDATA%Godotpp_userdataSwan Raceogs`, para análise futura (ex.: Firebase).
+  `%APPDATA%Godotpp_userdataSwan Raceogs`, para análise local; erros vão para o Google Analytics anônimo (ADR 0018), nunca o arquivo de log.
   Cópia dos antigos em `logs_archive`.
 
 ## Versionamento

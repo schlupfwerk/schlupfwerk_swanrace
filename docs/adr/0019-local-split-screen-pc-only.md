@@ -8,7 +8,7 @@
 Playtests with family showed that racing on the same couch is a big part of
 the fun. On Steam, Remote Play Together also lets friends join a local
 multiplayer game over the internet, with no netcode and no studio server, so
-the "no tracking" promise ([0009](0009-offline-first-no-ads-cosmetic-only.md))
+the privacy promise ([0009](0009-offline-first-no-ads-cosmetic-only.md), [0018](0018-crash-reports-without-sdk-no-push.md))
 holds.
 
 On phones it doesn't work: the screen is too small to split, there is one

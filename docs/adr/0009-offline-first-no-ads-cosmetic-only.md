@@ -1,6 +1,6 @@
 # 0009. Offline first, no ads, cosmetic-only monetization
 
-- **Status:** Accepted; monetization superseded by [0012](0012-no-paid-items.md)
+- **Status:** Accepted; monetization superseded by [0012](0012-no-paid-items.md) and [0021](0021-free-forever-no-purchases.md); "no data collection" superseded by [0018](0018-crash-reports-without-sdk-no-push.md) (anonymous Google Analytics)
 - **Date:** 2026-11-24
 
 ## Context
