@@ -32,6 +32,8 @@ const CYCLISTS := 9
 
 
 func _init() -> void:
+	# The curb of the sidewalk by the avenue is solid: running into it dazes.
+	daze_sides = [-1.0]
 	start_distance = 40.0
 	finish_distance = start_distance + LENGTH
 	build()
