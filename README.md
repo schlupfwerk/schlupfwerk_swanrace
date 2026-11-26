@@ -17,11 +17,12 @@ Janeiro, with more to come.
 
 - **Offline first**: plays fully offline against AI swans with their own
   personalities.
-- **No ads, no data collection.** Online leaderboards (Game Center, Google
-  Play Games and Steam) and multiplayer will be optional. What the game sends
+- **No ads, no selling data.** The only data the game will send is anonymous
+  error and usage reports to Google Analytics, with no SDK. Online leaderboards
+  (Game Center, Google Play Games and Steam) and multiplayer will be optional. What the game sends
   and stores is listed in the [privacy audit](docs/privacy-audit.md).
-- **No paid items**: skins are earned by playing. The only purchase is an
-  optional tip, which unlocks nothing.
+- **Free forever, no purchases**: skins are earned by playing, and nothing is
+  for sale, not even a tip.
 - **Your progress follows you** through your Google, Apple or Steam account.
 - **Family friendly.**
 
@@ -92,11 +93,12 @@ sobre a água) e **voo** até a linha de chegada. As pistas são inspiradas na
 Suíça, na Alemanha e no Rio de Janeiro.
 
 - Funciona **offline**, contra cisnes controlados por IA.
-- **Sem anúncios e sem coleta de dados.** Placares e multiplayer serão
-  opcionais. O que o jogo envia e guarda está na
+- **Sem anúncios e sem venda de dados.** O único envio será de relatórios
+  anônimos de erros e uso para o Google Analytics, sem SDK. Placares e
+  multiplayer serão opcionais. O que o jogo envia e guarda está na
   [auditoria de privacidade](docs/privacy-audit.md).
-- **Sem itens pagos:** as skins são ganhas jogando. A única compra é uma
-  gorjeta opcional, que não libera nada.
+- **Grátis para sempre, sem compras:** as skins são ganhas jogando, e nada
+  está à venda, nem gorjeta.
 - O progresso acompanha você pela sua conta Google, Apple ou Steam.
 - Jogue com toque, teclado ou controle (Xbox, PlayStation e controles
   Bluetooth genéricos, inclusive no celular), trocando quando quiser.

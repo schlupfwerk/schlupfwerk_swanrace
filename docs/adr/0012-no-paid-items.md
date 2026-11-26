@@ -1,6 +1,6 @@
 # 0012. No paid items: cosmetics are earned in the game
 
-- **Status:** Accepted
+- **Status:** Accepted; the tip superseded by [0021](0021-free-forever-no-purchases.md)
 - **Date:** 2026-11-24
 - **Supersedes:** the monetization part of [0009](0009-offline-first-no-ads-cosmetic-only.md)
 

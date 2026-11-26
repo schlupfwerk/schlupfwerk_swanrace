@@ -1,6 +1,8 @@
 # Privacy audit: what the game sends and stores
 
-Swan Race promises **no ads and no data collection** ([ADR 0009](adr/0009-offline-first-no-ads-cosmetic-only.md)).
+Swan Race promises **no ads and no selling data** ([ADR 0009](adr/0009-offline-first-no-ads-cosmetic-only.md),
+[ADR 0018](adr/0018-crash-reports-without-sdk-no-push.md)). The only data it will send is anonymous
+error and usage reports to Google Analytics, without any SDK; that is planned, not built yet.
 This file checks that promise against the code. Update it whenever a package,
 SDK or network feature is added, and before filling in any store privacy form.
 
@@ -14,7 +16,8 @@ SDK or network feature is added, and before filling in any store privacy form.
 | Godot 4.7.2 engine (official export template) | No | No telemetry or crash reporting in the engine |
 | Game scripts (`scripts/`) | No | No `HTTPRequest`, `HTTPClient`, sockets, WebSocket or multiplayer anywhere |
 | `addons/build_info` | No | Runs only in the editor, at export time |
-| Store or platform SDKs (Google Play Games, Game Center, Steam, Firebase) | Not integrated | See "Before adding a service" |
+| Store or platform SDKs (Google Play Games, Game Center, Steam, Firebase) | Not integrated | See "Before adding a service". Firebase is ruled out ([ADR 0018](adr/0018-crash-reports-without-sdk-no-push.md)) |
+| Google Analytics 4 (Measurement Protocol, from GDScript) | Planned, not built | Anonymous errors and basic usage only; no SDK ([ADR 0018](adr/0018-crash-reports-without-sdk-no-push.md)) |
 
 ## Outside the game process
 
@@ -45,16 +48,22 @@ None of these are uploaded. Nicknames are typed by the player and stay local.
 - **Apple, App Privacy:** Data Not Collected.
 - **Steam:** no third-party accounts or data collection to disclose.
 
-These answers change as soon as any service in the next section ships.
+These answers change as soon as any service in the next section ships. When Google Analytics ships:
+Google Play declares anonymous app activity and diagnostics (not shared, not used for ads), the APK asks
+for the internet permission, and Apple App Privacy declares diagnostics and usage data not linked to the user.
 
 ## Before adding a service
 
 Firebase, Google Play Games, Game Center, Steam, cloud saves or crash reporting
-all send data. Before any of them ships:
+all send data. Crashes come from the Play Console (Android vitals and
+pre-launch reports), errors and basic usage from anonymous Google Analytics
+without an SDK, and there are no push notifications
+([ADR 0018](adr/0018-crash-reports-without-sdk-no-push.md)). Before any of
+them ships:
 
-1. Write an ADR, and update the privacy page on schlupfwerk.com (site ADR 0007).
-2. Make it opt-in where the store allows, with analytics and crash reporting off
-   by default.
+1. Write an ADR, and update the privacy page on schlupfwerk.com (site ADRs 0007 and 0010).
+2. Make it opt-in where the store allows (Google Analytics stays anonymous, as
+   [ADR 0018](adr/0018-crash-reports-without-sdk-no-push.md) describes).
 3. Add it to "What calls home" above and redo the store forms.
 
 ## External links
