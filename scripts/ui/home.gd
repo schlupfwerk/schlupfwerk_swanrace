@@ -152,7 +152,7 @@ func _build_ui() -> void:
 	_root.add_child(_hint)
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT, Control.PRESET_MODE_MINSIZE, 16)
 	var version := Label.new()
-	version.text = GameVersion.label()
+	version.text = GameVersion.footer()
 	version.add_theme_font_size_override("font_size", 14)
 	version.modulate = Color(1, 1, 1, 0.75)
 	_root.add_child(version)

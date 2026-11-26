@@ -68,7 +68,12 @@ jobs:
           echo "VERSION=$version" >> "$GITHUB_ENV"
           mkdir -p builds/pkg
           cp builds/windows/SwanRace.exe LICENSE LICENSE-EXCEPTION.md ASSETS_LICENSE.md TRADEMARKS.md builds/pkg/
-          sed "s/{VERSION}/${version}/" dist/windows/LEIA-ME.txt > builds/pkg/LEIA-ME.txt
+          # Footer of the readme: the build number (commit count, as in the game) and
+          # the build day in Brazil.
+          build=$(printf "%05d" "$(git rev-list --count HEAD)")
+          built_on=$(TZ=America/Sao_Paulo date +%d/%m/%Y)
+          sed -e "s/{VERSION}/${version}/g" -e "s/{BUILD}/${build}/g" -e "s|{DATE}|${built_on}|g" \
+            dist/windows/LEIA-ME.txt > builds/pkg/LEIA-ME.txt
           (cd builds/pkg && 7z a -tzip -mx=9 "../SwanRace-${version}-windows.zip" . > /dev/null)
           echo "ZIP=builds/SwanRace-${version}-windows.zip" >> "$GITHUB_ENV"
 

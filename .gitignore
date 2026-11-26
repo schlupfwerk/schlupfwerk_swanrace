@@ -20,6 +20,8 @@ builds/
 *.p12
 *.mobileprovision
 export_credentials.cfg
+# Signing folder (Android keystore, iOS certificates and profiles)
+/sign/
 
 # OS
 .DS_Store
