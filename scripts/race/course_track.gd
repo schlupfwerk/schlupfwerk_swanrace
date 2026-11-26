@@ -51,6 +51,12 @@ var holes: Array[Dictionary] = []
 var looped := false
 ## No fences: running off an edge, the swan falls (CourseRules).
 var open_edges := false
+## Broken stretches of an otherwise fenced edge (the Great Wall's parapet):
+## {"from", "to", "side"} (side -1 = left, 1 = right). Off the edge there,
+## the swan falls (CourseRules).
+var breaks: Array[Dictionary] = []
+## Fences are solid stone walls: running into one dazes the swan (CourseRules).
+var fence_dazes := false
 
 ## Distance between samples: SPACING, or a little more or less on a loop so
 ## that a whole number of samples closes it.
@@ -360,6 +366,27 @@ func obstacle_ahead(distance: float, lateral: float, from := 6.0, to := 22.0) ->
 		if gap > from * 0.5 and gap < to and absf(lateral - hole.lateral) < hole.width * 0.5 + 0.5:
 			return true
 	return false
+
+
+## A broken stretch of the fence on one side (-1 left, 1 right).
+func add_break(from: float, to: float, side: float) -> void:
+	breaks.append({"from": from, "to": to, "side": side})
+
+
+## True where a swan can fall off this side of the course: everywhere with
+## open edges, or along a broken stretch.
+func edge_open(distance: float, side: float) -> bool:
+	if open_edges:
+		return true
+	for gap in breaks:
+		if gap.side == side and between(gap.from, distance) >= 0.0 and between(distance, gap.to) >= 0.0:
+			return true
+	return false
+
+
+## What the HUD says when a swan falls (a translation key).
+func fall_message() -> String:
+	return "CAREFUL_SPACE"
 
 
 func add_hole(distance: float, lateral: float, hole_length: float, width: float) -> void:

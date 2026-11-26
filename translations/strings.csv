@@ -261,4 +261,17 @@ MSG_TIME,Time  %s,Tempo  %s
 MAP_RIO_BEACH,Rio Seafront,Orla do Rio
 STRETCH_SEAFRONT,Along the beach,Pela orla
 MAP_SIDEREAL,Sidereal Circuit,Circuito Sideral
+MAP_SAO_PAULO,São Paulo,São Paulo
+STRETCH_AVENUE,Along the avenue,Pela avenida
+MAP_GERMAN_FOREST,German Forest,Floresta Alemã
+STRETCH_FOREST,Through the forest,Pela floresta
+MAP_TOKYO,Tokyo,Tóquio
+STRETCH_OLD_TOWN,Old town,Cidade antiga
+STRETCH_TORII,Torii tunnel,Túnel de toriis
+MAP_GREAT_WALL,Great Wall of China,Muralha da China
+STRETCH_WALL,On the wall,Sobre a muralha
+CAREFUL_WALL,Careful not to fall off the wall!!,Cuidado para não cair da muralha!!
+MAP_ANDES,Andes Mountains,Cordilheira dos Andes
+STRETCH_MOUNTAIN_ROAD,Mountain road,Estrada da serra
+CAREFUL_CLIFF,Careful with the cliff!!,Cuidado com o penhasco!!
 CAREFUL_SPACE,Careful not to fall into space!!,Cuidado para não cair no espaço!!

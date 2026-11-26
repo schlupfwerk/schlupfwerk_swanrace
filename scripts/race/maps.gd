@@ -14,6 +14,11 @@ const LIST := [
 	{"id": "swiss_alps", "name": "MAP_SWISS_ALPS", "laps": false, "course": true},
 	{"id": "rio_beach", "name": "MAP_RIO_BEACH", "laps": false, "course": true},
 	{"id": "sidereal_circuit", "name": "MAP_SIDEREAL", "laps": true, "course": true},
+	{"id": "sao_paulo", "name": "MAP_SAO_PAULO", "laps": true, "course": true},
+	{"id": "german_forest", "name": "MAP_GERMAN_FOREST", "laps": true, "course": true},
+	{"id": "tokyo", "name": "MAP_TOKYO", "laps": true, "course": true},
+	{"id": "great_wall", "name": "MAP_GREAT_WALL", "laps": false, "course": true},
+	{"id": "andes", "name": "MAP_ANDES", "laps": false, "course": true},
 ]
 
 
@@ -45,4 +50,14 @@ static func make_course(id: String) -> CourseTrack:
 			return RioCourse.new()
 		"sidereal_circuit":
 			return SiderealCircuit.new()
+		"sao_paulo":
+			return SaoPauloCircuit.new()
+		"german_forest":
+			return GermanyCircuit.new()
+		"tokyo":
+			return TokyoCircuit.new()
+		"great_wall":
+			return GreatWallCourse.new()
+		"andes":
+			return AndesCourse.new()
 	return null

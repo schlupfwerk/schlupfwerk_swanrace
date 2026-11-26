@@ -4,12 +4,14 @@ extends RefCounted
 ## tick. The same for players and bots (the course counterpart of TrackRules).
 ##   - Snow: the swan skis (SwanMotor.skiing); on the road it runs.
 ##   - Side fences and guard rails: the swan slides along them and loses the
-##     part of its speed going into them (no daze: the road has many curves).
+##     part of its speed going into them (no daze: the road has many curves;
+##     except stone walls, CourseTrack.fence_dazes: running into one dazes).
 ##   - Trees, rocks, logs and animals: running into one, the swan stops and
 ##     pops up right past it, blinking (like on the island). Brushing one from
 ##     the side only slides along it. Rocks and logs can be jumped.
 ##   - Puddles: wet and slow (half the top speed) while running through.
-##   - Open edges and holes (space, ADR 0024): no fences. Off an edge, or on
+##   - Open edges and holes (space, ADR 0024; broken parapets on the Great
+##     Wall, ADR 0028): no fence there. Off such an edge, or on
 ##     the ground over a hole, the swan falls, screaming, and comes back on
 ##     the course a few seconds later, blinking (like drowning on the island).
 ##   - Never the wrong way.
@@ -19,6 +21,9 @@ const SWAN_RADIUS := 0.45
 const PAST_OBSTACLE := 1.2
 ## Speed kept when running straight into a fence (scaled by how straight).
 const FENCE_LOSS := 0.8
+## Walls that daze (CourseTrack.fence_dazes): how straight into the wall
+## (sine of the angle) a swan must run to be dazed; less only slides.
+const FENCE_DAZE_ANGLE := 0.25
 ## Top speed while splashing through a puddle (a share of the normal one).
 const PUDDLE_SPEED := 0.5
 ## How far past an open edge the swan's center may go before it falls (m):
@@ -41,11 +46,11 @@ static func apply(swan: Swan, tracker: CourseTracker, track: CourseTrack) -> voi
 	swan.in_water = splashing
 	swan.motor.max_speed_scale = PUDDLE_SPEED if splashing else 1.0
 	_follow_ground(swan, track, i, ground)
-	if track.open_edges:
+	if track.open_edges or not track.breaks.is_empty() or not track.holes.is_empty():
 		if _fall_off(swan, track, i, distance, lateral, race_heading):
 			return
-	else:
-		_keep_inside(swan, track, i, lateral, race_heading)
+	if not track.open_edges:
+		_keep_inside(swan, track, i, distance, lateral, race_heading)
 	_collide(swan, track, i, distance)
 
 	var off := wrapf(swan.motor.heading - race_heading, -PI, PI)
@@ -58,8 +63,8 @@ static func apply(swan: Swan, tracker: CourseTracker, track: CourseTrack) -> voi
 ## Returns true when it fell.
 static func _fall_off(swan: Swan, track: CourseTrack, i: int, distance: float, lateral: float,
 		race_heading: float) -> bool:
-	var off_edge := lateral < track.left_edge(i) - FALL_MARGIN \
-			or lateral > track.right_edge(i) + FALL_MARGIN
+	var off_edge := (lateral < track.left_edge(i) - FALL_MARGIN and track.edge_open(distance, -1.0)) \
+			or (lateral > track.right_edge(i) + FALL_MARGIN and track.edge_open(distance, 1.0))
 	var hole := {} if off_edge or not swan.motor.on_ground else track.hole_at(distance, lateral)
 	if not off_edge and hole.is_empty():
 		return false
@@ -75,19 +80,30 @@ static func _fall_off(swan: Swan, track: CourseTrack, i: int, distance: float, l
 
 
 ## Fences on the slope, guard rails on the road: slide along, losing speed.
-static func _keep_inside(swan: Swan, track: CourseTrack, i: int, lateral: float,
+static func _keep_inside(swan: Swan, track: CourseTrack, i: int, distance: float, lateral: float,
 		race_heading: float) -> void:
 	var low := track.left_edge(i) + SWAN_RADIUS
 	var high := track.right_edge(i) - SWAN_RADIUS
 	if lateral >= low and lateral <= high:
 		return
 	var side := 1.0 if lateral > high else -1.0
+	# A broken stretch of the fence: nothing to hold the swan (it may fall).
+	if track.edge_open(distance, side):
+		return
 	var back := track.edge(i, clampf(lateral, low, high))
 	swan.motor.position.x = back.x
 	swan.motor.position.z = back.y
 	var outward := track.right(i) * side
 	var forward := Vector2(swan.motor.forward().x, swan.motor.forward().z)
 	var into := forward.dot(outward)
+	# Solid stone walls (the Great Wall's parapets): running into one dazes
+	# the swan, like the forest edge on the island. Brushing it only slides.
+	if track.fence_dazes and into > FENCE_DAZE_ANGLE and not swan.is_stunned():
+		var inside := track.edge(i, clampf(lateral, low + 0.4, high - 0.4))
+		swan.motor.position.x = inside.x
+		swan.motor.position.z = inside.y
+		swan.bump(race_heading)
+		return
 	if into > 0.0:
 		swan.motor.speed *= 1.0 - FENCE_LOSS * into
 		# Turned back along the fence.

@@ -49,12 +49,17 @@ var _laps := false
 var _total_laps := 1
 var _last_lap := 0.0
 
-# TODO(music): the owner picks each map's music. Until then the courses reuse
-# the island's race music and its final-lap version.
-static var _music_stream: AudioStreamWAV
+# Each course has its own music (samba in Rio, a Ländler in the Alps, French
+# house in space), rendered once per map in a background thread. Courses keep
+# their music to the end: no separate final-lap track (_final_stream stays null).
+static var _map_music := {}
+static var _map_music_rendering := {}
 static var _final_stream: AudioStreamWAV
 static var _podium_stream: AudioStreamWAV
 static var _music_rendering := false
+var _music_stream: AudioStreamWAV:
+	get:
+		return _map_music.get(_map_id)
 
 
 func _ready() -> void:
@@ -100,12 +105,38 @@ func _ready() -> void:
 		player.bus = &"Music"
 		player.volume_db = -6.0
 		add_child(player)
-	if _music_stream == null and not _music_rendering:
+	if not _map_music.has(_map_id) and not _map_music_rendering.has(_map_id):
+		_map_music_rendering[_map_id] = true
+		var id := _map_id
+		WorkerThreadPool.add_task(func() -> void:
+			var stream := _render_music(id)
+			(func() -> void: _map_music[id] = stream).call_deferred())
+	if _podium_stream == null and not _music_rendering:
 		_music_rendering = true
 		WorkerThreadPool.add_task(func() -> void:
-			_music_stream = IslandMusic.load_or_render()
-			_final_stream = FinalLapMusic.load_or_render()
-			_podium_stream = VictoryMusic.load_or_render())
+			var stream := VictoryMusic.load_or_render()
+			(func() -> void: _podium_stream = stream).call_deferred())
+
+
+static func _render_music(id: String) -> AudioStreamWAV:
+	match id:
+		"rio_beach":
+			return SambaMusic.load_or_render()
+		"swiss_alps":
+			return AlpineMusic.load_or_render()
+		"sidereal_circuit":
+			return SpaceMusic.load_or_render()
+		"sao_paulo":
+			return RockMusic.load_or_render()
+		"german_forest":
+			return BrassMusic.load_or_render()
+		"tokyo":
+			return AnimeMusic.load_or_render()
+		"great_wall":
+			return ChineseMusic.load_or_render()
+		"andes":
+			return CuecaMusic.load_or_render()
+	return IslandMusic.load_or_render()
 
 
 ## The player and the bots on a grid behind the start line.
@@ -169,7 +200,7 @@ func _spawn_racers() -> void:
 	for racer in _racers:
 		if racer.swan.brain is CourseBotBrain:
 			(racer.swan.brain as CourseBotBrain).player_tracker = player_tracker
-	(_player.swan as Swan).fell.connect(func() -> void: _hud.show_message(tr("CAREFUL_SPACE"), 3.0))
+	(_player.swan as Swan).fell.connect(func() -> void: _hud.show_message(tr(_track.fall_message()), 3.0))
 
 
 func _process(delta: float) -> void:

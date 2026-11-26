@@ -214,8 +214,19 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   o cache usa `Sfx.load_loop`. Sem a margem o mixer lê além do buffer no ponto de loop e o
   jogo fecha no Android (achado no emulador).
 - **Música:** cada país/pista terá a sua, **sem direitos autorais** (licença compatível,
-  com entrada em `assets/CREDITS.md`). A primeira pista, na praia, pede algo que lembre
-  praia. O dono do projeto escolhe as músicas; não adicione música por conta própria.
+  com entrada em `assets/CREDITS.md`, ou composta e sintetizada no código). A primeira pista, na
+  praia, pede algo que lembre praia. O dono do projeto escolhe o estilo de cada uma; não adicione
+  música por conta própria.
+- **Toda música do jogo é alegre e animada** (jogo infantil, para a família): tom maior, andamento
+  rápido, ritmo saltitante, nada triste, lento ou sombrio. Vale para pistas, menus, pódio e
+  qualquer música nova.
+- Músicas por mapa (originais, no código, `scripts/audio/`; `course_race.gd` escolhe pelo mapa e
+  as pistas novas não trocam de música na última volta): Rio = samba (`samba_music.gd`), Alpes =
+  ländler suíço animado (`alpine_music.gd`), Sideral = house eletrônico estilo francês
+  (`space_music.gd`), São Paulo = rock brasileiro (`rock_music.gd`), Floresta Alemã = polka de banda
+  de metais estilo Oktoberfest (`brass_music.gd`), Tóquio = estilo abertura de anime
+  (`anime_music.gd`), Muralha da China = música chinesa festiva, pentatônica (`chinese_music.gd`),
+  Cordilheira dos Andes = cueca chilena em 6/8 (`cueca_music.gd`).
 
 ## Pistas
 **Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
@@ -326,7 +337,7 @@ vilinha de chalés. ~2:00 para um bom piloto:
   lados, guard-rail (o cisne desliza nele, sem atordoar), faixa tracejada e pinheiros dos dois lados.
   Troncos atravessados e **vacas e veados cruzando**.
 - Escolha do mapa na aba Correr (`Settings.map`, `Maps`); voltas ficam desativadas nos mapas ponta a
-  ponta. O recorde é o **tempo total** por mapa. Música provisória: a da ilha (o dono escolhe).
+  ponta. O recorde é o **tempo total** por mapa. Cada mapa tem a sua música (ver Música, acima).
 
 **Terceiro mapa: Orla do Rio** (`RioCourse`, `RioScenery`, id `rio_beach`, ADR 0023). Ponta a ponta,
 **fácil**, ~2:30, **toda plana**: 1,9 km pela curva da baía. Mar à direita (praia com guarda-sóis,
