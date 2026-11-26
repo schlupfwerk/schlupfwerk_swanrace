@@ -43,9 +43,9 @@ whatever you use.
 ## Status
 
 🐣 **Version 1.0.0**: playable on Windows; Android build in testing (touch controls). We are still testing the
-first versions. Nine maps (the
+first versions. Twelve maps (the
 Desert Island with ramps, Swiss Alps, Rio Seafront, Sidereal Circuit, São Paulo, German Forest, Tokyo,
-Great Wall of China and the Andes), each with its own cheerful music,
+Great Wall of China, the Andes, Egypt, the Colosseum of Rome and Paris), each with its own cheerful music,
 AI racers, character customization, an easy mode that runs by itself. Expect rough edges
 and big changes.
 

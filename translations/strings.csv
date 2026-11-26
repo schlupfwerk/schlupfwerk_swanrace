@@ -274,4 +274,12 @@ CAREFUL_WALL,Careful not to fall off the wall!!,Cuidado para não cair da muralh
 MAP_ANDES,Andes Mountains,Cordilheira dos Andes
 STRETCH_MOUNTAIN_ROAD,Mountain road,Estrada da serra
 CAREFUL_CLIFF,Careful with the cliff!!,Cuidado com o penhasco!!
+MAP_EGYPT,Egypt,Egito
+STRETCH_DESERT,Through the desert,Pelo deserto
+CAREFUL_DUNES,Careful: the dunes swallow you!!,Cuidado: as dunas engolem!!
+MAP_COLOSSEUM,Colosseum of Rome,Coliseu de Roma
+STRETCH_ARENA,In the arena,Na arena
+CAREFUL_CROCS,Careful with the crocodiles!!,Cuidado com os jacarés!!
+MAP_PARIS,Paris,Paris
+STRETCH_PARIS_STREETS,Through the streets of Paris,Pelas ruas de Paris
 CAREFUL_SPACE,Careful not to fall into space!!,Cuidado para não cair no espaço!!

@@ -136,6 +136,12 @@ static func _render_music(id: String) -> AudioStreamWAV:
 			return ChineseMusic.load_or_render()
 		"andes":
 			return CuecaMusic.load_or_render()
+		"egypt":
+			return ArabianMusic.load_or_render()
+		"colosseum":
+			return RomanMusic.load_or_render()
+		"paris":
+			return MusetteMusic.load_or_render()
 	return IslandMusic.load_or_render()
 
 
@@ -201,6 +207,7 @@ func _spawn_racers() -> void:
 		if racer.swan.brain is CourseBotBrain:
 			(racer.swan.brain as CourseBotBrain).player_tracker = player_tracker
 	(_player.swan as Swan).fell.connect(func() -> void: _hud.show_message(tr(_track.fall_message()), 3.0))
+	(_player.swan as Swan).drowned.connect(func() -> void: _hud.show_message(tr(_track.sink_message()), 3.0))
 
 
 func _process(delta: float) -> void:
@@ -310,6 +317,7 @@ func _on_lap_completed(lap_time: float, racer: Dictionary) -> void:
 		swan.finish_place = _finish_order
 	if not racer.player:
 		return
+	_track.player_lap.emit()
 	_last_lap = lap_time
 	var record := Profile.submit_lap(_map_id, lap_time)
 	if record:

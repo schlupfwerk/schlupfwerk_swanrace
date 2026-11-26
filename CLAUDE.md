@@ -226,7 +226,9 @@ Salvas só no aparelho, **nunca sincronizadas** (dependem do hardware). Tela em
   (`space_music.gd`), São Paulo = rock brasileiro (`rock_music.gd`), Floresta Alemã = polka de banda
   de metais estilo Oktoberfest (`brass_music.gd`), Tóquio = estilo abertura de anime
   (`anime_music.gd`), Muralha da China = música chinesa festiva, pentatônica (`chinese_music.gd`),
-  Cordilheira dos Andes = cueca chilena em 6/8 (`cueca_music.gd`).
+  Cordilheira dos Andes = cueca chilena em 6/8 (`cueca_music.gd`), Egito = aventura das "Mil e Uma
+  Noites", escala hijaz (`arabian_music.gd`; original, sem copiar nenhum filme), Coliseu = marcha
+  triunfal romana (`roman_music.gd`), Paris = valsa musette de acordeão (`musette_music.gd`).
 
 ## Pistas
 **Primeiro circuito (feito): Ilha Deserta** (`IslandTrack`, `IslandScenery`, id
