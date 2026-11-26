@@ -24,6 +24,8 @@ const TORII_LENGTH := 70.0
 
 
 func _init() -> void:
+	# The fences at both edges are solid: running into them dazes.
+	daze_sides = [-1.0, 1.0]
 	var raw := PackedVector2Array()
 	var count := WAYPOINTS.size()
 	var per := OUTLINE_POINTS / count
